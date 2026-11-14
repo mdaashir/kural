@@ -1,9 +1,8 @@
-"""
-kural.config — configuration loading, validation, and defaults.
+# MIT License — Copyright (c) 2025 drajb (upstream: Pin Wang / whisper-key-local)
+# Ported from drajb/whisper-local/src/whisper_key/config_manager.py
+"""Kural configuration subsystem: defaults layering, settings validation, and hot reload."""
 
-Config file location: %APPDATA%\\kural\\config.json
-Bad values fall back to defaults and log a warning (never crash on startup).
+from .config_manager import ConfigManager
+from .defaults_merge import load_layered
 
-Ported from: ROHITCRAFTSYT/WhispLocal/configcheck.py (see THIRD_PARTY_NOTICES.md)
-Status: stub — real implementation arrives in feat/config-validation
-"""
+__all__ = ["ConfigManager", "load_layered"]

@@ -4,21 +4,22 @@
 **M0** — Import base, rename, upstream tests green
 
 ## Current branch
-`chore/import-base-engine`
+`port/doctor-and-config`
 
 ## PR
-Not yet opened — branch pushed, PR to be raised with gh.
+PR to be opened with gh after verification passes.
 
 ## Last completed step
-Committed engine package port from drajb/whisper-local (fcd87875) into
-`kural/engine/` with 11 ported source files and 5 test modules covering
-dictation_languages, dictation_cleanup, streaming_delivery, model_registry,
-and whisper_engine. 84 tests pass, ruff clean.
+Ported `kural/config/` (ConfigManager, defaults_merge, YAML defaults),
+`kural/engine/hardware_detection.py` (probes NVIDIA GPU and CUDA DLLs),
+and `kural/doctor.py` (CLI diagnostic health check wired into `kural.__main__`).
+All 114 tests pass, ruff is clean, and `kural --doctor` ran successfully on
+Windows 11 with the RTX 3050 6GB Laptop GPU detected.
 
 ## Next step
-1. Push `chore/import-base-engine` and open PR into `main` with gh.
+1. Push `port/doctor-and-config` and open PR into `main` using `gh pr create`.
 2. Wait for user to merge.
-3. After merge: start M1 — GPU Turbo benchmark harness (feat/benchmark-harness).
+3. After merge: start Milestone M1 — GPU Turbo benchmark harness (`test/benchmark-harness`).
 
 ## Open questions
 - None blocking M0.
@@ -39,6 +40,7 @@ and whisper_engine. 84 tests pass, ruff clean.
   tests with `-m 'not gpu and not mic'`.
 - WhisperEngine defaults changed from upstream (tiny/cpu/int8) to large-v3-turbo/cuda/float16
   to target the RTX 3050. Reason: AGENTS.md architecture decision.
-- Tests inject fake `faster_whisper` and `ctranslate2` into sys.modules via
-  `tests/engine/conftest.py` so the engine can be imported without real GPU deps.
-  Reason: AGENTS.md rule — tests must not need a GPU or model.
+- Config management layers `config.defaults.yaml` under `%APPDATA%\kural\user_settings.yaml`.
+  Reason: user settings remain minimal and clean, default updates arrive automatically.
+- Hardware detection checks PE imports and standard Windows DLL search order for cuBLAS and
+  cuDNN. Reason: prevents silent inference hangs on the RTX 3050.

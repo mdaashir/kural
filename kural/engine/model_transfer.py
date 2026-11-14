@@ -112,7 +112,8 @@ def _validate_destination(parent: Path) -> str:
 # `--export-model [DEST]`: bundle the configured model into a portable folder.
 # DEST defaults to the Desktop. Returns a process exit code.
 def export_model(dest: str = None) -> int:
-    from .config_manager import ConfigManager
+    from kural.config import ConfigManager
+
     from .model_registry import ModelRegistry
 
     cm = ConfigManager(quiet=True)
