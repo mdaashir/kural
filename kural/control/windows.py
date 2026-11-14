@@ -280,3 +280,65 @@ def check_foreground_elevation() -> tuple[bool, str]:
         return True, msg
 
     return False, ""
+
+
+def insert_text_at_caret(text: str, restore_clipboard_delay: float = 0.05) -> bool:
+    """Insert text at the current cursor position by pasting (Ctrl+V) via clipboard.
+
+    Preserves existing clipboard contents and checks for elevated windows before pasting.
+    """
+    if not text:
+        return False
+
+    is_elev, warn_msg = check_foreground_elevation()
+    if is_elev:
+        print(f"⚠️  {warn_msg}")
+
+    if sys.platform != "win32":
+        return False
+
+    import ctypes
+    import time
+
+    # Optional pyperclip for Unicode clipboard handling
+    saved_clipboard = None
+    try:
+        import pyperclip
+
+        try:
+            saved_clipboard = pyperclip.paste()
+        except Exception:
+            saved_clipboard = None
+
+        pyperclip.copy(text)
+    except ImportError:
+        # Minimal ctypes clipboard fallback
+        pass
+
+    # Simulate Ctrl+V keypress
+    user32 = ctypes.windll.user32
+    VK_CONTROL = 0x11
+    VK_V = 0x56
+
+    user32.keybd_event(VK_CONTROL, 0, 0, 0)
+    user32.keybd_event(VK_V, 0, 0, 0)
+    user32.keybd_event(VK_V, 0, KEYEVENTF_KEYUP, 0)
+    user32.keybd_event(VK_CONTROL, 0, KEYEVENTF_KEYUP, 0)
+
+    # Restore prior clipboard content if pyperclip was available
+    if saved_clipboard is not None:
+
+        def _restore():
+            time.sleep(restore_clipboard_delay)
+            try:
+                import pyperclip
+
+                pyperclip.copy(saved_clipboard)
+            except Exception:
+                pass
+
+        import threading
+
+        threading.Thread(target=_restore, daemon=True, name="clipboard-restore").start()
+
+    return True

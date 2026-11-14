@@ -30,7 +30,11 @@ def main() -> None:
 
         sys.exit(run_doctor())
 
-    print(f"Kural {get_version()} — use '--doctor' to run diagnostics.")
+    # Launch live background runtime
+    from kural.runtime import KuralRuntime
+
+    runtime = KuralRuntime()
+    runtime.run()
 
 
 if __name__ == "__main__":
