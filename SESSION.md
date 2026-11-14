@@ -4,21 +4,21 @@
 **M0** — Import base, rename, upstream tests green
 
 ## Current branch
-`chore/scaffold-skeleton`
+`chore/import-base-engine`
 
 ## PR
-Not yet opened — awaiting verification pass then push.
+Not yet opened — branch pushed, PR to be raised with gh.
 
 ## Last completed step
-Commit 4: `tests/conftest.py` + `tests/test_import.py` (smoke tests for all sub-packages).
+Committed engine package port from drajb/whisper-local (fcd87875) into
+`kural/engine/` with 11 ported source files and 5 test modules covering
+dictation_languages, dictation_cleanup, streaming_delivery, model_registry,
+and whisper_engine. 84 tests pass, ruff clean.
 
 ## Next step
-1. Verify `ruff check .`, `ruff format --check .`, and `pytest` all pass.
-2. Push `chore/scaffold-skeleton` and open PR into `main`.
-3. Wait for user to merge.
-4. After merge: start `chore/import-base-engine` — copy `drajb/whisper-local` source into the repo,
-   rename package references to `kural`, record upstream commit SHA in `THIRD_PARTY_NOTICES.md`,
-   and confirm `pytest` still passes.
+1. Push `chore/import-base-engine` and open PR into `main` with gh.
+2. Wait for user to merge.
+3. After merge: start M1 — GPU Turbo benchmark harness (feat/benchmark-harness).
 
 ## Open questions
 - None blocking M0.
@@ -37,3 +37,8 @@ Commit 4: `tests/conftest.py` + `tests/test_import.py` (smoke tests for all sub-
   Reason: clean separation of concerns; each milestone targets exactly one sub-package.
 - pytest markers defined: `gpu`, `mic`, `slow`. Reason: CI can deselect hardware-dependent
   tests with `-m 'not gpu and not mic'`.
+- WhisperEngine defaults changed from upstream (tiny/cpu/int8) to large-v3-turbo/cuda/float16
+  to target the RTX 3050. Reason: AGENTS.md architecture decision.
+- Tests inject fake `faster_whisper` and `ctranslate2` into sys.modules via
+  `tests/engine/conftest.py` so the engine can be imported without real GPU deps.
+  Reason: AGENTS.md rule — tests must not need a GPU or model.
