@@ -34,6 +34,16 @@ ALIASES = {
     "settings": "ms-settings:",
     "recycle bin": "shell:RecycleBinFolder",
     "camera": "microsoft.windows.camera:",
+    # Tamil and Tanglish application aliases
+    "குரோம்": "chrome",
+    "நோட்பேடு": "notepad",
+    "கால்குலேட்டர்": "calc",
+    "கணக்கி": "calc",
+    "டெர்மினல்": "wt",
+    "கோப்புகள்": "explorer",
+    "எக்ஸ்ப்ளோரர்": "explorer",
+    "அமைப்புகள்": "ms-settings:",
+    "கேமரா": "microsoft.windows.camera:",
 }
 
 # Popular web sites for web fallback
@@ -69,6 +79,10 @@ SITES = {
     "outlook": "https://outlook.live.com",
     "teams": "https://teams.microsoft.com",
     "notion": "https://www.notion.so",
+    # Tamil site names
+    "யூடியூப்": "https://www.youtube.com",
+    "கூகிள்": "https://www.google.com",
+    "வாட்ஸ்அப்": "https://web.whatsapp.com",
 }
 
 _APP_STOP_WORDS = frozenset(("app", "the", "my", "please", "up", "program"))
