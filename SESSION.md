@@ -1,34 +1,28 @@
 # SESSION.md
 
 ## Current milestone
-**M0 - M5 Roadmap Complete** (Ready for end-to-end dogfooding & live usage)
+**Post-M5: Live Dictation & Voice Control Runtime**
 
 ## Current branch
-`docs/update-docs-and-roadmap`
+`feat/live-dictation-runtime`
 
 ## PR
-PR to be opened with gh after documentation review.
+PR to be opened with gh after verification passes.
 
 ## Last completed step
-Completed full implementation of all roadmap milestones:
-- **M0**: Base engine import from `drajb/whisper-local` (fcd8787), package rename to `kural`, config system with round-trip YAML defaults, hardware detection for RTX 3050, and `kural --doctor` diagnostics.
-- **M1**: ASR evaluation benchmark harness (`benchmarks/metrics.py`, `benchmarks/run.py`) measuring Real-Time Factor (RTF), Word Error Rate (WER), and Character Error Rate (CER) for Tamil.
-- **M2**: Ported control engine from `ROHITCRAFTSYT/WhispLocal` (315af36), decomposed into modular components (`guardrails.py`, `app_index.py`, `media.py`, `windows.py`, `parser.py`, `executor.py`) with 5-tier resolution hierarchy.
-- **M3**: Added comprehensive pure Tamil and Tanglish command aliases (SVO and SOV syntax) and native Tamil script Whisper priming (`SCRIPT_PRIMER_TAMIL`).
-- **M4**: Configurable idle VRAM release timer (`idle_unload_minutes: 5`) freeing ~1.5 GB on the 6 GB RTX 3050, elevated window detection under Windows UIPI, and PyInstaller standalone build (`packaging/kural.spec`).
-- **M5**: Air-gapped local-LLM intent fallback (`llm_fallback.py`) and hands-free keyword listener (`wake_word.py`) (both off by default).
-- Comprehensive documentation update in `README.md` and `memory.md`.
+Built and integrated the end-to-end background daemon:
+- `kural/runtime.py`: Coordinates the runtime state machine (`IDLE` <-> `RECORDING_DICTATION` / `RECORDING_COMMAND` <-> `PROCESSING`), global hotkey bindings (`ctrl+space` for dictation, `ctrl+shift+space` for commands), audio capture, GPU Whisper inference, caret insertion, and voice-control execution.
+- `kural/control/windows.py`: Implemented `insert_text_at_caret(text)` with clipboard state preservation, Windows `Ctrl+V` key simulation, and foreground window elevation checking.
+- `kural/__main__.py`: Connected to launch `KuralRuntime.run()` on `python -m kural`.
+- 6 new unit tests in `tests/test_runtime.py` covering state transitions, dictation text typing, command routing, and empty audio resets (233 total tests passing, 0 requiring GPU or mic, ruff clean).
 
-## Next steps & What can be done next
-1. **Live Microphone Integration & System Tray / Overlay Loop**:
-   - Connect the continuous `AudioRecorder` ring-buffer, global hotkey listener (`global_hotkeys`), and tray icon (`pystray`) into `kural/__main__.py` so pressing `ctrl+space` records and pastes into active apps end-to-end.
-2. **Benchmark Run on Real Hardware**:
-   - Run `python -m benchmarks.run --models large-v3-turbo distil-large-v3.5 --device cuda --compute-type float16` with downloaded weights to record real WER and latency on the RTX 3050.
-3. **Packaging Build**:
-   - Execute `packaging\build.bat` on this machine to compile the standalone `dist\kural\kural.exe` and test clean execution on a machine without Python.
+## Next step
+1. Push `feat/live-dictation-runtime` and open PR into `main` with `gh pr create`.
+2. Wait for user to review and merge.
+3. Live test dictation and voice commands directly in Windows apps!
 
 ## Open questions
-- All roadmap milestones complete.
+- None. Full pipeline connected end-to-end.
 
 ## Verify items (from AGENTS.md)
 - [x] **Hotkey-driven only?** Confirmed: neither base (`whisper-local`) nor donor (`WhispLocal`) contained native wake-word engines. Designed and implemented opt-in offline wake-word detector in M5.
@@ -43,5 +37,7 @@ Completed full implementation of all roadmap milestones:
 - Linter: `ruff` only. Reason: handles pycodestyle + isort + pyupgrade in one tool.
 - Sub-package layout: `engine/`, `control/`, `config/`, `ui/` as top-level siblings under `kural/`.
   Reason: clean separation of concerns; each milestone targets exactly one sub-package.
-- Testing standard: 100% offline, 0 GPU/mic/network required for unit tests (227 passing).
-- Documentation: `README.md`, `THIRD_PARTY_NOTICES.md`, `SESSION.md`, and `memory.md` kept strictly in sync.
+- Clipboard preservation: `insert_text_at_caret` copies previous clipboard contents and restores
+  them asynchronously after paste, preventing destruction of user's copied text.
+- UIPI protection: foreground elevation is verified before pasting or macro execution to notify
+  the user when Windows security blocks synthetic keystrokes.
