@@ -100,3 +100,5 @@ licence texts are reproduced here in full, as required by the MIT licence terms.
 | `kural/control/windows.py` | `whisp/commands.py` |
 | `kural/control/parser.py` | `whisp/commands.py` |
 | `kural/control/executor.py` | `whisp/commands.py` |
+| `kural/control/llm_fallback.py` | `whisp/locallm.py` |
+| `kural/engine/wake_word.py` | `src/whisper_key/voice_activity_detection.py` + `whisp/` |
