@@ -97,3 +97,6 @@ licence texts are reproduced here in full, as required by the MIT licence terms.
 | `kural/control/guardrails.py` | `whisp/commands.py` + `GUARDRAILS.md` |
 | `kural/control/app_index.py` | `whisp/commands.py` + `whisp/appcontext.py` |
 | `kural/control/media.py` | `whisp/volume.py` |
+| `kural/control/windows.py` | `whisp/commands.py` |
+| `kural/control/parser.py` | `whisp/commands.py` |
+| `kural/control/executor.py` | `whisp/commands.py` |

@@ -1,0 +1,91 @@
+"""Tests for kural.control.windows — mocked window management without OS side-effects."""
+
+from unittest.mock import patch
+
+from kural.control.windows import (
+    SW_MAXIMIZE,
+    SW_MINIMIZE,
+    WM_CLOSE,
+    WindowInfo,
+    close_window,
+    focus_window,
+    set_window_state,
+)
+
+
+class TestWindowListingAndFocus:
+    def test_focus_window_matches_and_brings_foreground(self):
+        fake_wins = [
+            WindowInfo(hwnd=1001, title="Untitled - Notepad", exe="notepad.exe"),
+            WindowInfo(hwnd=1002, title="Google Chrome", exe="chrome.exe"),
+        ]
+        with (
+            patch("kural.control.windows.list_windows", return_value=fake_wins),
+            patch("ctypes.windll.user32.SwitchToThisWindow") as mock_switch,
+            patch("ctypes.windll.user32.IsIconic", return_value=False),
+        ):
+            title = focus_window("notepad")
+            assert title == "Untitled - Notepad"
+            mock_switch.assert_called_once_with(1001, True)
+
+    def test_focus_window_nonexistent_returns_none(self):
+        with patch("kural.control.windows.list_windows", return_value=[]):
+            assert focus_window("calculator") is None
+
+    def test_focus_window_skips_protected_processes(self):
+        fake_wins = [WindowInfo(hwnd=999, title="Task Manager", exe="Taskmgr.exe")]
+        with patch("kural.control.windows.list_windows", return_value=fake_wins):
+            assert focus_window("taskmgr") is None
+
+
+class TestCloseWindow:
+    def test_graceful_close_posts_wm_close(self):
+        fake_wins = [WindowInfo(hwnd=2001, title="Document - WordPad", exe="wordpad.exe")]
+        with (
+            patch("kural.control.windows.list_windows", return_value=fake_wins),
+            patch("ctypes.windll.user32.PostMessageW") as mock_post,
+        ):
+            ok, msg = close_window("wordpad")
+            assert ok is True
+            assert "Closing Document - WordPad" in msg
+            mock_post.assert_called_once_with(2001, WM_CLOSE, 0, 0)
+
+    def test_close_window_refuses_protected_process(self):
+        ok, msg = close_window("explorer.exe")
+        assert ok is False
+        assert "protected" in msg
+
+    def test_close_window_not_found(self):
+        with patch("kural.control.windows.list_windows", return_value=[]):
+            ok, msg = close_window("vlc")
+            assert ok is False
+            assert "no open window" in msg.lower()
+
+
+class TestWindowState:
+    def test_minimize_calls_show_window(self):
+        with (
+            patch("ctypes.windll.user32.GetForegroundWindow", return_value=5001),
+            patch("ctypes.windll.user32.ShowWindow") as mock_show,
+        ):
+            ok, msg = set_window_state("minimize")
+            assert ok is True
+            mock_show.assert_called_once_with(5001, SW_MINIMIZE)
+
+    def test_maximize_calls_show_window(self):
+        with (
+            patch("ctypes.windll.user32.GetForegroundWindow", return_value=5001),
+            patch("ctypes.windll.user32.ShowWindow") as mock_show,
+        ):
+            ok, msg = set_window_state("maximize")
+            assert ok is True
+            mock_show.assert_called_once_with(5001, SW_MAXIMIZE)
+
+    def test_snap_left_simulates_keys(self):
+        with (
+            patch("ctypes.windll.user32.GetForegroundWindow", return_value=5001),
+            patch("ctypes.windll.user32.keybd_event") as mock_keybd,
+        ):
+            ok, msg = set_window_state("snap_left")
+            assert ok is True
+            assert mock_keybd.call_count >= 2
