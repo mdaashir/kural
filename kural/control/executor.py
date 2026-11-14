@@ -12,6 +12,7 @@ from pathlib import Path
 from kural.config.defaults_merge import load_layered
 from kural.control.app_index import AppIndex
 from kural.control.guardrails import Guardrails, default_guardrails
+from kural.control.llm_fallback import LocalLLMFallback
 from kural.control.media import (
     change_volume,
     media_next,
@@ -46,9 +47,11 @@ class CommandExecutor:
         app_index: AppIndex | None = None,
         guardrails: Guardrails | None = None,
         commands_yaml_path: Path | str | None = None,
+        llm_fallback: LocalLLMFallback | None = None,
     ):
         self.app_index = app_index or AppIndex(auto_build=True)
         self.guardrails = guardrails or default_guardrails
+        self.llm_fallback = llm_fallback or LocalLLMFallback()
 
         if commands_yaml_path is None:
             self.commands_yaml_path = Path(get_user_app_data_path()) / "commands.yaml"
@@ -124,7 +127,18 @@ class CommandExecutor:
                 action_type="open_app",
             )
 
-        # Tier 5: Fallback — not understood
+        # Tier 5: Optional Local-LLM fallback (if enabled and configured)
+        if self.llm_fallback.is_available():
+            canonical = self.llm_fallback.resolve_command(clean)
+            if canonical:
+                safe, reason = self.guardrails.check_command_safety(canonical)
+                if safe:
+                    intent = parse_command(canonical)
+                    if intent:
+                        logger.info(f"Local LLM resolved '{clean}' -> '{canonical}'")
+                        return self._execute_intent(intent)
+
+        # Tier 6: Fallback — not understood
         return CommandResult(
             success=False,
             feedback=f"Command not understood: '{clean}'",

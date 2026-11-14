@@ -5,6 +5,7 @@
 from .app_index import ALIASES, SITES, AppIndex
 from .executor import CommandExecutor, CommandResult
 from .guardrails import Guardrails, GuardrailsViolation, default_guardrails
+from .llm_fallback import LocalLLMFallback, build_prompt, sanitize_llm_output
 from .media import (
     change_volume,
     get_volume,
@@ -34,7 +35,9 @@ __all__ = [
     "CommandResult",
     "Guardrails",
     "GuardrailsViolation",
+    "LocalLLMFallback",
     "WindowInfo",
+    "build_prompt",
     "change_volume",
     "check_foreground_elevation",
     "close_window",
@@ -48,6 +51,7 @@ __all__ = [
     "media_prev",
     "normalize_command_text",
     "parse_command",
+    "sanitize_llm_output",
     "set_volume",
     "set_window_state",
     "toggle_mute",
