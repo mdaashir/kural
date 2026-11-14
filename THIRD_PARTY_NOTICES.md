@@ -65,7 +65,7 @@ licence texts are reproduced here in full, as required by the MIT licence terms.
 
 **Origin:** https://github.com/ROHITCRAFTSYT/WhispLocal
 
-**Upstream commit imported:** <!-- fill in SHA when port/control-engine lands -->
+**Upstream commit imported:** `315af364f9bf3aa61b40092bc258ce88aa67756e`
 
 **Copyright:**
 > Copyright (c) Rohit Burani / ROHITCRAFTSYT
@@ -90,4 +90,10 @@ licence texts are reproduced here in full, as required by the MIT licence terms.
 > OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 > SOFTWARE.
 
-**Files ported from this source:** <!-- list added per file when each is ported -->
+**Files ported from this source:**
+
+| kural path | upstream path |
+|---|---|
+| `kural/control/guardrails.py` | `whisp/commands.py` + `GUARDRAILS.md` |
+| `kural/control/app_index.py` | `whisp/commands.py` + `whisp/appcontext.py` |
+| `kural/control/media.py` | `whisp/volume.py` |
