@@ -100,8 +100,23 @@ class TestCommandExecutor:
             assert res.success is True
             assert "Opening Calculator" in res.feedback
 
-    def test_hierarchy_tier_5_unrecognized_returns_failure(self):
+    def test_hierarchy_tier_5_llm_fallback_resolves(self):
         self.mock_app_index.find_app.return_value = None
+        mock_llm = MagicMock()
+        mock_llm.is_available.return_value = True
+        mock_llm.resolve_command.return_value = "volume up"
+        self.executor.llm_fallback = mock_llm
+
+        with patch("kural.control.executor.change_volume", return_value=80):
+            res = self.executor.execute("could you please bump the sound a notch")
+            assert res.success is True
+            assert res.action_type == "volume"
+            assert "Volume set to 80%" in res.feedback
+
+    def test_hierarchy_tier_6_unrecognized_returns_failure(self):
+        self.mock_app_index.find_app.return_value = None
+        self.executor.llm_fallback = MagicMock()
+        self.executor.llm_fallback.is_available.return_value = False
         res = self.executor.execute("the quick brown fox jumps")
         assert res.success is False
         assert res.action_type == "unrecognized"

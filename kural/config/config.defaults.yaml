@@ -147,3 +147,13 @@ ui: # User interface preferences
 
 stats:
     typing_wpm: 40
+
+llm_fallback: # Optional local language model intent fallback (off by default)
+    enabled: false
+    model_path: "" # Path to local .gguf or ONNX model
+    timeout_sec: 6.0
+
+wake_word: # Optional hands-free keyword activation (off by default)
+    enabled: false
+    trigger_phrase: "kural" # Activation keyword (e.g. "kural" or "குரல்")
+    sensitivity: 0.6

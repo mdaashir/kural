@@ -1,36 +1,34 @@
 # SESSION.md
 
 ## Current milestone
-**M4** — One installer, idle VRAM unload, elevated-window message
+**M5 (Optional)** — Local-LLM intent fallback, wake word
 
 ## Current branch
-`feat/m4-installer-vram-elevation`
+`feat/m5-locallm-and-wakeword`
 
 ## PR
 PR to be opened with gh after verification passes.
 
 ## Last completed step
-Delivered Milestone M4 requirements:
-- `kural/engine/whisper_engine.py`: Configurable idle VRAM unload timer (`idle_unload_minutes`, default: 5 min) freeing GPU memory after inactivity and seamlessly waking up on the next dictation.
-- `kural/config/config.defaults.yaml`: Added `idle_unload_minutes: 5`.
-- `kural/control/windows.py`: Implemented `is_window_elevated(hwnd)` and `check_foreground_elevation()` to detect Administrator windows and issue clear actionable messages instead of silent UIPI input drops.
-- `kural/doctor.py`: Added Idle VRAM unload status display.
-- `packaging/kural.spec` & `packaging/build.bat`: PyInstaller standalone specification and build script producing `dist/kural/kural.exe`.
-- 7 new unit tests in `tests/engine/test_vram_idle.py` and `tests/control/test_elevation.py` (211 total passing tests, 0 requiring GPU or mic, ruff clean).
+Delivered Milestone M5 optional capabilities (both off by default):
+- `kural/control/llm_fallback.py`: Local-LLM intent fallback querying an optional local GGUF/ONNX model to map novel phrasing to canonical commands, with strict air-gap sanitization and deterministic parser re-validation.
+- `kural/engine/wake_word.py`: Hands-free keyword activation detector and listener thread.
+- `kural/control/executor.py`: Wired `llm_fallback` as Tier 5 in the resolution hierarchy.
+- `kural/config/config.defaults.yaml`: Added `llm_fallback` and `wake_word` configuration blocks.
+- 16 new unit tests across `tests/control/test_llm_fallback.py` and `tests/engine/test_wake_word.py` (227 total passing tests, 0 requiring GPU or mic, ruff clean).
 
 ## Next step
-1. Push `feat/m4-installer-vram-elevation` and open PR into `main` with `gh pr create`.
+1. Push `feat/m5-locallm-and-wakeword` and open PR into `main` with `gh pr create`.
 2. Wait for user to review and merge.
-3. After merge: Milestone M5 (optional) / final system evaluation.
+3. Roadmap milestones M0 through M5 are complete! Final integration review.
 
 ## Open questions
-- None blocking M4.
+- All roadmap milestones complete.
 
 ## Verify items (from AGENTS.md)
-- [ ] **Hotkey-driven only?** AGENTS.md says "Neither appears to offer hands-free activation …
-      Both are hotkey-driven (verify)." Confirm in both source repos before M5 planning.
-- [x] **Feature overlap between base and donor** — Confirmed and resolved.
-- [x] **Tamil voice commands supported** — Both formal Tamil and colloquial Tanglish supported.
+- [x] **Hotkey-driven only?** Confirmed: neither base (`whisper-local`) nor donor (`WhispLocal`) contained native wake-word engines. Designed and implemented opt-in offline wake-word detector in M5.
+- [x] **Feature overlap between base and donor** — Confirmed and resolved across M0-M5.
+- [x] **Tamil voice commands supported** — SVO, SOV, and Tanglish supported.
 - [x] **Idle VRAM unload implemented** — Configurable timer unloads model from VRAM after inactivity.
 - [x] **Elevated window message implemented** — UIPI token inspection warns user with actionable advice.
 
@@ -40,7 +38,8 @@ Delivered Milestone M4 requirements:
 - Linter: `ruff` only. Reason: handles pycodestyle + isort + pyupgrade in one tool.
 - Sub-package layout: `engine/`, `control/`, `config/`, `ui/` as top-level siblings under `kural/`.
   Reason: clean separation of concerns; each milestone targets exactly one sub-package.
-- Packaging chosen: PyInstaller one-folder standalone build (`packaging/kural.spec`).
-  Reason: bundles Python 3.12, CTranslate2 DLLs, and YAML configs without requiring external installers.
-- Elevated window handling: inspects `TokenElevation` via `OpenProcessToken` and warns user.
-  Reason: Windows UIPI blocks synthetic input sent from medium to high-integrity windows.
+- LLM intent fallback is strictly air-gapped: cannot execute code directly, must map to a
+  canonical command that parses through `parse_command()` and clears guardrails.
+  Reason: eliminates autonomous execution risks and hallucinated shell commands.
+- Wake-word detector is off by default and uses energy envelope gating.
+  Reason: keeps background CPU and battery consumption minimal.
