@@ -48,6 +48,9 @@ PROTECTED_PROCESSES = frozenset(
         "smss",
         "kural",
         "kural.exe",
+        "taskmgr",
+        "task manager",
+        "program manager",
     ]
 )
 

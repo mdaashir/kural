@@ -1,0 +1,217 @@
+# MIT License — Copyright (c) 2025 Rohit Burani / ROHITCRAFTSYT
+# Ported from ROHITCRAFTSYT/WhispLocal/whisp/commands.py
+"""Windows management for voice control: window enumeration, focus, snap, and graceful close."""
+
+import logging
+import os
+import sys
+from dataclasses import dataclass
+
+logger = logging.getLogger(__name__)
+
+WM_CLOSE = 0x0010
+SW_MAXIMIZE = 3
+SW_MINIMIZE = 6
+SW_RESTORE = 9
+
+VK_LWIN = 0x5B
+VK_LEFT = 0x25
+VK_RIGHT = 0x27
+VK_UP = 0x26
+VK_DOWN = 0x28
+VK_D = 0x44
+KEYEVENTF_KEYUP = 0x0002
+
+
+@dataclass
+class WindowInfo:
+    """Represents a visible top-level desktop window."""
+
+    hwnd: int
+    title: str
+    exe: str
+
+
+def list_windows() -> list[WindowInfo]:
+    """Enumerate all visible top-level windows with non-empty titles."""
+    if sys.platform != "win32":
+        return []
+
+    import ctypes
+    import ctypes.wintypes as wintypes
+
+    user32 = ctypes.windll.user32
+    kernel32 = ctypes.windll.kernel32
+    results: list[WindowInfo] = []
+
+    WNDENUMPROC = ctypes.WINFUNCTYPE(wintypes.BOOL, wintypes.HWND, wintypes.LPARAM)
+
+    def enum_cb(hwnd: int, _lparam: int) -> bool:
+        if not user32.IsWindowVisible(hwnd):
+            return True
+
+        length = user32.GetWindowTextLengthW(hwnd)
+        if length == 0:
+            return True
+
+        buf = ctypes.create_unicode_buffer(length + 1)
+        user32.GetWindowTextW(hwnd, buf, length + 1)
+        title = buf.value.strip()
+        if not title:
+            return True
+
+        pid = wintypes.DWORD()
+        user32.GetWindowThreadProcessId(hwnd, ctypes.byref(pid))
+        exe = ""
+        # PROCESS_QUERY_LIMITED_INFORMATION = 0x1000
+        h_proc = kernel32.OpenProcess(0x1000, False, pid.value)
+        if h_proc:
+            size = wintypes.DWORD(260)
+            path_buf = ctypes.create_unicode_buffer(260)
+            if kernel32.QueryFullProcessImageNameW(h_proc, 0, path_buf, ctypes.byref(size)):
+                exe = os.path.basename(path_buf.value)
+            kernel32.CloseHandle(h_proc)
+
+        results.append(WindowInfo(hwnd=hwnd, title=title, exe=exe))
+        return True
+
+    user32.EnumWindows(WNDENUMPROC(enum_cb), 0)
+    return results
+
+
+def focus_window(term: str, allow_browser: bool = True) -> str | None:
+    """Find a window matching `term` in title or executable name, focus it, and return its title.
+
+    Uses SwitchToThisWindow to reliably bypass the Windows foreground-lock restriction.
+    """
+    if sys.platform != "win32":
+        return None
+
+    import ctypes
+
+    clean_term = (term or "").strip().lower()
+    if len(clean_term) < 2:
+        return None
+
+    from kural.control.guardrails import default_guardrails
+
+    candidates = []
+    for win in list_windows():
+        if default_guardrails.is_protected_target(
+            win.exe
+        ) or default_guardrails.is_protected_target(win.title):
+            continue
+
+        tl = win.title.lower()
+        el = os.path.splitext(win.exe)[0].lower() if win.exe else ""
+
+        # Avoid grabbing a browser tab if term is not a browser
+        browser_exes = ("chrome", "msedge", "firefox", "brave", "opera", "vivaldi")
+        if not allow_browser and el in browser_exes and clean_term not in el:
+            continue
+
+        if clean_term in tl or clean_term == el:
+            candidates.append(win)
+
+    if not candidates:
+        return None
+
+    # Pick the most specific (shortest) matching title
+    best = min(candidates, key=lambda w: len(w.title))
+
+    user32 = ctypes.windll.user32
+    if user32.IsIconic(best.hwnd):
+        user32.ShowWindow(best.hwnd, SW_RESTORE)
+    user32.SwitchToThisWindow(best.hwnd, True)
+
+    return best.title
+
+
+def close_window(term: str) -> tuple[bool, str]:
+    """Gracefully close a window matching `term` by posting a WM_CLOSE message.
+
+    Never force-kills; allows the target application to prompt for unsaved changes.
+    """
+    if sys.platform != "win32":
+        return False, "Window closing is only available on Windows"
+
+    import ctypes
+
+    clean_term = (term or "").strip().lower()
+    if not clean_term:
+        return False, "No window name specified"
+
+    from kural.control.guardrails import default_guardrails
+
+    if default_guardrails.is_protected_target(clean_term):
+        return (
+            False,
+            f"Target '{clean_term}' is protected system infrastructure and cannot be closed.",
+        )
+
+    target_win = None
+    for win in list_windows():
+        if default_guardrails.is_protected_target(win.exe):
+            continue
+        tl = win.title.lower()
+        el = os.path.splitext(win.exe)[0].lower() if win.exe else ""
+        if clean_term in tl or clean_term == el:
+            target_win = win
+            break
+
+    if not target_win:
+        return False, f"No open window matching '{term}' found"
+
+    # Post WM_CLOSE message
+    user32 = ctypes.windll.user32
+    user32.PostMessageW(target_win.hwnd, WM_CLOSE, 0, 0)
+    logger.info(f"Posted WM_CLOSE to '{target_win.title}' (HWND: {target_win.hwnd:#x})")
+    return True, f"Closing {target_win.title}"
+
+
+def set_window_state(action: str) -> tuple[bool, str]:
+    """Modify the state of the active foreground window (minimize, maximize, snap left/right, show desktop)."""
+    if sys.platform != "win32":
+        return False, "Window state operations are only available on Windows"
+
+    import ctypes
+
+    user32 = ctypes.windll.user32
+    hwnd = user32.GetForegroundWindow()
+    if not hwnd and action != "show_desktop":
+        return False, "No active foreground window found"
+
+    act = action.strip().lower()
+
+    if act == "minimize":
+        user32.ShowWindow(hwnd, SW_MINIMIZE)
+        return True, "Minimized window"
+
+    if act == "maximize":
+        user32.ShowWindow(hwnd, SW_MAXIMIZE)
+        return True, "Maximized window"
+
+    if act == "restore":
+        user32.ShowWindow(hwnd, SW_RESTORE)
+        return True, "Restored window"
+
+    # Key combination simulation for snap operations
+    def _press_keys(*keys):
+        for k in keys:
+            user32.keybd_event(k, 0, 0, 0)
+        for k in reversed(keys):
+            user32.keybd_event(k, 0, KEYEVENTF_KEYUP, 0)
+
+    if act in ("snap_left", "snap left"):
+        _press_keys(VK_LWIN, VK_LEFT)
+        return True, "Snapped window left"
+
+    if act in ("snap_right", "snap right"):
+        _press_keys(VK_LWIN, VK_RIGHT)
+        return True, "Snapped window right"
+
+    if act in ("show_desktop", "desktop"):
+        _press_keys(VK_LWIN, VK_D)
+        return True, "Showing desktop"
+
+    return False, f"Unknown window action: {action}"
