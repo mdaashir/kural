@@ -215,3 +215,68 @@ def set_window_state(action: str) -> tuple[bool, str]:
         return True, "Showing desktop"
 
     return False, f"Unknown window action: {action}"
+
+
+def is_window_elevated(hwnd: int) -> bool:
+    """Check whether the process owning `hwnd` is running with elevated (Administrator) privileges.
+
+    Under Windows UIPI, standard-privilege applications cannot send synthetic input
+    (SendInput, keybd_event, WM_CLOSE) to elevated windows.
+    """
+    if sys.platform != "win32" or not hwnd:
+        return False
+
+    import ctypes
+    import ctypes.wintypes as wintypes
+
+    user32 = ctypes.windll.user32
+    kernel32 = ctypes.windll.kernel32
+    advapi32 = ctypes.windll.advapi32
+
+    pid = wintypes.DWORD()
+    user32.GetWindowThreadProcessId(hwnd, ctypes.byref(pid))
+    if not pid.value:
+        return False
+
+    # PROCESS_QUERY_LIMITED_INFORMATION = 0x1000
+    h_proc = kernel32.OpenProcess(0x1000, False, pid.value)
+    if not h_proc:
+        return False
+
+    h_token = wintypes.HANDLE()
+    # TOKEN_QUERY = 0x0008
+    elevated = False
+    if advapi32.OpenProcessToken(h_proc, 0x0008, ctypes.byref(h_token)):
+        # TokenElevation = 20
+        elevation = wintypes.DWORD()
+        ret_len = wintypes.DWORD()
+        if advapi32.GetTokenInformation(
+            h_token, 20, ctypes.byref(elevation), ctypes.sizeof(elevation), ctypes.byref(ret_len)
+        ):
+            elevated = bool(elevation.value)
+        kernel32.CloseHandle(h_token)
+    kernel32.CloseHandle(h_proc)
+
+    return elevated
+
+
+def check_foreground_elevation() -> tuple[bool, str]:
+    """Check if the current foreground window is elevated, returning (is_elevated, warning_message)."""
+    if sys.platform != "win32":
+        return False, ""
+
+    import ctypes
+
+    hwnd = ctypes.windll.user32.GetForegroundWindow()
+    if not hwnd:
+        return False, ""
+
+    if is_window_elevated(hwnd):
+        msg = (
+            "The active window is running as Administrator. Windows UIPI blocks "
+            "synthetic keystrokes to elevated windows unless Kural is also launched as Administrator."
+        )
+        logger.warning(msg)
+        return True, msg
+
+    return False, ""

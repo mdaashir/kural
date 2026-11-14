@@ -1,7 +1,7 @@
 """Tests for kural.engine.whisper_engine — mocks faster_whisper, no GPU/mic needed."""
 
 import inspect
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
 import numpy as np
 import pytest
@@ -70,7 +70,8 @@ class TestWhisperEngineDefaults:
 class TestTranscribeAudio:
     def test_none_model_returns_none(self, engine):
         engine.model = None
-        assert engine.transcribe_audio(np.zeros(16000, dtype=np.float32)) is None
+        with patch.object(engine, "_load_model", side_effect=RuntimeError("Load failed")):
+            assert engine.transcribe_audio(np.zeros(16000, dtype=np.float32)) is None
 
     def test_empty_audio_returns_none(self, engine):
         assert engine.transcribe_audio(np.array([], dtype=np.float32)) is None

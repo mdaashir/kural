@@ -26,6 +26,10 @@ whisper: # Whisper AI Model Settings
     # Options: float16 (for CUDA), int8 (for CPU)
     compute_type: float16
 
+    # Automatically unload model from VRAM after N minutes of inactivity (0 to disable)
+    # Frees ~1.5 GB on RTX 3050 for other GPU workloads; reloads seamlessly on next dictation
+    idle_unload_minutes: 5
+
     # Language selection
     # Options: en (English), ta (Tamil), or auto (auto-detect)
     language: en
