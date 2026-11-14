@@ -1,28 +1,29 @@
 # SESSION.md
 
 ## Current milestone
-**M0** — Import base, rename, upstream tests green
+**M1** — GPU Turbo for EN + TA, benchmark harness
 
 ## Current branch
-`port/doctor-and-config`
+`test/benchmark-harness`
 
 ## PR
 PR to be opened with gh after verification passes.
 
 ## Last completed step
-Ported `kural/config/` (ConfigManager, defaults_merge, YAML defaults),
-`kural/engine/hardware_detection.py` (probes NVIDIA GPU and CUDA DLLs),
-and `kural/doctor.py` (CLI diagnostic health check wired into `kural.__main__`).
-All 114 tests pass, ruff is clean, and `kural --doctor` ran successfully on
-Windows 11 with the RTX 3050 6GB Laptop GPU detected.
+Implemented ASR benchmark harness in `benchmarks/`:
+- `metrics.py`: Levenshtein distance, WER, CER (supporting Tamil script and Tanglish), RTF.
+- `datasets.py`: Benchmark dataset manager with automatic synthetic 16 kHz WAV generator.
+- `run.py`: CLI benchmark tool with Markdown and JSON report generation.
+- `tests/test_benchmark.py`: Pure unit tests for metrics and runner with mocked engine (133 tests passing, 0 requiring GPU).
 
 ## Next step
-1. Push `port/doctor-and-config` and open PR into `main` using `gh pr create`.
-2. Wait for user to merge.
-3. After merge: start Milestone M1 — GPU Turbo benchmark harness (`test/benchmark-harness`).
+1. Push `test/benchmark-harness` and open PR into `main` with `gh pr create`.
+2. Wait for user to review and merge.
+3. After merge: run live benchmark on RTX 3050 (`large-v3-turbo` vs `distil-large-v3.5` vs `large-v3`) and record performance metrics.
+4. Begin Milestone M2: port voice-control engine from donor into `kural/control/`.
 
 ## Open questions
-- None blocking M0.
+- None blocking M1.
 
 ## Verify items (from AGENTS.md)
 - [ ] **Hotkey-driven only?** AGENTS.md says "Neither appears to offer hands-free activation …
@@ -38,9 +39,7 @@ Windows 11 with the RTX 3050 6GB Laptop GPU detected.
   Reason: clean separation of concerns; each milestone targets exactly one sub-package.
 - pytest markers defined: `gpu`, `mic`, `slow`. Reason: CI can deselect hardware-dependent
   tests with `-m 'not gpu and not mic'`.
-- WhisperEngine defaults changed from upstream (tiny/cpu/int8) to large-v3-turbo/cuda/float16
-  to target the RTX 3050. Reason: AGENTS.md architecture decision.
-- Config management layers `config.defaults.yaml` under `%APPDATA%\kural\user_settings.yaml`.
-  Reason: user settings remain minimal and clean, default updates arrive automatically.
-- Hardware detection checks PE imports and standard Windows DLL search order for cuBLAS and
-  cuDNN. Reason: prevents silent inference hangs on the RTX 3050.
+- Benchmark metrics compute Character Error Rate (CER) alongside WER. Reason: essential for
+  evaluating Tamil script and agglutinative suffixes.
+- Reference audio files are generated on the fly via `create_synthetic_wav` if not already present,
+  keeping git history binary-free as required by AGENTS.md.
