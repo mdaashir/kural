@@ -95,6 +95,30 @@ class TestTranscribeAudio:
         assert result is None
         engine.model.transcribe.assert_not_called()
 
+    def test_tamil_script_primer_injected(self, engine):
+        from kural.engine.whisper_engine import SCRIPT_PRIMER_TAMIL
+
+        fake_model, _ = _make_fake_whisper_model("வணக்கம்")
+        engine.model = fake_model
+        engine.language = "ta"
+        engine.initial_prompt = None
+
+        result = engine.transcribe_audio(np.zeros(16000, dtype=np.float32))
+        assert result == "வணக்கம்"
+        fake_model.transcribe.assert_called_once()
+        kwargs = fake_model.transcribe.call_args[1]
+        assert kwargs["initial_prompt"] == SCRIPT_PRIMER_TAMIL
+
+    def test_custom_prompt_overrides_tamil_primer(self, engine):
+        fake_model, _ = _make_fake_whisper_model("வணக்கம்")
+        engine.model = fake_model
+        engine.language = "ta"
+        engine.initial_prompt = "Custom Tamil prompt"
+
+        engine.transcribe_audio(np.zeros(16000, dtype=np.float32))
+        kwargs = fake_model.transcribe.call_args[1]
+        assert kwargs["initial_prompt"] == "Custom Tamil prompt"
+
     def test_exception_sets_last_error_returns_none(self, engine):
         engine.model.transcribe.side_effect = RuntimeError("CUDA OOM")
         result = engine.transcribe_audio(np.zeros(16000, dtype=np.float32))

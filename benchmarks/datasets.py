@@ -41,6 +41,16 @@ DEFAULT_TEST_ITEMS = [
         "language": "ta",
         "reference": "நான் குரோம் ஓபன் பண்ணி யூடியூப் பார்க்கிறேன்.",
     },
+    {
+        "id": "ta_command_open_1",
+        "language": "ta",
+        "reference": "நோட்பேடு ஓபன் பண்ணு.",
+    },
+    {
+        "id": "ta_command_volume_1",
+        "language": "ta",
+        "reference": "சத்தத்தை ஏற்று.",
+    },
 ]
 
 

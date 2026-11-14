@@ -35,6 +35,10 @@ _MODEL_SIZE_HINTS = {
 }
 
 
+# Default script primer for Tamil to steer Whisper toward native script instead of Roman transliteration
+SCRIPT_PRIMER_TAMIL = "வணக்கம், இது தமிழ் எழுத்தில் எழுதப்பட்ட வாக்கியம்."
+
+
 def _model_size_hint(model_key: str) -> str:
     key = (model_key or "").lower()
     for prefix, size in _MODEL_SIZE_HINTS.items():
@@ -264,8 +268,12 @@ class WhisperEngine:
                 "task": self.task,
                 "condition_on_previous_text": False,
             }
-            if self.initial_prompt:
-                transcribe_kwargs["initial_prompt"] = self.initial_prompt
+            prompt = self.initial_prompt
+            if not prompt and language == "ta":
+                prompt = SCRIPT_PRIMER_TAMIL
+
+            if prompt:
+                transcribe_kwargs["initial_prompt"] = prompt
             if self.hotwords:
                 transcribe_kwargs["hotwords"] = self.hotwords
 
