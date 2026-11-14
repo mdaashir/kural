@@ -20,6 +20,22 @@ dev = [
     "pytest-mock>=3.14",
     "ruff>=0.4",
 ]
+# Runtime extras — needed for the live dictation daemon, not for the library
+# itself, so the core package stays installable on a bare Python.
+runtime = [
+    "faster-whisper>=1.0.0",
+    "sounddevice>=0.4.6",
+    "soxr>=0.3.7",
+    "global-hotkeys>=0.6.0",
+    "pyperclip>=1.8.2",
+]
+tray = [
+    "pystray>=0.19.5",
+    "pillow>=10.0.0",
+]
+vad = [
+    "ten-vad>=0.0.4",
+]
 
 [project.scripts]
 kural = "kural.__main__:main"

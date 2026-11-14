@@ -33,6 +33,10 @@ OPTIONAL_PACKAGES = [
     "sounddevice",
     "soxr",
     "ten_vad",
+    "global_hotkeys",
+    "pyperclip",
+    "pystray",
+    "PIL",
 ]
 
 
