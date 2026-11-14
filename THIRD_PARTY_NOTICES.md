@@ -10,7 +10,7 @@ licence texts are reproduced here in full, as required by the MIT licence terms.
 **Origin:** https://github.com/drajb/whisper-local
 (itself a fork of Pin Wang's whisper-key-local: https://github.com/pinw/whisper-key-local)
 
-**Upstream commit imported:** <!-- fill in SHA when chore/import-base-engine lands -->
+**Upstream commit imported:** `fcd87875ac582e11afc65d916a2bc38bda2b5ad7`
 
 **Copyright:**
 > Copyright (c) Pin Wang
@@ -36,7 +36,22 @@ licence texts are reproduced here in full, as required by the MIT licence terms.
 > OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 > SOFTWARE.
 
-**Files ported from this source:** <!-- list added per file when each is ported -->
+**Files ported from this source:**
+
+| kural path | upstream path |
+|---|---|
+| `kural/engine/__init__.py` | `src/whisper_key/__init__.py` |
+| `kural/engine/audio_recorder.py` | `src/whisper_key/audio_recorder.py` |
+| `kural/engine/dictation_cleanup.py` | `src/whisper_key/dictation_cleanup.py` |
+| `kural/engine/dictation_languages.py` | `src/whisper_key/dictation_languages.py` |
+| `kural/engine/model_registry.py` | `src/whisper_key/model_registry.py` |
+| `kural/engine/model_transfer.py` | `src/whisper_key/model_transfer.py` |
+| `kural/engine/streaming_delivery.py` | `src/whisper_key/streaming_delivery.py` |
+| `kural/engine/streaming_manager.py` | `src/whisper_key/streaming_manager.py` |
+| `kural/engine/streaming_recognizer.py` | `src/whisper_key/streaming_recognizer.py` |
+| `kural/engine/utils.py` | `src/whisper_key/utils.py` |
+| `kural/engine/voice_activity_detection.py` | `src/whisper_key/voice_activity_detection.py` |
+| `kural/engine/whisper_engine.py` | `src/whisper_key/whisper_engine.py` |
 
 ---
 
