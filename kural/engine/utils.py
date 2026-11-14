@@ -100,10 +100,26 @@ def resolve_asset_path(relative_path: str) -> str:
         return relative_path
 
     if is_installed_package():
-        files = importlib.resources.files("kural.engine")
-        return str(files / relative_path)
+        for pkg in ("kural.config", "kural.engine", "kural"):
+            try:
+                candidate = importlib.resources.files(pkg) / relative_path
+                if candidate.is_file() or candidate.is_dir():
+                    return str(candidate)
+            except Exception:
+                continue
+        return str(importlib.resources.files("kural.engine") / relative_path)
 
-    return str(Path(__file__).parent / relative_path)
+    # Repository checkout: search engine/, config/, and package root
+    here = Path(__file__).parent
+    for candidate in (
+        here / relative_path,
+        here.parent / "config" / relative_path,
+        here.parent / relative_path,
+    ):
+        if candidate.exists():
+            return str(candidate)
+
+    return str(here / relative_path)
 
 
 # Import ctranslate2 without its optional converter back-ends. Its package

@@ -10,10 +10,8 @@ readme = "README.md"
 license = { file = "LICENSE" }
 requires-python = ">=3.12"
 dependencies = [
-    # Engine — added in chore/import-base-engine
-    # "faster-whisper>=1.0",
-    # "torch>=2.2",           # CUDA build installed separately via onboarding
-    # Control / UI — added per milestone
+    "numpy>=1.26.0",
+    "ruamel.yaml>=0.18.0",
 ]
 
 [project.optional-dependencies]
