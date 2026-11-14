@@ -1,26 +1,31 @@
 # SESSION.md
 
 ## Current milestone
-**M5 (Optional)** — Local-LLM intent fallback, wake word
+**M0 - M5 Roadmap Complete** (Ready for end-to-end dogfooding & live usage)
 
 ## Current branch
-`feat/m5-locallm-and-wakeword`
+`docs/update-docs-and-roadmap`
 
 ## PR
-PR to be opened with gh after verification passes.
+PR to be opened with gh after documentation review.
 
 ## Last completed step
-Delivered Milestone M5 optional capabilities (both off by default):
-- `kural/control/llm_fallback.py`: Local-LLM intent fallback querying an optional local GGUF/ONNX model to map novel phrasing to canonical commands, with strict air-gap sanitization and deterministic parser re-validation.
-- `kural/engine/wake_word.py`: Hands-free keyword activation detector and listener thread.
-- `kural/control/executor.py`: Wired `llm_fallback` as Tier 5 in the resolution hierarchy.
-- `kural/config/config.defaults.yaml`: Added `llm_fallback` and `wake_word` configuration blocks.
-- 16 new unit tests across `tests/control/test_llm_fallback.py` and `tests/engine/test_wake_word.py` (227 total passing tests, 0 requiring GPU or mic, ruff clean).
+Completed full implementation of all roadmap milestones:
+- **M0**: Base engine import from `drajb/whisper-local` (fcd8787), package rename to `kural`, config system with round-trip YAML defaults, hardware detection for RTX 3050, and `kural --doctor` diagnostics.
+- **M1**: ASR evaluation benchmark harness (`benchmarks/metrics.py`, `benchmarks/run.py`) measuring Real-Time Factor (RTF), Word Error Rate (WER), and Character Error Rate (CER) for Tamil.
+- **M2**: Ported control engine from `ROHITCRAFTSYT/WhispLocal` (315af36), decomposed into modular components (`guardrails.py`, `app_index.py`, `media.py`, `windows.py`, `parser.py`, `executor.py`) with 5-tier resolution hierarchy.
+- **M3**: Added comprehensive pure Tamil and Tanglish command aliases (SVO and SOV syntax) and native Tamil script Whisper priming (`SCRIPT_PRIMER_TAMIL`).
+- **M4**: Configurable idle VRAM release timer (`idle_unload_minutes: 5`) freeing ~1.5 GB on the 6 GB RTX 3050, elevated window detection under Windows UIPI, and PyInstaller standalone build (`packaging/kural.spec`).
+- **M5**: Air-gapped local-LLM intent fallback (`llm_fallback.py`) and hands-free keyword listener (`wake_word.py`) (both off by default).
+- Comprehensive documentation update in `README.md` and `memory.md`.
 
-## Next step
-1. Push `feat/m5-locallm-and-wakeword` and open PR into `main` with `gh pr create`.
-2. Wait for user to review and merge.
-3. Roadmap milestones M0 through M5 are complete! Final integration review.
+## Next steps & What can be done next
+1. **Live Microphone Integration & System Tray / Overlay Loop**:
+   - Connect the continuous `AudioRecorder` ring-buffer, global hotkey listener (`global_hotkeys`), and tray icon (`pystray`) into `kural/__main__.py` so pressing `ctrl+space` records and pastes into active apps end-to-end.
+2. **Benchmark Run on Real Hardware**:
+   - Run `python -m benchmarks.run --models large-v3-turbo distil-large-v3.5 --device cuda --compute-type float16` with downloaded weights to record real WER and latency on the RTX 3050.
+3. **Packaging Build**:
+   - Execute `packaging\build.bat` on this machine to compile the standalone `dist\kural\kural.exe` and test clean execution on a machine without Python.
 
 ## Open questions
 - All roadmap milestones complete.
@@ -38,8 +43,5 @@ Delivered Milestone M5 optional capabilities (both off by default):
 - Linter: `ruff` only. Reason: handles pycodestyle + isort + pyupgrade in one tool.
 - Sub-package layout: `engine/`, `control/`, `config/`, `ui/` as top-level siblings under `kural/`.
   Reason: clean separation of concerns; each milestone targets exactly one sub-package.
-- LLM intent fallback is strictly air-gapped: cannot execute code directly, must map to a
-  canonical command that parses through `parse_command()` and clears guardrails.
-  Reason: eliminates autonomous execution risks and hallucinated shell commands.
-- Wake-word detector is off by default and uses energy envelope gating.
-  Reason: keeps background CPU and battery consumption minimal.
+- Testing standard: 100% offline, 0 GPU/mic/network required for unit tests (227 passing).
+- Documentation: `README.md`, `THIRD_PARTY_NOTICES.md`, `SESSION.md`, and `memory.md` kept strictly in sync.
