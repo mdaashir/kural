@@ -166,7 +166,11 @@ def _detect_ct2_variant() -> str:
     except ImportError:
         return "not_installed"
 
-    dll_path = pathlib.Path(ctranslate2.__file__).parent / "ctranslate2.dll"
+    file_path = getattr(ctranslate2, "__file__", None)
+    if not file_path:
+        return "cuda"
+
+    dll_path = pathlib.Path(file_path).parent / "ctranslate2.dll"
     if not dll_path.exists():
         return "cuda"
 

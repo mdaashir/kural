@@ -15,7 +15,15 @@ from .media import (
     toggle_mute,
 )
 from .parser import CommandIntent, normalize_command_text, parse_command
-from .windows import WindowInfo, close_window, focus_window, list_windows, set_window_state
+from .windows import (
+    WindowInfo,
+    check_foreground_elevation,
+    close_window,
+    focus_window,
+    is_window_elevated,
+    list_windows,
+    set_window_state,
+)
 
 __all__ = [
     "ALIASES",
@@ -28,10 +36,12 @@ __all__ = [
     "GuardrailsViolation",
     "WindowInfo",
     "change_volume",
+    "check_foreground_elevation",
     "close_window",
     "default_guardrails",
     "focus_window",
     "get_volume",
+    "is_window_elevated",
     "list_windows",
     "media_next",
     "media_play_pause",

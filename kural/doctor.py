@@ -252,11 +252,18 @@ def _section_model() -> int:
 
     try:
         from kural.config import ConfigManager
-        from kural.engine.model_registry import ModelRegistry
 
         cfg = ConfigManager(quiet=True)
         whisper_cfg = cfg.get_whisper_config()
         model_key = whisper_cfg.get("model", "large-v3-turbo")
+
+        idle_min = whisper_cfg.get("idle_unload_minutes", 5)
+        if idle_min > 0:
+            Check("Idle VRAM unload").ok(f"{idle_min} min timeout (frees GPU memory)").print()
+        else:
+            Check("Idle VRAM unload").info("disabled").print()
+
+        from kural.engine.model_registry import ModelRegistry
 
         reg = ModelRegistry(whisper_models_config=whisper_cfg.get("models", {}))
         cached = reg.is_model_cached(model_key)

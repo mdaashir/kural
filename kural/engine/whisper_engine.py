@@ -8,6 +8,7 @@
 # `whisper_engine_cpp.py` mirrors this class's API for the opt-in whisper.cpp
 # backend — keep the two signatures in sync.
 
+import gc
 import logging
 import threading
 import time
@@ -62,11 +63,15 @@ class WhisperEngine:
         model_registry=None,
         log_transcriptions: bool = False,
         languages: list = None,
+        idle_unload_minutes: int = 5,
     ):
 
         self.model_key = model_key
         self.device = device
         self.compute_type = compute_type
+        self.idle_unload_minutes = idle_unload_minutes
+        self._idle_timer = None
+        self._idle_lock = threading.Lock()
         self.language = None if language == "auto" else language
         self.beam_size = beam_size
         self.initial_prompt = initial_prompt or None
@@ -138,10 +143,50 @@ class WhisperEngine:
             device_label = "GPU" if self.device == "cuda" else "CPU"
             print(f"   ✓ Running on {device_label} with {self.compute_type} precision")
             self._warmup()
+            self._start_idle_timer()
 
         except Exception as e:
             self.logger.error(f"Failed to load Whisper model: {e}")
             raise
+
+    def _start_idle_timer(self):
+        if getattr(self, "idle_unload_minutes", 0) <= 0:
+            return
+        self._cancel_idle_timer()
+        self._idle_timer = threading.Timer(self.idle_unload_minutes * 60, self._unload_model)
+        self._idle_timer.daemon = True
+        self._idle_timer.start()
+
+    def _cancel_idle_timer(self):
+        if getattr(self, "_idle_timer", None):
+            self._idle_timer.cancel()
+            self._idle_timer = None
+
+    def _get_idle_lock(self):
+        if not hasattr(self, "_idle_lock") or self._idle_lock is None:
+            self._idle_lock = threading.Lock()
+        return self._idle_lock
+
+    def _unload_model(self):
+        with self._get_idle_lock():
+            if self.model is not None:
+                self.logger.info("Inactivity timeout reached: unloading Whisper model from VRAM")
+                self.model = None
+                gc.collect()
+
+    def _ensure_model_loaded(self):
+        with self._get_idle_lock():
+            self._cancel_idle_timer()
+            if self.model is None:
+                self.logger.info("Reloading Whisper model into VRAM...")
+                try:
+                    self._load_model()
+                except Exception as e:
+                    self.last_error = f"Failed to reload model: {e}"
+                    self.logger.error(self.last_error)
+
+    def is_model_loaded(self) -> bool:
+        return self.model is not None
 
     # Fail fast when the CUDA runtime is incomplete. The model itself loads
     # without cuBLAS/cuDNN; their absence only shows on the first inference,
@@ -232,11 +277,12 @@ class WhisperEngine:
     # full decode on an accidental hotkey press. Callers rely on this contract —
     # whisper_engine_cpp and system_audio both feed it the same array shape.
     def transcribe_audio(self, audio_data: np.ndarray) -> str | None:
-        if self.model is None:
-            return None
-
         if audio_data is None or len(audio_data) == 0:
             self.logger.warning("No audio data to transcribe")
+            return None
+
+        self._ensure_model_loaded()
+        if self.model is None:
             return None
 
         self.last_error = None
@@ -295,7 +341,7 @@ class WhisperEngine:
             self.logger.info(
                 f"Transcription complete. Language: {detected_language} (confidence: {confidence:.2f}) - Time: {transcription_time:.2f}s"
             )
-            if self.log_transcriptions:
+            if getattr(self, "log_transcriptions", False):
                 self.logger.info(f"Transcribed text: '{transcribed_text}'")
             else:
                 self.logger.info(f"Transcribed {len(transcribed_text)} chars")
@@ -311,6 +357,8 @@ class WhisperEngine:
             self.last_error = str(e) or e.__class__.__name__
             self.logger.error(f"Transcription failed: {e}", exc_info=True)
             return None
+        finally:
+            self._start_idle_timer()
 
     # With `language: auto` and a list of the user's languages, detect the
     # language and keep the choice inside that list. One language is simply
