@@ -1,28 +1,31 @@
 # SESSION.md
 
 ## Current milestone
-**Post-M5: Live Dictation & Voice Control Runtime**
+**Post-M5: Visual Overlay & System Tray** (desktop polish)
 
 ## Current branch
-`feat/live-dictation-runtime`
+`feat/system-tray-and-overlay`
 
 ## PR
 PR to be opened with gh after verification passes.
 
 ## Last completed step
-Built and integrated the end-to-end background daemon:
-- `kural/runtime.py`: Coordinates the runtime state machine (`IDLE` <-> `RECORDING_DICTATION` / `RECORDING_COMMAND` <-> `PROCESSING`), global hotkey bindings (`ctrl+space` for dictation, `ctrl+shift+space` for commands), audio capture, GPU Whisper inference, caret insertion, and voice-control execution.
-- `kural/control/windows.py`: Implemented `insert_text_at_caret(text)` with clipboard state preservation, Windows `Ctrl+V` key simulation, and foreground window elevation checking.
-- `kural/__main__.py`: Connected to launch `KuralRuntime.run()` on `python -m kural`.
-- 6 new unit tests in `tests/test_runtime.py` covering state transitions, dictation text typing, command routing, and empty audio resets (233 total tests passing, 0 requiring GPU or mic, ruff clean).
+Added the desktop visual surface to Kural:
+- `kural/ui/overlay.py` (239 lines): Floating, always-on-top, click-through Tkinter status pill showing live microphone level while recording, a processing indicator while transcribing, and green/red success/failure flashes. Runs on its own daemon thread with a thread-safe command queue.
+- `kural/ui/tray.py` (111 lines): Optional Windows notification area icon via `pystray` with a context menu (Dictate, Voice Command, Exit). Gracefully degrades to a no-op when `pystray`/`Pillow` are absent.
+- `kural/runtime.py`: Wires the overlay and tray into the state machine, so pressing `ctrl+space` or `ctrl+shift+space` immediately shows the pill.
+- `kural/config/config.defaults.yaml`: Added `overlay` (enabled, position, click_through) and `system_tray` (enabled) configuration blocks.
+- `pyproject.toml`: Split dependencies into `runtime`, `tray`, and `vad` optional extras so the core package stays installable on a bare Python.
+- `kural/doctor.py`: Reports the new optional dependencies.
+- 15 new unit tests in `tests/ui/test_overlay.py` and `tests/ui/test_tray.py` (248 total passing, 0 requiring GPU, mic, or network, ruff clean).
 
 ## Next step
-1. Push `feat/live-dictation-runtime` and open PR into `main` with `gh pr create`.
+1. Push `feat/system-tray-and-overlay` and open PR into `main` with `gh pr create`.
 2. Wait for user to review and merge.
-3. Live test dictation and voice commands directly in Windows apps!
+3. After merge: install the `runtime` extras on this machine and do the first real end-to-end dictation test in Notepad.
 
 ## Open questions
-- None. Full pipeline connected end-to-end.
+- None.
 
 ## Verify items (from AGENTS.md)
 - [x] **Hotkey-driven only?** Confirmed: neither base (`whisper-local`) nor donor (`WhispLocal`) contained native wake-word engines. Designed and implemented opt-in offline wake-word detector in M5.
@@ -37,7 +40,7 @@ Built and integrated the end-to-end background daemon:
 - Linter: `ruff` only. Reason: handles pycodestyle + isort + pyupgrade in one tool.
 - Sub-package layout: `engine/`, `control/`, `config/`, `ui/` as top-level siblings under `kural/`.
   Reason: clean separation of concerns; each milestone targets exactly one sub-package.
-- Clipboard preservation: `insert_text_at_caret` copies previous clipboard contents and restores
-  them asynchronously after paste, preventing destruction of user's copied text.
-- UIPI protection: foreground elevation is verified before pasting or macro execution to notify
-  the user when Windows security blocks synthetic keystrokes.
+- Overlay uses only Python's built-in Tkinter (no new dependency) and is click-through on Windows
+  via `WS_EX_TRANSPARENT | WS_EX_LAYERED`. Reason: zero-dependency visual feedback.
+- Tray icon and audio runtime are optional extras, never hard dependencies.
+  Reason: keeps `pip install kural` lightweight and lets the library run headless on CI.

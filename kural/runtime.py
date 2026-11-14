@@ -87,6 +87,43 @@ class KuralRuntime:
         # Command execution brain
         self.executor = CommandExecutor()
 
+        # Visual overlay (Tkinter pill) and optional system tray
+        from kural.ui.overlay import LevelOverlay
+        from kural.ui.tray import SystemTray
+
+        overlay_cfg = self.config_manager.config.get("overlay") or {}
+        self.overlay = LevelOverlay(
+            level_provider=self._current_mic_level,
+            position=overlay_cfg.get("position", "bottom-center"),
+            click_through=bool(overlay_cfg.get("click_through", True)),
+            enabled=bool(overlay_cfg.get("enabled", True)),
+        )
+
+        tray_cfg = self.config_manager.config.get("system_tray") or {}
+        self.tray = SystemTray(
+            on_toggle_dictation=self.toggle_dictation,
+            on_toggle_command=self.toggle_command,
+            on_exit=self.request_exit,
+            enabled=bool(tray_cfg.get("enabled", True)),
+        )
+
+    def _current_mic_level(self) -> float:
+        """Return the current microphone input level (0.0 - 1.0) for the overlay meter."""
+        recorder = getattr(self, "recorder", None)
+        if recorder is None:
+            return 0.0
+        getter = getattr(recorder, "get_current_level", None)
+        if getter is None:
+            return 0.0
+        try:
+            return float(getter() or 0.0)
+        except Exception:
+            return 0.0
+
+    def request_exit(self) -> None:
+        """Request the runtime loop to stop (used by the tray Exit menu item)."""
+        self._running = False
+
     def _on_vad_event(self, event) -> None:
         """Handle silence timeout from continuous VAD."""
         if getattr(event, "name", "") == "SILENCE_TIMEOUT":
@@ -103,9 +140,11 @@ class KuralRuntime:
             if self.state == RuntimeState.IDLE:
                 self.state = RuntimeState.RECORDING_DICTATION
                 self.recorder.start_recording()
+                self.overlay.show_recording(is_command=False)
                 print("\n🎙️  Listening (Dictation Mode)...")
             elif self.state == RuntimeState.RECORDING_DICTATION:
                 self.state = RuntimeState.PROCESSING
+                self.overlay.show_processing()
                 threading.Thread(
                     target=self._finish_recording, daemon=True, name="finish-dictation"
                 ).start()
@@ -116,9 +155,11 @@ class KuralRuntime:
             if self.state == RuntimeState.IDLE:
                 self.state = RuntimeState.RECORDING_COMMAND
                 self.recorder.start_recording()
+                self.overlay.show_recording(is_command=True)
                 print("\n⚡ Listening (Command Mode)...")
             elif self.state == RuntimeState.RECORDING_COMMAND:
                 self.state = RuntimeState.PROCESSING
+                self.overlay.show_processing()
                 threading.Thread(
                     target=self._finish_recording, daemon=True, name="finish-command"
                 ).start()
@@ -153,9 +194,14 @@ class KuralRuntime:
                 res = self.executor.execute(text)
                 status_icon = "✓" if res.success else "✗"
                 print(f"   {status_icon} {res.feedback}")
+                if res.success:
+                    self.overlay.flash_success(res.feedback[:40])
+                else:
+                    self.overlay.flash_error(res.feedback[:40])
             else:
                 print(f"✍️  Typed: '{text}'")
                 insert_text_at_caret(text)
+                self.overlay.flash_success("Typed")
 
         finally:
             with self._state_lock:
@@ -201,6 +247,8 @@ class KuralRuntime:
         print("   Press Ctrl+C to exit.\n")
 
         self.start_hotkeys()
+        self.overlay.start()
+        self.tray.start()
 
         try:
             while self._running:
@@ -213,6 +261,10 @@ class KuralRuntime:
     def shutdown(self) -> None:
         """Clean up audio streams, timers, and exit."""
         self._running = False
+        with contextlib.suppress(Exception):
+            self.overlay.stop()
+        with contextlib.suppress(Exception):
+            self.tray.stop()
         with contextlib.suppress(Exception):
             self.recorder.shutdown()
         with contextlib.suppress(Exception):

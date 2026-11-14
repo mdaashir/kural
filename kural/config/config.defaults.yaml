@@ -145,6 +145,14 @@ voice_commands: # Voice control engine
 ui: # User interface preferences
     theme: system
 
+overlay: # Floating visual status pill (Wispr-style screen edge overlay)
+    enabled: true
+    position: "bottom-center" # bottom-center, top-center
+    click_through: true # Allow mouse clicks to pass through to windows below
+
+system_tray: # Windows notification area / tray icon
+    enabled: true
+
 stats:
     typing_wpm: 40
 
