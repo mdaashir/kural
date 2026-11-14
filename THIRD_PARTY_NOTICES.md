@@ -57,6 +57,8 @@ licence texts are reproduced here in full, as required by the MIT licence terms.
 | `kural/config/defaults_merge.py` | `src/whisper_key/defaults_merge.py` |
 | `kural/config/config.defaults.yaml` | `src/whisper_key/config.defaults.yaml` |
 | `kural/config/commands.defaults.yaml` | `src/whisper_key/commands.defaults.yaml` |
+| `kural/ui/overlay.py` | `src/whisper_key/level_overlay.py` |
+| `kural/ui/tray.py` | `src/whisper_key/system_tray.py` |
 | `kural/doctor.py` | `src/whisper_key/doctor.py` |
 
 ---

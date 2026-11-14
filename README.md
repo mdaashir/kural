@@ -50,6 +50,9 @@ kural/
 │   ├── config_manager.py       # %APPDATA%\kural\user_settings.yaml overrides & validation
 │   ├── config.defaults.yaml    # Shipped engine & control defaults
 │   └── commands.defaults.yaml  # Bilingual voice command triggers
+├── ui/                 # Desktop visual surface
+│   ├── overlay.py              # Floating click-through status pill (Tkinter)
+│   └── tray.py                 # Windows notification area icon (pystray, optional)
 ├── doctor.py            # CLI diagnostic tool (kural --doctor)
 ├── benchmarks/          # ASR evaluation harness (WER, Tamil CER, RTF)
 └── packaging/           # Standalone PyInstaller build (kural.exe)
@@ -75,8 +78,37 @@ cd kural
 # Create environment and install dependencies
 uv venv
 .\.venv\Scripts\activate
+
+# Core package (library + diagnostics)
 uv pip install -e .
+
+# Full desktop runtime (dictation engine, audio, hotkeys)
+uv pip install -e ".[runtime]"
+
+# Optional extras: tray icon, voice activity detection
+uv pip install -e ".[tray,vad]"
 ```
+
+### Running Kural
+
+```powershell
+# Start the live dictation daemon
+python -m kural
+```
+
+```
+=======================================================
+   Kural 0.1.0-dev — Ready
+=======================================================
+   [Ctrl+Space]  Dictation Mode (speech -> active cursor)
+   [Ctrl+Shift+Space]  Command Mode (voice control)
+   Model: large-v3-turbo (cuda)
+   Press Ctrl+C to exit.
+```
+
+A floating status pill appears at the screen edge while you speak, showing a live
+microphone level meter, a processing indicator, and a success/failure flash.
+The pill is click-through, so it never blocks your mouse.
 
 ### System Health Check
 
@@ -143,7 +175,7 @@ Output executable will be placed in `dist\kural\kural.exe`.
 All unit tests are designed to run 100% offline without requiring a microphone, GPU, or network download:
 
 ```powershell
-# Run the complete test suite (227 tests)
+# Run the complete test suite (248 tests)
 pytest tests/ -q
 
 # Run code style and format checks
