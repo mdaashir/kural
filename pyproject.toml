@@ -1,0 +1,58 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "kural"
+version = "0.1.0"
+description = "Local-first voice typing and voice control for Windows. English and Tamil. GPU-accelerated Whisper, no cloud."
+readme = "README.md"
+license = { file = "LICENSE" }
+requires-python = ">=3.12"
+dependencies = [
+    # Engine — added in chore/import-base-engine
+    # "faster-whisper>=1.0",
+    # "torch>=2.2",           # CUDA build installed separately via onboarding
+    # Control / UI — added per milestone
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "pytest-mock>=3.14",
+    "ruff>=0.4",
+]
+
+[project.scripts]
+kural = "kural.__main__:main"
+
+[tool.ruff]
+target-version = "py312"
+line-length = 100
+
+[tool.ruff.lint]
+select = [
+    "E",   # pycodestyle errors
+    "W",   # pycodestyle warnings
+    "F",   # pyflakes
+    "I",   # isort
+    "UP",  # pyupgrade
+    "B",   # flake8-bugbear
+    "C4",  # flake8-comprehensions
+    "SIM", # flake8-simplify
+]
+ignore = [
+    "E501",  # line too long — ruff format handles wrapping
+]
+
+[tool.ruff.lint.isort]
+known-first-party = ["kural"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-v"
+markers = [
+    "gpu: requires NVIDIA GPU and CUDA (deselect with -m 'not gpu')",
+    "mic: requires a real microphone",
+    "slow: long-running benchmark tests",
+]

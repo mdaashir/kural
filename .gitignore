@@ -1,0 +1,55 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.egg-info/
+dist/
+build/
+.eggs/
+*.egg
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# uv
+.uv/
+
+# Ruff / linting
+.ruff_cache/
+
+# Pytest
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Kural runtime — never commit these
+config.json
+kural.log
+kural.log.*
+*.wav
+*.mp3
+*.flac
+*.ogg
+*.m4a
+recordings/
+history/
+
+# Whisper models — large binaries, download separately
+models/
+*.bin
+*.gguf
+*.pt
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Windows
+Thumbs.db
+desktop.ini
