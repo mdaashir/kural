@@ -136,6 +136,17 @@ postprocess: # Text cleanup and formatting
     format_lists: true
     styles: {}
     corrections: {}
+    snippets: # Inline spoken text expansions
+        - trigger: "today's date"
+          expansion: "${date}"
+        - trigger: "current time"
+          expansion: "${time}"
+        - trigger: "insert clipboard"
+          expansion: "${clipboard}"
+
+recovery: # Never-lose-a-dictation audio and text retention
+    enabled: true
+    max_age_hours: 24 # DPAPI encrypted take expires after N hours
 
 voice_commands: # Voice control engine
     enabled: true
