@@ -1,29 +1,31 @@
 # SESSION.md
 
 ## Current milestone
-**Wispr Flow Experience: Flow Formatting & Disfluency Engine**
+**Wispr Flow Experience: Smart Voice Rewrites & Text Transforms**
 
 ## Current branch
-`feat/wispr-flow-formatting`
+`feat/smart-voice-rewrites`
 
 ## PR
 PR to be opened with gh after verification passes.
 
 ## Last completed step
-Implemented Wispr Flow natural text transformation pipeline:
-- `kural/engine/flow_formatting.py` (118 lines):
-  - `strip_fillers()`: word-boundary safe removal of verbal disfluencies and hesitation fillers (*um*, *uh*, *er*, *ah*, *you know*).
-  - Collapses stuttered false-start duplicate words (*"I I think"* -> *"I think"*, *"we we"* -> *"we"*).
-  - `replace_spoken_punctuation()`: translates spoken punctuation triggers (English and Tamil) to actual symbols (*comma*, *period*, *full stop*, *question mark*, *exclamation point*, *new line*, *new paragraph*, *கமா*, *புள்ளி*, *கேள்விக்குறி*).
-  - `format_flow_typography()`: cleans spacing around punctuation, strips awkward whitespace, and applies proper sentence capitalization.
-  - `apply_flow_formatting()`: main entry point, respecting `is_verbatim` to preserve raw code/terminal input intact.
-- `kural/runtime.py`: Connected `apply_flow_formatting()` to the dictation processing loop right before caret insertion.
-- 11 new unit tests in `tests/engine/test_flow_formatting.py` (343 total passing, 0 requiring GPU, mic, or network, ruff clean).
+Implemented Wispr Flow smart voice editing and inline text transforms:
+- `kural/engine/transforms.py` (119 lines):
+  - Fast deterministic transforms: bullet lists (`• Item`), numbered lists (`1. Item`), title casing, uppercase, lowercase.
+  - Natural language AI rewrites via air-gapped `LocalLLMFallback` for instructions (*"translate to Tamil"*, *"summarize"*, *"make formal"*).
+- `kural/control/windows.py`: Added `get_selected_text()` to safely capture highlighted text across Windows applications via simulated copy with clipboard restoration.
+- `kural/control/parser.py`: Added voice transform triggers:
+  - *"make that a bullet list"*, *"bullet that"*, *"வரிசைப்படுத்து"*.
+  - *"title case that"*, *"தலைப்பாக்கு"*, *"uppercase that"*, *"பெரிய எழுத்தாக்கு"*.
+  - *"make that [instruction]"*, *"rephrase that [instruction]"*.
+- `kural/control/executor.py`: Wired `intent.kind == "transform"` to grab highlighted text (or fall back to the last dictation take in the ledger), execute the transform, and paste the rewritten text directly over the selection.
+- 8 new unit tests in `tests/engine/test_transforms.py` (351 total passing, 0 requiring GPU, mic, or network, ruff clean).
 
 ## Next step
-1. Push `feat/wispr-flow-formatting` and open PR into `main` with `gh pr create`.
+1. Push `feat/smart-voice-rewrites` and open PR into `main` with `gh pr create`.
 2. Wait for user to review and merge.
-3. Test natural flow dictation live: say *"um send the report comma because uh we are ready period"* and see it type *"Send the report, because we are ready."*!
+3. Test highlighting text in any app and saying *"bullet that"* or *"make that title case"*!
 
 ## Open questions
 - None.
@@ -41,7 +43,7 @@ Implemented Wispr Flow natural text transformation pipeline:
 - Linter: `ruff` only. Reason: handles pycodestyle + isort + pyupgrade in one tool.
 - Sub-package layout: `engine/`, `control/`, `config/`, `ui/` as top-level siblings under `kural/`.
   Reason: clean separation of concerns; each milestone targets exactly one sub-package.
-- Flow formatting pipeline: deterministic regex-based transformation rather than a local LLM call.
-  Reason: instantaneous execution (<1 ms latency), 100% predictable, zero additional VRAM consumption.
-- Verbatim bypass: code editors and terminals configured with `style: verbatim` skip filler removal and spoken punctuation substitution.
-  Reason: ensures code syntax, shell commands, and regexes are never altered.
+- Smart Transforms: prioritizes instant deterministic transforms (bullets, casing) and falls back to local air-gapped LLM for complex instructions.
+  Reason: zero-latency for standard edits; full power of LLMs for creative rewriting.
+- Target fallback: if no text is actively highlighted on screen, transforms automatically operate on the user's last dictation take.
+  Reason: eliminates the need to manually select text if you just finished speaking.
