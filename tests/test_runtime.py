@@ -47,7 +47,8 @@ class TestKuralRuntimeStateTransitions:
         with patch("kural.runtime.insert_text_at_caret") as mock_insert:
             fake_audio = np.zeros(16000, dtype=np.float32)
             self.runtime._process_audio(fake_audio)
-            mock_insert.assert_called_once_with("hello world")
+            # Default style is formal (capitalized + trailing period)
+            mock_insert.assert_called_once_with("Hello world.")
             assert self.runtime.state == RuntimeState.IDLE
 
     def test_process_audio_command_routes_to_executor(self):
