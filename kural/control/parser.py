@@ -213,7 +213,26 @@ def parse_command(phrase: str) -> CommandIntent | None:
     ):
         return CommandIntent(kind="window_op", action="show_desktop", raw_text=phrase)
 
-    # 4. System power controls (English + Tamil + Tanglish)
+    # 4. Never-lose-a-dictation recovery & recall
+    if t in (
+        "paste last dictation",
+        "paste that again",
+        "paste last",
+        "paste previous",
+        "கடைசி உரையை தட்டச்சு செய்",
+        "மீண்டும் தட்டச்சு செய்",
+        "மறுபடியும் தட்டச்சு செய்",
+    ):
+        return CommandIntent(kind="system", action="paste_last", raw_text=phrase)
+    if t in (
+        "retry last take",
+        "retry last dictation",
+        "retry last",
+        "கடைசி பதிவை மீண்டும் செய்",
+    ):
+        return CommandIntent(kind="system", action="retry_last", raw_text=phrase)
+
+    # 5. System power controls (English + Tamil + Tanglish)
     if t in (
         "shut down the computer",
         "shut down",

@@ -22,7 +22,7 @@ from kural.control.media import (
     toggle_mute,
 )
 from kural.control.parser import CommandIntent, parse_command
-from kural.control.windows import close_window, focus_window, set_window_state
+from kural.control.windows import close_window, focus_window, insert_text_at_caret, set_window_state
 from kural.engine.utils import get_user_app_data_path
 
 logger = logging.getLogger(__name__)
@@ -48,10 +48,12 @@ class CommandExecutor:
         guardrails: Guardrails | None = None,
         commands_yaml_path: Path | str | None = None,
         llm_fallback: LocalLLMFallback | None = None,
+        ledger=None,
     ):
         self.app_index = app_index or AppIndex(auto_build=True)
         self.guardrails = guardrails or default_guardrails
         self.llm_fallback = llm_fallback or LocalLLMFallback()
+        self.ledger = ledger
 
         if commands_yaml_path is None:
             self.commands_yaml_path = Path(get_user_app_data_path()) / "commands.yaml"
@@ -281,8 +283,24 @@ class CommandExecutor:
                 success=True, feedback=f"Searching for '{intent.target}'", action_type="web_search"
             )
 
-        # System power
+        # System actions and recovery
         if intent.kind == "system":
+            if intent.action == "paste_last":
+                last_txt = self.ledger.last() if getattr(self, "ledger", None) else ""
+                if last_txt:
+                    insert_text_at_caret(last_txt)
+                    return CommandResult(
+                        success=True, feedback="Pasted last dictation", action_type="recovery"
+                    )
+                return CommandResult(
+                    success=False,
+                    feedback="No previous dictation in ledger",
+                    action_type="recovery",
+                )
+            if intent.action == "retry_last":
+                return CommandResult(
+                    success=True, feedback="Retrying last dictation take", action_type="retry_take"
+                )
             if intent.action == "shutdown":
                 ok, msg = self.guardrails.schedule_shutdown(restart=False)
                 return CommandResult(success=ok, feedback=msg, action_type="system")

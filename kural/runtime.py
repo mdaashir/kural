@@ -59,7 +59,6 @@ class KuralRuntime:
             ),
         )
 
-        # Whisper engine targeting RTX 3050 CUDA float16 with idle unload
         from kural.engine.whisper_engine import WhisperEngine
 
         self.engine = WhisperEngine(
@@ -74,7 +73,6 @@ class KuralRuntime:
             languages=self.whisper_cfg.get("languages", ["en", "ta"]),
         )
 
-        # Audio capture stream (lazy import)
         from kural.engine.audio_recorder import AudioRecorder
 
         self.recorder = AudioRecorder(
@@ -84,8 +82,17 @@ class KuralRuntime:
             vad_manager=self.vad_manager,
         )
 
-        # Command execution brain
-        self.executor = CommandExecutor()
+        # Recovery and snippets
+        from kural.engine.recovery import LastTake, Ledger
+        from kural.engine.utils import get_user_app_data_path
+
+        recovery_cfg = self.config_manager.config.get("recovery") or {}
+        max_age_s = float(recovery_cfg.get("max_age_hours", 24)) * 3600
+        self.last_take = LastTake(storage_dir=get_user_app_data_path(), max_age_s=max_age_s)
+        self.ledger = Ledger()
+
+        # Command execution brain with ledger
+        self.executor = CommandExecutor(ledger=self.ledger)
 
         # Audible feedback cues
         from kural.engine.audio_feedback import AudioFeedback
@@ -201,6 +208,9 @@ class KuralRuntime:
                 print("   ✗ No audio data captured.")
                 return
 
+            if getattr(self, "last_take", None):
+                self.last_take.save(audio_data)
+
             prior_state = self.state
             print("⏳ Transcribing on GPU...")
             text = self.engine.transcribe_audio(audio_data)
@@ -213,6 +223,12 @@ class KuralRuntime:
                 res = self.executor.execute(text)
                 status_icon = "✓" if res.success else "✗"
                 print(f"   {status_icon} {res.feedback}")
+                if res.action_type == "retry_take" and getattr(self, "last_take", None):
+                    cached, _ = self.last_take.load()
+                    if cached is not None:
+                        self.state = RuntimeState.RECORDING_DICTATION
+                        self._process_audio(cached)
+                        return
                 if res.success:
                     self.overlay.flash_success(res.feedback[:40])
                     self.audio_feedback.play_complete()
@@ -220,8 +236,14 @@ class KuralRuntime:
                     self.overlay.flash_error(res.feedback[:40])
                     self.audio_feedback.play_error()
             else:
+                from kural.engine.snippets import apply_snippets
+
+                snippets_cfg = self.config_manager.get_postprocess_config().get("snippets") or []
+                text = apply_snippets(text, snippets_cfg)
                 print(f"✍️  Typed: '{text}'")
                 insert_text_at_caret(text)
+                if getattr(self, "ledger", None):
+                    self.ledger.record(text)
                 self.overlay.flash_success("Typed")
                 self.audio_feedback.play_complete()
 
@@ -283,14 +305,15 @@ class KuralRuntime:
     def shutdown(self) -> None:
         """Clean up audio streams, timers, and exit."""
         self._running = False
-        with contextlib.suppress(Exception):
-            self.overlay.stop()
-        with contextlib.suppress(Exception):
-            self.tray.stop()
-        with contextlib.suppress(Exception):
-            self.recorder.shutdown()
-        with contextlib.suppress(Exception):
-            self.engine._cancel_idle_timer()
+        for c in (
+            getattr(self.overlay, "stop", None),
+            getattr(self.tray, "stop", None),
+            getattr(self.recorder, "shutdown", None),
+            getattr(self.engine, "_cancel_idle_timer", None),
+        ):
+            if c:
+                with contextlib.suppress(Exception):
+                    c()
         with contextlib.suppress(Exception):
             import global_hotkeys
 
