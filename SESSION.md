@@ -1,32 +1,33 @@
 # SESSION.md
 
 ## Current milestone
-**Post-M5: Local OpenAI-Compatible Speech API Server**
+**Post-M5: Hotkeys & Voice Commands Cheat Sheet**
 
 ## Current branch
-`feat/openai-compatible-server`
+`feat/hotkeys-cheat-sheet`
 
 ## PR
 PR to be opened with gh after verification passes.
 
 ## Last completed step
-Implemented local OpenAI-compatible Whisper speech API server:
-- `kural/engine/server.py` (284 lines):
-  - Zero extra framework dependencies: built with stdlib `http.server.ThreadingHTTPServer`.
-  - Implements the standard OpenAI audio API endpoints:
-    - `POST /v1/audio/transcriptions`: multipart/form-data upload parsing audio (`file`), optional `language`, `prompt`, and `response_format` (`json` vs `text`).
-    - `GET /v1/models`: OpenAI-compatible model listing (`whisper-1`).
-    - `GET /health`: liveness probe returning engine and status.
-  - Multi-format audio decoding: parses audio bytes via `soundfile` with stdlib `wave` fallback (resampling to 16 kHz float32).
-  - Thread-safe serialized GPU model execution with `threading.Lock`.
-  - Strict local privacy: bound to `127.0.0.1` loopback by default.
-- `kural/__main__.py`: Added `--serve`, `--host` (default `127.0.0.1`), and `--port` (default `7777`) CLI commands.
-- 6 new unit tests in `tests/engine/test_server.py` (325 total passing, 0 requiring GPU, mic, or network, ruff clean).
+Implemented dynamic hotkeys and voice commands quick-reference cheat sheet:
+- `kural/ui/cheat_sheet.py` (245 lines):
+  - Self-contained Tkinter dialog matching Kural's dark GitHub-palette (`#0d1117`).
+  - Dynamically reads the user's active hotkeys from `ConfigManager` (`Ctrl+Space`, `Ctrl+Shift+Space`).
+  - Displays structured sections for:
+    1. **Global Hotkeys**: dictation and command trigger bindings with usage instructions.
+    2. **Voice Control Triggers**: app open/switch, close, window ops, volume/media, and Tamil triggers (*open chrome*, *திற chrome*, *notepad மூடு*).
+    3. **Inline Snippets**: `${date}`, `${time}`, `${clipboard}` speech expansions.
+  - Singleton guard: re-invoking from CLI or tray raises and focuses the open instance.
+- `kural/ui/tray.py`: Added `on_open_cheat_sheet` callback and `"Cheat Sheet..."` context menu item.
+- `kural/runtime.py`: Connected tray `"Cheat Sheet..."` action to `open_cheat_sheet()`.
+- `kural/__main__.py`: Added `--cheat-sheet` CLI command.
+- 5 new unit tests in `tests/ui/test_cheat_sheet.py` + updated `tests/ui/test_tray.py` (330 total passing, 0 requiring GPU, mic, or network, ruff clean).
 
 ## Next step
-1. Push `feat/openai-compatible-server` and open PR into `main` with `gh pr create`.
+1. Push `feat/hotkeys-cheat-sheet` and open PR into `main` with `gh pr create`.
 2. Wait for user to review and merge.
-3. Test transcribing via local tools or curl: `curl -F file=@sample.wav http://127.0.0.1:7777/v1/audio/transcriptions`!
+3. Test launching the reference card via `python -m kural --cheat-sheet`!
 
 ## Open questions
 - None.
@@ -44,7 +45,5 @@ Implemented local OpenAI-compatible Whisper speech API server:
 - Linter: `ruff` only. Reason: handles pycodestyle + isort + pyupgrade in one tool.
 - Sub-package layout: `engine/`, `control/`, `config/`, `ui/` as top-level siblings under `kural/`.
   Reason: clean separation of concerns; each milestone targets exactly one sub-package.
-- Local API server: built with stdlib `http.server` instead of pulling heavy frameworks like FastAPI/Uvicorn.
-  Reason: zero extra dependencies, instant startup, minimal footprint.
-- Loopback binding: defaults strictly to `127.0.0.1`.
-  Reason: prevents exposing the GPU speech model or local transcription capabilities to external networks.
+- Cheat sheet design: pure Tkinter dialog displaying live hotkeys from `ConfigManager` instead of hardcoded defaults.
+  Reason: guarantees the reference card always reflects the user's actual bindings.
