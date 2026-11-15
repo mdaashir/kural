@@ -23,6 +23,23 @@ def main() -> None:
         help="Open the graphical settings configuration window.",
     )
     parser.add_argument(
+        "--dict-list",
+        action="store_true",
+        help="List all custom dictionary hotwords.",
+    )
+    parser.add_argument(
+        "--dict-add",
+        type=str,
+        metavar="WORD",
+        help="Add a custom word or Tamil proper noun to dictionary hotwords.",
+    )
+    parser.add_argument(
+        "--dict-remove",
+        type=str,
+        metavar="WORD",
+        help="Remove a custom word from dictionary hotwords.",
+    )
+    parser.add_argument(
         "--version",
         action="version",
         version=f"%(prog)s {get_version()}",
@@ -39,6 +56,33 @@ def main() -> None:
         from kural.ui.settings_window import open_settings_window
 
         open_settings_window()
+        return
+
+    if args.dict_list:
+        from kural.engine.dictionary import list_hotwords
+
+        words = list_hotwords()
+        print(f"Kural Custom Dictionary ({len(words)} words):")
+        for w in words:
+            print(f"  • {w}")
+        return
+
+    if args.dict_add:
+        from kural.engine.dictionary import add_hotword
+
+        if add_hotword(args.dict_add):
+            print(f"✓ Added '{args.dict_add}' to dictionary hotwords.")
+        else:
+            print(f"✗ Word '{args.dict_add}' is already present or empty.")
+        return
+
+    if args.dict_remove:
+        from kural.engine.dictionary import remove_hotword
+
+        if remove_hotword(args.dict_remove):
+            print(f"✓ Removed '{args.dict_remove}' from dictionary hotwords.")
+        else:
+            print(f"✗ Word '{args.dict_remove}' not found in dictionary.")
         return
 
     # Launch live background runtime

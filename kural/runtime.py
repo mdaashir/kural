@@ -82,8 +82,9 @@ class KuralRuntime:
             vad_manager=self.vad_manager,
         )
 
-        # Recovery and snippets
+        # Recovery, adaptive learning, and app rules
         from kural.control.app_rules import AppRules
+        from kural.engine.adaptive import AdaptiveLearner
         from kural.engine.recovery import LastTake, Ledger
         from kural.engine.utils import get_user_app_data_path
 
@@ -92,6 +93,7 @@ class KuralRuntime:
         self.last_take = LastTake(storage_dir=get_user_app_data_path(), max_age_s=max_age_s)
         self.ledger = Ledger()
         self.app_rules = AppRules()
+        self.adaptive = AdaptiveLearner()
 
         # Command execution brain with ledger
         self.executor = CommandExecutor(ledger=self.ledger)
@@ -260,7 +262,10 @@ class KuralRuntime:
                     self.audio_feedback.play_error()
                     return
 
-                # 3. Apply style formatting (verbatim, formal, casual)
+                # 3. Apply learned corrections and style formatting
+                if getattr(self, "adaptive", None):
+                    text = self.adaptive.apply_corrections(text)
+
                 style_name = (matched_rule.get("style") if matched_rule else None) or "formal"
                 text = apply_formatting_style(text, style_name)
 
@@ -272,6 +277,8 @@ class KuralRuntime:
                 insert_text_at_caret(text)
                 if getattr(self, "ledger", None):
                     self.ledger.record(text)
+                if getattr(self, "adaptive", None):
+                    self.adaptive.learn_text(text)
                 self.overlay.flash_success("Typed")
                 self.audio_feedback.play_complete()
 
