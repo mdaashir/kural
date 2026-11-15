@@ -126,10 +126,17 @@ class KuralRuntime:
         self.tray = SystemTray(
             on_toggle_dictation=self.toggle_dictation,
             on_toggle_command=self.toggle_command,
+            on_open_history=self.open_history,
             on_open_settings=self.open_settings,
             on_exit=self.request_exit,
             enabled=bool(tray_cfg.get("enabled", True)),
         )
+
+    def open_history(self) -> None:
+        """Launch the graphical speech & command history window."""
+        from kural.ui.history_window import open_history_window
+
+        open_history_window()
 
     def open_settings(self) -> None:
         """Launch the graphical settings window."""
