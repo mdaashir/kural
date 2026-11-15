@@ -1,35 +1,30 @@
 # SESSION.md
 
 ## Current milestone
-**Post-M5: Adaptive Vocabulary & Custom Dictionary**
+**Post-M5: History Search & Productivity Stats**
 
 ## Current branch
-`feat/adaptive-vocabulary-and-dictionary`
+`feat/history-and-stats`
 
 ## PR
 PR to be opened with gh after verification passes.
 
 ## Last completed step
-Implemented adaptive vocabulary learning and dictionary hotwords management:
-- `kural/engine/dictionary.py` (104 lines):
-  - Direct management of biased vocabulary (`whisper.hotwords`) in `%APPDATA%\kural\user_settings.yaml`.
-  - Functions: `list_hotwords()`, `add_hotword(word)`, `remove_hotword(word)`.
-- `kural/engine/adaptive.py` (146 lines):
-  - Local on-disk personalization stored in `%APPDATA%\kural\adaptive.json`.
-  - Tracks vocabulary frequencies from accepted dictations (safe for English and Tamil Unicode words).
-  - Automatically identifies top domain terms and feeds them to Whisper as hotwords.
-  - Learns and applies user-taught word corrections (e.g. replacing recurrent mishearings).
+Implemented dictation history logging, BM25 full-text search, and productivity stats:
+- `kural/engine/history.py` (188 lines):
+  - Local JSONL logging to `%APPDATA%\kural\history.jsonl` recording text, task (`transcribe`/`command`), duration, app, and timestamp.
+  - Dependency-free BM25 full-text ranking over historical dictations with prefix scoring.
+  - `compute_stats()`: calculates total words dictated, speaking speed in WPM, time saved vs manual typing, active daily streak, and top apps.
 - `kural/__main__.py`: Added CLI commands:
-  - `python -m kural --dict-list`
-  - `python -m kural --dict-add <word>`
-  - `python -m kural --dict-remove <word>`
-- `kural/runtime.py`: Integrated `AdaptiveLearner` into the dictation loop to apply corrections and learn words on completed takes.
-- 9 new unit tests in `tests/engine/test_dictionary.py` and `tests/engine/test_adaptive.py` (296 total passing, 0 requiring GPU, mic, or network, ruff clean).
+  - `python -m kural --history [query]`: searches past dictations using BM25 ranking.
+  - `python -m kural --stats`: displays productivity statistics and streak.
+- `kural/runtime.py`: Automatically appends completed dictations and commands to `history.jsonl`.
+- 5 new unit tests in `tests/engine/test_history.py` (301 total passing, 0 requiring GPU, mic, or network, ruff clean).
 
 ## Next step
-1. Push `feat/adaptive-vocabulary-and-dictionary` and open PR into `main` with `gh pr create`.
+1. Push `feat/history-and-stats` and open PR into `main` with `gh pr create`.
 2. Wait for user to review and merge.
-3. Test adding technical terms or Tamil proper nouns via `python -m kural --dict-add "..."` live!
+3. Review your personal dictation history and metrics live via `python -m kural --stats`!
 
 ## Open questions
 - None.
@@ -47,7 +42,7 @@ Implemented adaptive vocabulary learning and dictionary hotwords management:
 - Linter: `ruff` only. Reason: handles pycodestyle + isort + pyupgrade in one tool.
 - Sub-package layout: `engine/`, `control/`, `config/`, `ui/` as top-level siblings under `kural/`.
   Reason: clean separation of concerns; each milestone targets exactly one sub-package.
-- Adaptive vocabulary: runs 100% locally on disk (`adaptive.json`), zero network calls.
-  Reason: strictly adheres to Kural's privacy guarantees.
-- Stopwords filtering: filters high-frequency English functional words so hotwords slots are
-  dedicated exclusively to domain terminology, names, and specialized jargon.
+- History storage: local `%APPDATA%\kural\history.jsonl`, strictly private with zero cloud telemetry.
+  Reason: complies with core principles in AGENTS.md.
+- Search algorithm: pure BM25 full-text ranking without third-party search dependencies.
+  Reason: lightweight, lightning-fast ranking over thousands of speech records.

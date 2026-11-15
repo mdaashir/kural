@@ -227,6 +227,17 @@ class KuralRuntime:
                 res = self.executor.execute(text)
                 status_icon = "✓" if res.success else "✗"
                 print(f"   {status_icon} {res.feedback}")
+
+                from kural.engine.history import HistoryEntry, append_history
+
+                append_history(
+                    HistoryEntry(
+                        text=text,
+                        task="command",
+                        audio_s=float(len(audio_data) / 16000.0),
+                    )
+                )
+
                 if res.action_type == "retry_take" and getattr(self, "last_take", None):
                     cached, _ = self.last_take.load()
                     if cached is not None:
@@ -242,6 +253,7 @@ class KuralRuntime:
             else:
                 from kural.control.app_rules import apply_formatting_style
                 from kural.control.windows import get_foreground_window_info
+                from kural.engine.history import HistoryEntry, append_history
                 from kural.engine.snippets import apply_snippets
 
                 # 1. Match foreground app rule
@@ -275,10 +287,22 @@ class KuralRuntime:
 
                 print(f"✍️  Typed ({style_name}): '{text}'")
                 insert_text_at_caret(text)
+
+                # 5. Record to ledger, adaptive learner, and history.jsonl
                 if getattr(self, "ledger", None):
                     self.ledger.record(text)
                 if getattr(self, "adaptive", None):
                     self.adaptive.learn_text(text)
+
+                append_history(
+                    HistoryEntry(
+                        text=text,
+                        task="transcribe",
+                        audio_s=float(len(audio_data) / 16000.0),
+                        app=fg_info.exe if fg_info else "",
+                    )
+                )
+
                 self.overlay.flash_success("Typed")
                 self.audio_feedback.play_complete()
 

@@ -112,4 +112,5 @@ licence texts are reproduced here in full, as required by the MIT licence terms.
 | `kural/engine/wake_word.py` | `src/whisper_key/voice_activity_detection.py` + `whisp/` |
 | `kural/engine/recovery.py` | `whisp/recovery.py` |
 | `kural/engine/adaptive.py` | `whisp/adaptive.py` |
+| `kural/engine/history.py` | `whisp/history.py` |
 | `kural/runtime.py` | `src/whisper_key/state_manager.py` + `whisp/app.py` |
