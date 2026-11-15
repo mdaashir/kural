@@ -117,6 +117,16 @@ def _section_runtime() -> int:
         Check("Kural version").fail(str(e)).print()
         failures += 1
 
+    try:
+        from kural.control.autostart import is_autostart_enabled
+
+        if is_autostart_enabled():
+            Check("Windows startup").ok("Enabled (runs at login)").print()
+        else:
+            Check("Windows startup").info("Disabled (manual launch)").print()
+    except Exception:
+        pass
+
     print()
     return failures
 

@@ -57,6 +57,21 @@ def main() -> None:
         help="Display productivity statistics (words, speaking WPM, time saved, streak).",
     )
     parser.add_argument(
+        "--autostart-status",
+        action="store_true",
+        help="Check whether Kural is configured to launch on Windows startup.",
+    )
+    parser.add_argument(
+        "--enable-autostart",
+        action="store_true",
+        help="Configure Kural to launch automatically on Windows login (windowless).",
+    )
+    parser.add_argument(
+        "--disable-autostart",
+        action="store_true",
+        help="Remove Kural from Windows startup.",
+    )
+    parser.add_argument(
         "--version",
         action="version",
         version=f"%(prog)s {get_version()}",
@@ -136,6 +151,33 @@ def main() -> None:
         if s["top_apps"]:
             app_str = ", ".join(f"{a} ({c})" for a, c in s["top_apps"])
             print(f"  • Top Apps:          {app_str}")
+        return
+
+    if args.autostart_status:
+        from kural.control.autostart import get_stored_autostart_command, is_autostart_enabled
+
+        if is_autostart_enabled():
+            print(f"✓ Kural autostart is ENABLED.\n  Command: {get_stored_autostart_command()}")
+        else:
+            print("✗ Kural autostart is DISABLED (will not launch on login).")
+        return
+
+    if args.enable_autostart:
+        from kural.control.autostart import enable_autostart
+
+        if enable_autostart():
+            print("✓ Enabled Kural autostart at Windows login (windowless background mode).")
+        else:
+            print("✗ Failed to enable autostart (check platform and user permissions).")
+        return
+
+    if args.disable_autostart:
+        from kural.control.autostart import disable_autostart
+
+        if disable_autostart():
+            print("✓ Disabled Kural autostart (removed from Windows startup).")
+        else:
+            print("✗ Failed to disable autostart.")
         return
 
     # Launch live background runtime

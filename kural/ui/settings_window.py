@@ -64,6 +64,7 @@ class SettingsWindow:
         self.var_overlay_pos = None
         self.var_click_through = None
         self.var_fuzzy = None
+        self.var_autostart = None
 
     def show(self) -> None:
         """Construct and display the settings window (blocks until closed)."""
@@ -137,6 +138,10 @@ class SettingsWindow:
 
         self.var_fuzzy = tk.BooleanVar(value=bool(self.vc_cfg.get("fuzzy_match", True)))
 
+        from kural.control.autostart import is_autostart_enabled
+
+        self.var_autostart = tk.BooleanVar(value=is_autostart_enabled())
+
     def _build_engine_tab(self, parent, ttk) -> None:
         row = 0
 
@@ -198,6 +203,11 @@ class SettingsWindow:
         c3 = ttk.Checkbutton(parent, text="Fuzzy Voice Command Matching", variable=self.var_fuzzy)
         c3.grid(row=3, column=0, columnspan=2, sticky="w", pady=6)
 
+        c4 = ttk.Checkbutton(
+            parent, text="Launch Kural at Windows Startup", variable=self.var_autostart
+        )
+        c4.grid(row=4, column=0, columnspan=2, sticky="w", pady=6)
+
     def _on_open_folder(self) -> None:
         from kural.engine.utils import get_user_app_data_path
 
@@ -242,6 +252,21 @@ class SettingsWindow:
             for section, values in settings.items():
                 for key, val in values.items():
                     self.config_manager.set_user_setting(f"{section}.{key}", val)
+
+            # Sync Windows autostart registry setting
+            if self.var_autostart is not None:
+                from kural.control.autostart import (
+                    disable_autostart,
+                    enable_autostart,
+                    is_autostart_enabled,
+                )
+
+                desired = bool(self.var_autostart.get())
+                current = is_autostart_enabled()
+                if desired and not current:
+                    enable_autostart()
+                elif not desired and current:
+                    disable_autostart()
 
             messagebox.showinfo(
                 "Kural",
