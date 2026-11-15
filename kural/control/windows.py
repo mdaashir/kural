@@ -2,6 +2,7 @@
 # Ported from ROHITCRAFTSYT/WhispLocal/whisp/commands.py
 """Windows management for voice control: window enumeration, focus, snap, and graceful close."""
 
+import contextlib
 import logging
 import os
 import sys
@@ -379,3 +380,54 @@ def insert_text_at_caret(text: str, restore_clipboard_delay: float = 0.05) -> bo
         threading.Thread(target=_restore, daemon=True, name="clipboard-restore").start()
 
     return True
+
+
+def get_selected_text(timeout: float = 0.1) -> str:
+    """Capture currently selected/highlighted text across any Windows application.
+
+    Simulates Ctrl+C and reads clipboard, gracefully restoring the clipboard
+    after extraction.
+    """
+    if sys.platform != "win32":
+        return ""
+
+    import ctypes
+    import time
+
+    saved = None
+    try:
+        import pyperclip
+
+        with contextlib.suppress(Exception):
+            saved = pyperclip.paste()
+        pyperclip.copy("")
+    except ImportError:
+        pass
+
+    user32 = ctypes.windll.user32
+    VK_CONTROL = 0x11
+    VK_C = 0x43
+    KEYEVENTF_KEYUP = 0x0002
+
+    # Simulate Ctrl+C
+    user32.keybd_event(VK_CONTROL, 0, 0, 0)
+    user32.keybd_event(VK_C, 0, 0, 0)
+    user32.keybd_event(VK_C, 0, KEYEVENTF_KEYUP, 0)
+    user32.keybd_event(VK_CONTROL, 0, KEYEVENTF_KEYUP, 0)
+
+    time.sleep(timeout)
+
+    captured = ""
+    try:
+        import pyperclip
+
+        with contextlib.suppress(Exception):
+            captured = pyperclip.paste() or ""
+        # Restore prior clipboard if we changed it
+        if saved is not None:
+            with contextlib.suppress(Exception):
+                pyperclip.copy(saved)
+    except ImportError:
+        pass
+
+    return captured.strip()
