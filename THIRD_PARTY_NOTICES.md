@@ -53,6 +53,7 @@ licence texts are reproduced here in full, as required by the MIT licence terms.
 | `kural/engine/voice_activity_detection.py` | `src/whisper_key/voice_activity_detection.py` |
 | `kural/engine/whisper_engine.py` | `src/whisper_key/whisper_engine.py` |
 | `kural/engine/hardware_detection.py` | `src/whisper_key/hardware_detection.py` + `src/whisper_key/platform/windows/gpu.py` |
+| `kural/engine/audio_feedback.py` | `src/whisper_key/audio_feedback.py` |
 | `kural/config/config_manager.py` | `src/whisper_key/config_manager.py` |
 | `kural/config/defaults_merge.py` | `src/whisper_key/defaults_merge.py` |
 | `kural/config/config.defaults.yaml` | `src/whisper_key/config.defaults.yaml` |
