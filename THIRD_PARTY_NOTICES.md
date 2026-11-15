@@ -62,6 +62,7 @@ licence texts are reproduced here in full, as required by the MIT licence terms.
 | `kural/config/commands.defaults.yaml` | `src/whisper_key/commands.defaults.yaml` |
 | `kural/config/app_rules.defaults.yaml` | `src/whisper_key/app_rules.defaults.yaml` |
 | `kural/control/app_rules.py` | `src/whisper_key/app_rules.py` |
+| `kural/control/autostart.py` | `src/whisper_key/autostart.py` |
 | `kural/ui/overlay.py` | `src/whisper_key/level_overlay.py` |
 | `kural/ui/tray.py` | `src/whisper_key/system_tray.py` |
 | `kural/ui/settings_window.py` | `src/whisper_key/settings_ui.py` + `whisp/settings.py` |
