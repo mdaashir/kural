@@ -52,6 +52,11 @@ def main() -> None:
         help="Open the graphical history browser window.",
     )
     parser.add_argument(
+        "--cheat-sheet",
+        action="store_true",
+        help="Open the hotkeys and voice commands cheat sheet reference card.",
+    )
+    parser.add_argument(
         "--stats",
         action="store_true",
         help="Display productivity statistics (words, speaking WPM, time saved, streak).",
@@ -111,6 +116,12 @@ def main() -> None:
         from kural.ui.history_window import open_history_window
 
         open_history_window()
+        return
+
+    if args.cheat_sheet:
+        from kural.ui.cheat_sheet import open_cheat_sheet
+
+        open_cheat_sheet()
         return
 
     if args.dict_list:

@@ -5,6 +5,10 @@
 
 ## Current branch
 `feat/wispr-flow-waveform-interface`
+**Post-M5: Hotkeys & Voice Commands Cheat Sheet**
+
+## Current branch
+`feat/hotkeys-cheat-sheet`
 
 ## PR
 PR to be opened with gh after verification passes.
@@ -26,6 +30,24 @@ Redesigned visual status overlay with dynamic, fluid waveform visualizer (Wispr 
 1. Push `feat/wispr-flow-waveform-interface` and open PR into `main` with `gh pr create`.
 2. Wait for user to review and merge.
 3. Test recording live with `Ctrl+Space` to experience the undulating soundwave visualizer!
+Implemented dynamic hotkeys and voice commands quick-reference cheat sheet:
+- `kural/ui/cheat_sheet.py` (245 lines):
+  - Self-contained Tkinter dialog matching Kural's dark GitHub-palette (`#0d1117`).
+  - Dynamically reads the user's active hotkeys from `ConfigManager` (`Ctrl+Space`, `Ctrl+Shift+Space`).
+  - Displays structured sections for:
+    1. **Global Hotkeys**: dictation and command trigger bindings with usage instructions.
+    2. **Voice Control Triggers**: app open/switch, close, window ops, volume/media, and Tamil triggers (*open chrome*, *திற chrome*, *notepad மூடு*).
+    3. **Inline Snippets**: `${date}`, `${time}`, `${clipboard}` speech expansions.
+  - Singleton guard: re-invoking from CLI or tray raises and focuses the open instance.
+- `kural/ui/tray.py`: Added `on_open_cheat_sheet` callback and `"Cheat Sheet..."` context menu item.
+- `kural/runtime.py`: Connected tray `"Cheat Sheet..."` action to `open_cheat_sheet()`.
+- `kural/__main__.py`: Added `--cheat-sheet` CLI command.
+- 5 new unit tests in `tests/ui/test_cheat_sheet.py` + updated `tests/ui/test_tray.py` (330 total passing, 0 requiring GPU, mic, or network, ruff clean).
+
+## Next step
+1. Push `feat/hotkeys-cheat-sheet` and open PR into `main` with `gh pr create`.
+2. Wait for user to review and merge.
+3. Test launching the reference card via `python -m kural --cheat-sheet`!
 
 ## Open questions
 - None.
@@ -45,3 +67,5 @@ Redesigned visual status overlay with dynamic, fluid waveform visualizer (Wispr 
   Reason: clean separation of concerns; each milestone targets exactly one sub-package.
 - Overlay design: Wispr Flow inspired multi-bar animated soundwave equalizer.
   Reason: transforms static block level meter into a lively, fluid, modern voice UI.
+- Cheat sheet design: pure Tkinter dialog displaying live hotkeys from `ConfigManager` instead of hardcoded defaults.
+  Reason: guarantees the reference card always reflects the user's actual bindings.

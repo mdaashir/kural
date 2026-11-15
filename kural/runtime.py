@@ -127,6 +127,7 @@ class KuralRuntime:
             on_toggle_dictation=self.toggle_dictation,
             on_toggle_command=self.toggle_command,
             on_open_history=self.open_history,
+            on_open_cheat_sheet=self.open_cheat_sheet,
             on_open_settings=self.open_settings,
             on_exit=self.request_exit,
             enabled=bool(tray_cfg.get("enabled", True)),
@@ -137,6 +138,12 @@ class KuralRuntime:
         from kural.ui.history_window import open_history_window
 
         open_history_window()
+
+    def open_cheat_sheet(self) -> None:
+        """Launch the shortcuts and commands cheat sheet reference window."""
+        from kural.ui.cheat_sheet import open_cheat_sheet
+
+        open_cheat_sheet(config_manager=self.config_manager)
 
     def open_settings(self) -> None:
         """Launch the graphical settings window."""

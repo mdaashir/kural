@@ -31,18 +31,21 @@ class TestSystemTrayCallbacks:
         on_dict = MagicMock()
         on_cmd = MagicMock()
         on_hist = MagicMock()
+        on_cheat = MagicMock()
         on_settings = MagicMock()
         on_exit = MagicMock()
         tray = SystemTray(
             on_toggle_dictation=on_dict,
             on_toggle_command=on_cmd,
             on_open_history=on_hist,
+            on_open_cheat_sheet=on_cheat,
             on_open_settings=on_settings,
             on_exit=on_exit,
         )
         assert tray.on_toggle_dictation is on_dict
         assert tray.on_toggle_command is on_cmd
         assert tray.on_open_history is on_hist
+        assert tray.on_open_cheat_sheet is on_cheat
         assert tray.on_open_settings is on_settings
         assert tray.on_exit is on_exit
 
