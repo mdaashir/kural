@@ -1,32 +1,31 @@
 # SESSION.md
 
 ## Current milestone
-**Post-M5: Local OpenAI-Compatible Speech API Server**
+**Wispr Flow Experience: Dynamic Multi-Bar Waveform Overlay**
 
 ## Current branch
-`feat/openai-compatible-server`
+`feat/wispr-flow-waveform-interface`
 
 ## PR
 PR to be opened with gh after verification passes.
 
 ## Last completed step
-Implemented local OpenAI-compatible Whisper speech API server:
-- `kural/engine/server.py` (284 lines):
-  - Zero extra framework dependencies: built with stdlib `http.server.ThreadingHTTPServer`.
-  - Implements the standard OpenAI audio API endpoints:
-    - `POST /v1/audio/transcriptions`: multipart/form-data upload parsing audio (`file`), optional `language`, `prompt`, and `response_format` (`json` vs `text`).
-    - `GET /v1/models`: OpenAI-compatible model listing (`whisper-1`).
-    - `GET /health`: liveness probe returning engine and status.
-  - Multi-format audio decoding: parses audio bytes via `soundfile` with stdlib `wave` fallback (resampling to 16 kHz float32).
-  - Thread-safe serialized GPU model execution with `threading.Lock`.
-  - Strict local privacy: bound to `127.0.0.1` loopback by default.
-- `kural/__main__.py`: Added `--serve`, `--host` (default `127.0.0.1`), and `--port` (default `7777`) CLI commands.
-- 6 new unit tests in `tests/engine/test_server.py` (325 total passing, 0 requiring GPU, mic, or network, ruff clean).
+Redesigned visual status overlay with dynamic, fluid waveform visualizer (Wispr Flow style):
+- `kural/ui/overlay.py` (295 lines):
+  - Upgraded floating status pill into a compact, modern pill with 7 dynamic vertical soundwave equalizer bars.
+  - Multi-harmonic wave animation reacting smoothly to microphone volume and frequency modulation with exponential smoothing decay.
+  - Distinct theme modes:
+    - **Dictation**: Emerald wave (`#2ea043`, `#3fb950`) undulating live with user speech.
+    - **Voice Command**: Electric violet wave (`#a371f7`, `#bc8cff`).
+    - **GPU Processing**: Amber wave shimmer (`#d29922`) while Whisper transcribes.
+    - **Flashes**: Clean success/error confirmation pill.
+  - Retains Windows click-through transparency (`WS_EX_TRANSPARENT | WS_EX_LAYERED`).
+- Updated unit tests in `tests/ui/test_overlay.py` with 100% offline coverage for waveform animation states (327 total passing, ruff clean).
 
 ## Next step
-1. Push `feat/openai-compatible-server` and open PR into `main` with `gh pr create`.
+1. Push `feat/wispr-flow-waveform-interface` and open PR into `main` with `gh pr create`.
 2. Wait for user to review and merge.
-3. Test transcribing via local tools or curl: `curl -F file=@sample.wav http://127.0.0.1:7777/v1/audio/transcriptions`!
+3. Test recording live with `Ctrl+Space` to experience the undulating soundwave visualizer!
 
 ## Open questions
 - None.
@@ -44,7 +43,5 @@ Implemented local OpenAI-compatible Whisper speech API server:
 - Linter: `ruff` only. Reason: handles pycodestyle + isort + pyupgrade in one tool.
 - Sub-package layout: `engine/`, `control/`, `config/`, `ui/` as top-level siblings under `kural/`.
   Reason: clean separation of concerns; each milestone targets exactly one sub-package.
-- Local API server: built with stdlib `http.server` instead of pulling heavy frameworks like FastAPI/Uvicorn.
-  Reason: zero extra dependencies, instant startup, minimal footprint.
-- Loopback binding: defaults strictly to `127.0.0.1`.
-  Reason: prevents exposing the GPU speech model or local transcription capabilities to external networks.
+- Overlay design: Wispr Flow inspired multi-bar animated soundwave equalizer.
+  Reason: transforms static block level meter into a lively, fluid, modern voice UI.

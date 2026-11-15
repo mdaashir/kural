@@ -28,7 +28,7 @@ class TestLevelOverlayStateCommands:
         self.overlay._root = MagicMock()
         self.overlay._canvas = MagicMock()
         self.overlay._text_item = "text"
-        self.overlay._bar_item = "bar"
+        self.overlay._wave_bars = [1, 2, 3, 4, 5, 6, 7]
 
     def test_show_recording_sets_mode(self):
         self.overlay._set_mode("dictation")
@@ -50,6 +50,18 @@ class TestLevelOverlayStateCommands:
     def test_flash_sets_mode_and_message(self):
         self.overlay._flash(LevelOverlay.LEVEL_COLOR, "Done")
         assert self.overlay._mode == "flash"
+
+    def test_waveform_animation_dictation(self):
+        self.overlay._mode = "dictation"
+        self.overlay._animate_waveform()
+        assert self.overlay._canvas.coords.call_count == 7
+        assert self.overlay._canvas.itemconfig.call_count == 7
+
+    def test_waveform_animation_processing(self):
+        self.overlay._mode = "processing"
+        self.overlay._animate_waveform()
+        assert self.overlay._canvas.coords.call_count == 7
+        assert self.overlay._canvas.itemconfig.call_count == 7
 
     def test_public_api_queues_commands(self):
         with patch.object(self.overlay, "_dispatch") as mock_dispatch:

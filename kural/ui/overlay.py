@@ -1,14 +1,17 @@
-# MIT License — Copyright (c) 2025 drajb (upstream: Pin Wang / whisper-key-local)
-# Ported from drajb/whisper-local/src/whisper_key/level_overlay.py
-"""Small, always-on-top visual status pill near the screen edge.
+# MIT License — Copyright (c) 2025 drajb & Rohit Burani
+# Ported and adapted from drajb/whisper-local/src/whisper_key/level_overlay.py
+"""Floating status pill with dynamic fluid waveform animation (Wispr Flow style).
 
-Displays live microphone input level while recording, spinner/status while processing,
-and success/failure flashes upon completion. On Windows, click-through styling is enabled
-so mouse clicks pass directly through to windows below.
+Displays an always-on-top, click-through pill near the screen edge with:
+- Multi-bar animated waveform visualizer reacting smoothly to mic levels and voice frequencies.
+- Cyan/Emerald animated wave for Dictation, Violet wave for Voice Command mode.
+- Pulsing wave shimmer during GPU transcription.
+- Smooth flash animations for success and error feedback.
 """
 
 import contextlib
 import logging
+import math
 import queue
 import sys
 import threading
@@ -18,16 +21,24 @@ logger = logging.getLogger(__name__)
 
 
 class LevelOverlay:
-    """Floating visual pill rendering recording state and microphone activity."""
+    """Floating visual pill rendering live animated soundwave activity."""
 
-    WIDTH = 280
-    HEIGHT = 32
+    WIDTH = 240
+    HEIGHT = 38
     BG_COLOR = "#0d1117"
     BORDER_COLOR = "#30363d"
-    TEXT_COLOR = "#c9d1d9"
-    LEVEL_COLOR = "#3fb950"  # Green
-    COMMAND_COLOR = "#58a6ff"  # Blue
-    ERROR_COLOR = "#f85149"  # Red
+    TEXT_COLOR = "#f0f6fc"
+
+    # Theme colors
+    DICTATION_COLOR = "#2ea043"  # Emerald / Green wave
+    DICTATION_GLOW = "#3fb950"
+    COMMAND_COLOR = "#a371f7"  # Electric Purple wave
+    COMMAND_GLOW = "#bc8cff"
+    PROCESSING_COLOR = "#d29922"  # Amber wave
+    LEVEL_COLOR = "#3fb950"
+    ERROR_COLOR = "#f85149"
+
+    NUM_BARS = 7
 
     def __init__(
         self,
@@ -46,8 +57,10 @@ class LevelOverlay:
         self._root = None
         self._canvas = None
         self._text_item = None
-        self._bar_item = None
-        self._status_text = "Ready"
+        self._wave_bars: list[int] = []
+        self._bar_heights = [4.0] * self.NUM_BARS
+        self._phase = 0.0
+
         self._mode = "hidden"
         self._running = False
         self._available = self._check_tk()
@@ -88,20 +101,20 @@ class LevelOverlay:
 
     def flash_success(self, message: str = "Done") -> None:
         """Flash green success status and hide."""
-        self._dispatch(lambda: self._flash(self.LEVEL_COLOR, message))
+        self._dispatch(lambda: self._flash(self.LEVEL_COLOR, f"✓ {message}"))
 
     def flash_error(self, message: str = "Error") -> None:
         """Flash red error status and hide."""
-        self._dispatch(lambda: self._flash(self.ERROR_COLOR, message))
+        self._dispatch(lambda: self._flash(self.ERROR_COLOR, f"✗ {message}"))
 
     def hide(self) -> None:
         """Hide the overlay pill."""
         self._dispatch(lambda: self._set_mode("hidden"))
 
     def stop(self) -> None:
-        """Terminate the overlay thread."""
+        """Stop the overlay and destroy the window."""
         self._running = False
-        self._dispatch(lambda: self._destroy_root())
+        self._dispatch(self._destroy_root)
         if self._thread and self._thread.is_alive():
             self._thread.join(timeout=1.0)
         self._thread = None
@@ -117,20 +130,18 @@ class LevelOverlay:
 
             root = tk.Tk()
             self._root = root
-            root.title("Kural Status")
+            root.title("Kural Flow")
             root.overrideredirect(True)
             root.attributes("-topmost", True)
             root.configure(bg=self.BG_COLOR)
 
-            # Position window on screen
             screen_w = root.winfo_screenwidth()
             screen_h = root.winfo_screenheight()
 
             x = (screen_w - self.WIDTH) // 2
-            y = screen_h - self.HEIGHT - 60 if "bottom" in self.position else 40
+            y = screen_h - self.HEIGHT - 65 if "bottom" in self.position else 45
             root.geometry(f"{self.WIDTH}x{self.HEIGHT}+{x}+{y}")
 
-            # Canvas for drawing pill border and audio bar
             canvas = tk.Canvas(
                 root,
                 width=self.WIDTH,
@@ -142,25 +153,39 @@ class LevelOverlay:
             canvas.pack(fill="both", expand=True)
             self._canvas = canvas
 
-            self._bar_item = canvas.create_rectangle(
-                6, 6, 6, self.HEIGHT - 6, fill=self.LEVEL_COLOR, width=0
-            )
+            # Status text label
             self._text_item = canvas.create_text(
-                self.WIDTH // 2,
+                self.WIDTH - 75,
                 self.HEIGHT // 2,
-                text="Kural",
+                text="Dictating...",
                 fill=self.TEXT_COLOR,
-                font=("Segoe UI", 10, "bold"),
+                font=("Segoe UI", 9, "bold"),
+                anchor="e",
             )
 
-            # Windows click-through transparent style
+            # Create the 7 waveform vertical bars
+            self._wave_bars = []
+            bar_w = 4
+            spacing = 3
+            start_x = 22
+            cy = self.HEIGHT // 2
+
+            for i in range(self.NUM_BARS):
+                bx = start_x + (i * (bar_w + spacing))
+                rect = canvas.create_rectangle(
+                    bx,
+                    cy - 2,
+                    bx + bar_w,
+                    cy + 2,
+                    fill=self.DICTATION_COLOR,
+                    outline="",
+                )
+                self._wave_bars.append(rect)
+
             if sys.platform == "win32" and self.click_through:
                 self._enable_click_through(root)
 
-            # Initial state is hidden
             root.withdraw()
-
-            # Background pump loop
             self._poll_commands()
             root.mainloop()
         except Exception as e:
@@ -172,7 +197,6 @@ class LevelOverlay:
             import ctypes
 
             hwnd = ctypes.windll.user32.GetParent(root.winfo_id())
-            # WS_EX_TRANSPARENT = 0x20, WS_EX_LAYERED = 0x80000
             GWL_EXSTYLE = -20
             styles = ctypes.windll.user32.GetWindowLongW(hwnd, GWL_EXSTYLE)
             ctypes.windll.user32.SetWindowLongW(hwnd, GWL_EXSTYLE, styles | 0x20 | 0x80000)
@@ -190,16 +214,47 @@ class LevelOverlay:
             except Exception:
                 pass
 
-        # If currently recording, animate live mic level
-        if self._mode in ("dictation", "command") and self._canvas:
-            level = min(1.0, max(0.0, self.level_provider() * 20.0))
-            max_w = self.WIDTH - 12
-            bar_w = int(6 + (max_w * level))
-            color = self.COMMAND_COLOR if self._mode == "command" else self.LEVEL_COLOR
-            self._canvas.coords(self._bar_item, 6, 6, bar_w, self.HEIGHT - 6)
-            self._canvas.itemconfig(self._bar_item, fill=color)
+        if self._canvas:
+            self._animate_waveform()
 
         self._root.after(30, self._poll_commands)
+
+    def _animate_waveform(self) -> None:
+        """Render fluid, undulating waveform bars reacting to audio volume and animation phase."""
+        if not self._canvas or not self._wave_bars:
+            return
+
+        cy = self.HEIGHT // 2
+        bar_w = 4
+        spacing = 3
+        start_x = 22
+
+        if self._mode in ("dictation", "command"):
+            raw_lvl = min(1.0, max(0.0, self.level_provider() * 25.0))
+            color = self.COMMAND_GLOW if self._mode == "command" else self.DICTATION_GLOW
+            self._phase += 0.25
+
+            max_h = 24.0
+            for i, rect in enumerate(self._wave_bars):
+                # Harmonic wave pattern with audio amplitude scaling
+                offset = math.sin(self._phase + (i * 0.8)) * 0.35 + 0.65
+                target_h = max(4.0, (raw_lvl * max_h * offset) + (2.0 if raw_lvl > 0.05 else 0.0))
+                # Smooth decay
+                self._bar_heights[i] += (target_h - self._bar_heights[i]) * 0.4
+
+                h = self._bar_heights[i]
+                bx = start_x + (i * (bar_w + spacing))
+                self._canvas.coords(rect, bx, cy - (h / 2), bx + bar_w, cy + (h / 2))
+                self._canvas.itemconfig(rect, fill=color)
+
+        elif self._mode == "processing":
+            self._phase += 0.2
+            for i, rect in enumerate(self._wave_bars):
+                wave_val = (math.sin(self._phase + (i * 0.7)) + 1.0) / 2.0
+                h = 4.0 + (wave_val * 14.0)
+                bx = start_x + (i * (bar_w + spacing))
+                self._canvas.coords(rect, bx, cy - (h / 2), bx + bar_w, cy + (h / 2))
+                self._canvas.itemconfig(rect, fill=self.PROCESSING_COLOR)
 
     def _set_mode(self, mode: str) -> None:
         self._mode = mode
@@ -210,26 +265,28 @@ class LevelOverlay:
             self._root.withdraw()
         elif mode == "dictation":
             self._root.deiconify()
-            self._canvas.itemconfig(self._text_item, text="🎙️ Dictating...", fill=self.TEXT_COLOR)
+            self._canvas.itemconfig(self._text_item, text="🎙️ Listening...", fill=self.TEXT_COLOR)
         elif mode == "command":
             self._root.deiconify()
-            self._canvas.itemconfig(self._text_item, text="⚡ Command...", fill=self.TEXT_COLOR)
+            self._canvas.itemconfig(self._text_item, text="⚡ Command...", fill=self.COMMAND_GLOW)
         elif mode == "processing":
             self._root.deiconify()
-            self._canvas.coords(self._bar_item, 6, 6, 6, self.HEIGHT - 6)
-            self._canvas.itemconfig(self._text_item, text="⏳ Transcribing...", fill="#d29922")
+            self._canvas.itemconfig(
+                self._text_item, text="⏳ Flowing...", fill=self.PROCESSING_COLOR
+            )
 
     def _flash(self, color: str, message: str) -> None:
         if not self._root or not self._canvas:
             return
         self._mode = "flash"
         self._root.deiconify()
-        self._canvas.coords(self._bar_item, 6, 6, self.WIDTH - 6, self.HEIGHT - 6)
-        self._canvas.itemconfig(self._bar_item, fill=color)
-        self._canvas.itemconfig(self._text_item, text=message, fill="#ffffff")
 
-        # Automatically hide after 800ms
-        self._root.after(800, lambda: self._set_mode("hidden"))
+        # Hide wave bars during message flash
+        for rect in self._wave_bars:
+            self._canvas.coords(rect, 0, 0, 0, 0)
+
+        self._canvas.itemconfig(self._text_item, text=message, fill=color)
+        self._root.after(850, lambda: self._set_mode("hidden"))
 
     def _destroy_root(self) -> None:
         if self._root:
