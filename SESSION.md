@@ -1,53 +1,29 @@
 # SESSION.md
 
 ## Current milestone
-**Wispr Flow Experience: Dynamic Multi-Bar Waveform Overlay**
+**Wispr Flow Experience: Flow Formatting & Disfluency Engine**
 
 ## Current branch
-`feat/wispr-flow-waveform-interface`
-**Post-M5: Hotkeys & Voice Commands Cheat Sheet**
-
-## Current branch
-`feat/hotkeys-cheat-sheet`
+`feat/wispr-flow-formatting`
 
 ## PR
 PR to be opened with gh after verification passes.
 
 ## Last completed step
-Redesigned visual status overlay with dynamic, fluid waveform visualizer (Wispr Flow style):
-- `kural/ui/overlay.py` (295 lines):
-  - Upgraded floating status pill into a compact, modern pill with 7 dynamic vertical soundwave equalizer bars.
-  - Multi-harmonic wave animation reacting smoothly to microphone volume and frequency modulation with exponential smoothing decay.
-  - Distinct theme modes:
-    - **Dictation**: Emerald wave (`#2ea043`, `#3fb950`) undulating live with user speech.
-    - **Voice Command**: Electric violet wave (`#a371f7`, `#bc8cff`).
-    - **GPU Processing**: Amber wave shimmer (`#d29922`) while Whisper transcribes.
-    - **Flashes**: Clean success/error confirmation pill.
-  - Retains Windows click-through transparency (`WS_EX_TRANSPARENT | WS_EX_LAYERED`).
-- Updated unit tests in `tests/ui/test_overlay.py` with 100% offline coverage for waveform animation states (327 total passing, ruff clean).
+Implemented Wispr Flow natural text transformation pipeline:
+- `kural/engine/flow_formatting.py` (118 lines):
+  - `strip_fillers()`: word-boundary safe removal of verbal disfluencies and hesitation fillers (*um*, *uh*, *er*, *ah*, *you know*).
+  - Collapses stuttered false-start duplicate words (*"I I think"* -> *"I think"*, *"we we"* -> *"we"*).
+  - `replace_spoken_punctuation()`: translates spoken punctuation triggers (English and Tamil) to actual symbols (*comma*, *period*, *full stop*, *question mark*, *exclamation point*, *new line*, *new paragraph*, *கமா*, *புள்ளி*, *கேள்விக்குறி*).
+  - `format_flow_typography()`: cleans spacing around punctuation, strips awkward whitespace, and applies proper sentence capitalization.
+  - `apply_flow_formatting()`: main entry point, respecting `is_verbatim` to preserve raw code/terminal input intact.
+- `kural/runtime.py`: Connected `apply_flow_formatting()` to the dictation processing loop right before caret insertion.
+- 11 new unit tests in `tests/engine/test_flow_formatting.py` (343 total passing, 0 requiring GPU, mic, or network, ruff clean).
 
 ## Next step
-1. Push `feat/wispr-flow-waveform-interface` and open PR into `main` with `gh pr create`.
+1. Push `feat/wispr-flow-formatting` and open PR into `main` with `gh pr create`.
 2. Wait for user to review and merge.
-3. Test recording live with `Ctrl+Space` to experience the undulating soundwave visualizer!
-Implemented dynamic hotkeys and voice commands quick-reference cheat sheet:
-- `kural/ui/cheat_sheet.py` (245 lines):
-  - Self-contained Tkinter dialog matching Kural's dark GitHub-palette (`#0d1117`).
-  - Dynamically reads the user's active hotkeys from `ConfigManager` (`Ctrl+Space`, `Ctrl+Shift+Space`).
-  - Displays structured sections for:
-    1. **Global Hotkeys**: dictation and command trigger bindings with usage instructions.
-    2. **Voice Control Triggers**: app open/switch, close, window ops, volume/media, and Tamil triggers (*open chrome*, *திற chrome*, *notepad மூடு*).
-    3. **Inline Snippets**: `${date}`, `${time}`, `${clipboard}` speech expansions.
-  - Singleton guard: re-invoking from CLI or tray raises and focuses the open instance.
-- `kural/ui/tray.py`: Added `on_open_cheat_sheet` callback and `"Cheat Sheet..."` context menu item.
-- `kural/runtime.py`: Connected tray `"Cheat Sheet..."` action to `open_cheat_sheet()`.
-- `kural/__main__.py`: Added `--cheat-sheet` CLI command.
-- 5 new unit tests in `tests/ui/test_cheat_sheet.py` + updated `tests/ui/test_tray.py` (330 total passing, 0 requiring GPU, mic, or network, ruff clean).
-
-## Next step
-1. Push `feat/hotkeys-cheat-sheet` and open PR into `main` with `gh pr create`.
-2. Wait for user to review and merge.
-3. Test launching the reference card via `python -m kural --cheat-sheet`!
+3. Test natural flow dictation live: say *"um send the report comma because uh we are ready period"* and see it type *"Send the report, because we are ready."*!
 
 ## Open questions
 - None.
@@ -65,7 +41,7 @@ Implemented dynamic hotkeys and voice commands quick-reference cheat sheet:
 - Linter: `ruff` only. Reason: handles pycodestyle + isort + pyupgrade in one tool.
 - Sub-package layout: `engine/`, `control/`, `config/`, `ui/` as top-level siblings under `kural/`.
   Reason: clean separation of concerns; each milestone targets exactly one sub-package.
-- Overlay design: Wispr Flow inspired multi-bar animated soundwave equalizer.
-  Reason: transforms static block level meter into a lively, fluid, modern voice UI.
-- Cheat sheet design: pure Tkinter dialog displaying live hotkeys from `ConfigManager` instead of hardcoded defaults.
-  Reason: guarantees the reference card always reflects the user's actual bindings.
+- Flow formatting pipeline: deterministic regex-based transformation rather than a local LLM call.
+  Reason: instantaneous execution (<1 ms latency), 100% predictable, zero additional VRAM consumption.
+- Verbatim bypass: code editors and terminals configured with `style: verbatim` skip filler removal and spoken punctuation substitution.
+  Reason: ensures code syntax, shell commands, and regexes are never altered.
