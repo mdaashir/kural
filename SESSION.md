@@ -1,35 +1,38 @@
 # SESSION.md
 
 ## Current milestone
-**Post-M5: Audio Feedback Cues** (audible signals)
+**Post-M5: Snippets & Never-Lose-a-Dictation Recovery**
 
 ## Current branch
-`feat/audio-feedback`
+`feat/snippets-and-recovery`
 
 ## PR
 PR to be opened with gh after verification passes.
 
 ## Last completed step
-Built and wired the audible feedback subsystem:
-- `kural/engine/audio_feedback.py` (91 lines): Fire-and-forget asynchronous sound player with Windows `winsound` native integration (system event aliases and MessageBeep fallback) and custom WAV path support. Never blocks audio recording or GPU transcription.
-- `kural/config/config.defaults.yaml`: Added `audio_feedback` configuration section (`enabled`, `start_sound`, `stop_sound`, `complete_sound`, `error_sound`).
-- `kural/runtime.py`: Wired audio cues directly into the state machine:
-  - Start chime when hotkey is pressed (`play_start`).
-  - Stop chime when hotkey is released and transcription begins (`play_stop`).
-  - Completion tick when text is inserted at caret or command executes (`play_complete`).
-  - Error/blocked tone when a command fails or is blocked by guardrails (`play_error`).
-- 11 new unit tests in `tests/engine/test_audio_feedback.py` (265 total passing, 0 requiring GPU, mic, or network, ruff clean).
+Built text snippets and never-lose-a-dictation recovery subsystems:
+- `kural/engine/recovery.py` (174 lines):
+  - `LastTake`: Encrypts raw 16 kHz audio on disk using Windows Data Protection API (DPAPI `CryptProtectData`). Only the current Windows user account can decrypt it. Automatically expires after 24 hours. Enables retrying a failed or interrupted dictation without speaking again.
+  - `Ledger`: Ephemeral in-memory store of the last successfully inserted text.
+- `kural/engine/snippets.py` (94 lines):
+  - Spoken shortcuts expanding inline during dictation (e.g. *"today's date"* -> `2026-11-15`).
+  - Supports dynamic variable interpolation (`${date}`, `${time}`, `${clipboard}`). Matches longest triggers first.
+- `kural/control/parser.py`: Added voice commands for recovery:
+  - *"paste last dictation"*, *"paste that again"*, *"கடைசி உரையை தட்டச்சு செய்"* -> calls `ledger.last()` and pastes at caret.
+  - *"retry last take"*, *"retry last dictation"*, *"கடைசி பதிவை மீண்டும் செய்"* -> re-transcribes the cached take.
+- `kural/runtime.py`: Integrates `LastTake`, `Ledger`, and `apply_snippets` into the dictation pipeline.
+- 13 new unit tests in `tests/engine/test_recovery.py` and `tests/engine/test_snippets.py` (278 total passing, 0 requiring GPU, mic, or network, ruff clean).
 
 ## Next step
-1. Push `feat/audio-feedback` and open PR into `main` with `gh pr create`.
+1. Push `feat/snippets-and-recovery` and open PR into `main` with `gh pr create`.
 2. Wait for user to review and merge.
-3. After merge: run `python -m kural` live to hear the audible confirmation chimes on hotkey press.
+3. Test inline snippets (*"today's date"*) and *"paste last dictation"* live!
 
 ## Open questions
 - None.
 
 ## Verify items (from AGENTS.md)
-- [x] **Hotkey-driven only?** Confirmed: neither base (`whisper-local`) nor donor (`WhispLocal`) contained native wake-word engines. Designed and implemented opt-in offline wake-word detector in M5.
+- [x] **Hotkey-driven only?** Confirmed and resolved in M5.
 - [x] **Feature overlap between base and donor** — Confirmed and resolved across M0-M5.
 - [x] **Tamil voice commands supported** — SVO, SOV, and Tanglish supported.
 - [x] **Idle VRAM unload implemented** — Configurable timer unloads model from VRAM after inactivity.
@@ -41,7 +44,7 @@ Built and wired the audible feedback subsystem:
 - Linter: `ruff` only. Reason: handles pycodestyle + isort + pyupgrade in one tool.
 - Sub-package layout: `engine/`, `control/`, `config/`, `ui/` as top-level siblings under `kural/`.
   Reason: clean separation of concerns; each milestone targets exactly one sub-package.
-- Audio feedback uses Python standard library `winsound` on Windows (zero external dependencies).
-  Reason: native, zero-latency, 100% reliable system event chimes.
-- All audio playback is fire-and-forget on background daemon threads.
-  Reason: audio playback failures or muted devices must never block dictation or speech capture.
+- Retained audio security: single-take raw audio is encrypted via Windows DPAPI `CryptProtectData`.
+  Reason: strictly conforms to AGENTS.md privacy requirement ("Retained audio only DPAPI-encrypted, one take, short expiry").
+- Text snippets: applied inline before caret insertion without requiring a separate hotkey.
+  Reason: natural dictation shortcuts for dates, signatures, and clipboard text.

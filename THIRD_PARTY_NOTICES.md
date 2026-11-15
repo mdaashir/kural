@@ -54,6 +54,7 @@ licence texts are reproduced here in full, as required by the MIT licence terms.
 | `kural/engine/whisper_engine.py` | `src/whisper_key/whisper_engine.py` |
 | `kural/engine/hardware_detection.py` | `src/whisper_key/hardware_detection.py` + `src/whisper_key/platform/windows/gpu.py` |
 | `kural/engine/audio_feedback.py` | `src/whisper_key/audio_feedback.py` |
+| `kural/engine/snippets.py` | `src/whisper_key/snippets.py` |
 | `kural/config/config_manager.py` | `src/whisper_key/config_manager.py` |
 | `kural/config/defaults_merge.py` | `src/whisper_key/defaults_merge.py` |
 | `kural/config/config.defaults.yaml` | `src/whisper_key/config.defaults.yaml` |
@@ -106,4 +107,5 @@ licence texts are reproduced here in full, as required by the MIT licence terms.
 | `kural/control/executor.py` | `whisp/commands.py` |
 | `kural/control/llm_fallback.py` | `whisp/locallm.py` |
 | `kural/engine/wake_word.py` | `src/whisper_key/voice_activity_detection.py` + `whisp/` |
+| `kural/engine/recovery.py` | `whisp/recovery.py` |
 | `kural/runtime.py` | `src/whisper_key/state_manager.py` + `whisp/app.py` |
