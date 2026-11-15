@@ -72,6 +72,23 @@ def main() -> None:
         help="Remove Kural from Windows startup.",
     )
     parser.add_argument(
+        "--serve",
+        action="store_true",
+        help="Run local OpenAI-compatible Whisper API server.",
+    )
+    parser.add_argument(
+        "--host",
+        type=str,
+        default="127.0.0.1",
+        help="Host address to bind local server to (default: 127.0.0.1).",
+    )
+    parser.add_argument(
+        "--port",
+        type=int,
+        default=7777,
+        help="Port to bind local server to (default: 7777).",
+    )
+    parser.add_argument(
         "--version",
         action="version",
         version=f"%(prog)s {get_version()}",
@@ -179,6 +196,11 @@ def main() -> None:
         else:
             print("✗ Failed to disable autostart.")
         return
+
+    if args.serve:
+        from kural.engine.server import run_server
+
+        sys.exit(run_server(host=args.host, port=args.port))
 
     # Launch live background runtime
     from kural.runtime import KuralRuntime
