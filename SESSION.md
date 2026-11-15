@@ -1,31 +1,29 @@
 # SESSION.md
 
 ## Current milestone
-**Post-M5: Graphical History Window**
+**Post-M5: Windows Startup (Autostart) Registration**
 
 ## Current branch
-`feat/history-window-gui`
+`feat/windows-autostart`
 
 ## PR
 PR to be opened with gh after verification passes.
 
 ## Last completed step
-Implemented searchable graphical history browser:
-- `kural/ui/history_window.py` (282 lines):
-  - Self-contained Tkinter dialog matching Kural's dark theme palette (`#0d1117`).
-  - Search bar with live search-as-you-type querying `search_history()` (BM25 ranking).
-  - Treeview displaying timestamps, task tag (`transcribe` vs `command`), foreground app, and transcribed text.
-  - Double-click and "Copy Selected" button for one-click clipboard copying.
-  - Singleton guard to ensure re-opening raises and focuses the existing window rather than stacking multiple instances.
-- `kural/ui/tray.py`: Added `on_open_history` callback and `"History..."` tray menu item.
-- `kural/runtime.py`: Connected tray `"History..."` to `open_history_window()`.
-- `kural/__main__.py`: Added `--history-gui` CLI flag to launch the history window directly.
-- 6 new unit tests in `tests/ui/test_history_window.py` + updated `tests/ui/test_tray.py` (307 total passing, 0 requiring GPU, mic, or network, ruff clean).
+Implemented Windows autostart registration and management:
+- `kural/control/autostart.py` (112 lines):
+  - Windows registry integration via stdlib `winreg` under `HKCU\Software\Microsoft\Windows\CurrentVersion\Run` with value name `"Kural"`.
+  - Windowless background execution: automatically resolves and runs via `pythonw.exe -m kural` so there is no console flash at Windows boot.
+  - Safe opt-in functions: `is_autostart_enabled()`, `enable_autostart()`, `disable_autostart()`, and `get_stored_autostart_command()`.
+- `kural/ui/settings_window.py`: Added `[x] Launch Kural at Windows Startup` checkbox to the "Overlay & Control" tab and synced it on save.
+- `kural/doctor.py`: Added autostart status reporting in the runtime section of the doctor diagnostics report.
+- `kural/__main__.py`: Added `--autostart-status`, `--enable-autostart`, and `--disable-autostart` CLI commands.
+- 12 new unit tests in `tests/control/test_autostart.py` + updated `tests/ui/test_settings.py` (319 total passing, 0 requiring GPU, mic, or network, ruff clean).
 
 ## Next step
-1. Push `feat/history-window-gui` and open PR into `main` with `gh pr create`.
+1. Push `feat/windows-autostart` and open PR into `main` with `gh pr create`.
 2. Wait for user to review and merge.
-3. Test browsing past dictations graphically via `python -m kural --history-gui`!
+3. Verify status live with `python -m kural --autostart-status` or in the Settings UI!
 
 ## Open questions
 - None.
@@ -43,7 +41,7 @@ Implemented searchable graphical history browser:
 - Linter: `ruff` only. Reason: handles pycodestyle + isort + pyupgrade in one tool.
 - Sub-package layout: `engine/`, `control/`, `config/`, `ui/` as top-level siblings under `kural/`.
   Reason: clean separation of concerns; each milestone targets exactly one sub-package.
-- Graphical History Browser: pure Tkinter without heavy external GUI frameworks.
-  Reason: native, instant startup, lightweight, and works seamlessly with dark Windows 11 desktop theme.
-- Singleton window guard: only one instance of the History Window exists at a time; subsequent triggers lift and focus the window.
-  Reason: prevents clutter and memory leaks from multiple open windows.
+- Windowless autostart: uses `pythonw.exe` for startup registration.
+  Reason: prevents a black console terminal window from flashing when the user logs into Windows.
+- Opt-in policy: startup registry entries are never written automatically without explicit user action in Settings or CLI.
+  Reason: respects user choice and system hygiene.

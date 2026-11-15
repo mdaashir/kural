@@ -70,6 +70,18 @@ class TestSettingsCollectionAndSave:
         mock_mb.showinfo.assert_called_once()
         mock_callback.assert_called_once()
 
+    def test_save_syncs_autostart_toggle(self):
+        mock_mb = MagicMock()
+        self.win.var_autostart = MagicMock()
+        self.win.var_autostart.get.return_value = True
+
+        with (
+            patch("kural.control.autostart.is_autostart_enabled", return_value=False),
+            patch("kural.control.autostart.enable_autostart") as mock_enable,
+        ):
+            self.win._on_save(messagebox=mock_mb)
+            mock_enable.assert_called_once()
+
     def test_open_folder_windows(self):
         with patch.object(sys, "platform", "win32"), patch("os.startfile") as mock_start:
             open_folder("C:\\dummy\\path")
