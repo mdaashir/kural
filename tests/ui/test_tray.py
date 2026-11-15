@@ -30,10 +30,17 @@ class TestSystemTrayCallbacks:
     def test_callbacks_are_stored(self):
         on_dict = MagicMock()
         on_cmd = MagicMock()
+        on_settings = MagicMock()
         on_exit = MagicMock()
-        tray = SystemTray(on_toggle_dictation=on_dict, on_toggle_command=on_cmd, on_exit=on_exit)
+        tray = SystemTray(
+            on_toggle_dictation=on_dict,
+            on_toggle_command=on_cmd,
+            on_open_settings=on_settings,
+            on_exit=on_exit,
+        )
         assert tray.on_toggle_dictation is on_dict
         assert tray.on_toggle_command is on_cmd
+        assert tray.on_open_settings is on_settings
         assert tray.on_exit is on_exit
 
     def test_stop_is_safe_without_start(self):

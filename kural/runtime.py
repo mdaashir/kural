@@ -103,9 +103,16 @@ class KuralRuntime:
         self.tray = SystemTray(
             on_toggle_dictation=self.toggle_dictation,
             on_toggle_command=self.toggle_command,
+            on_open_settings=self.open_settings,
             on_exit=self.request_exit,
             enabled=bool(tray_cfg.get("enabled", True)),
         )
+
+    def open_settings(self) -> None:
+        """Launch the graphical settings window."""
+        from kural.ui.settings_window import open_settings_window
+
+        open_settings_window(config_manager=self.config_manager)
 
     def _current_mic_level(self) -> float:
         """Return the current microphone input level (0.0 - 1.0) for the overlay meter."""

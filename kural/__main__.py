@@ -18,6 +18,11 @@ def main() -> None:
         help="Run environment, hardware, GPU, audio, and configuration diagnostics.",
     )
     parser.add_argument(
+        "--settings",
+        action="store_true",
+        help="Open the graphical settings configuration window.",
+    )
+    parser.add_argument(
         "--version",
         action="version",
         version=f"%(prog)s {get_version()}",
@@ -29,6 +34,12 @@ def main() -> None:
         from kural.doctor import run_doctor
 
         sys.exit(run_doctor())
+
+    if args.settings:
+        from kural.ui.settings_window import open_settings_window
+
+        open_settings_window()
+        return
 
     # Launch live background runtime
     from kural.runtime import KuralRuntime
