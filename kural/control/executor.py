@@ -311,6 +311,43 @@ class CommandExecutor:
                 ok, msg = self.guardrails.cancel_shutdown()
                 return CommandResult(success=ok, feedback=msg, action_type="system")
 
+        # Smart text transform / rewrite (Wispr Flow style)
+        if intent.kind == "transform":
+            from kural.control.windows import get_selected_text
+            from kural.engine.transforms import apply_smart_transform
+
+            # Try capturing highlighted text first, fallback to last dictation take
+            selected = get_selected_text()
+            source_text = selected or (self.ledger.last() if getattr(self, "ledger", None) else "")
+
+            if not source_text:
+                return CommandResult(
+                    success=False,
+                    feedback="No text selected or in ledger to transform",
+                    action_type="transform",
+                )
+
+            rewritten = apply_smart_transform(
+                text=source_text,
+                instruction=intent.target,
+                llm_fallback=self.llm_fallback,
+            )
+
+            if rewritten and rewritten != source_text:
+                insert_text_at_caret(rewritten)
+                if getattr(self, "ledger", None):
+                    self.ledger.record(rewritten)
+                return CommandResult(
+                    success=True,
+                    feedback=f"Transformed ({intent.target})",
+                    action_type="transform",
+                )
+            return CommandResult(
+                success=True,
+                feedback="Text unchanged",
+                action_type="transform",
+            )
+
         return CommandResult(
             success=False, feedback=f"Unhandled action: {intent.action}", action_type="unhandled"
         )

@@ -142,6 +142,41 @@ def parse_command(phrase: str) -> CommandIntent | None:
         "volume aethu",
     ):
         return CommandIntent(kind="volume", action="up", target="10", raw_text=phrase)
+
+    # 3. Smart voice transforms / text rewrites (Wispr Flow style)
+    m_transform = re.match(
+        r"^(?:make\s+(?:that|this)\s+(?:a\s+)?|transform\s+(?:that|this)\s+(?:to\s+)?|rephrase\s+(?:that|this)\s+(?:to\s+)?)(.+)$",
+        t,
+    )
+    if m_transform:
+        return CommandIntent(
+            kind="transform", action="rewrite", target=m_transform.group(1).strip(), raw_text=phrase
+        )
+
+    if t in (
+        "bullet that",
+        "make bullets",
+        "make that bullets",
+        "bulletize",
+        "bullet list",
+        "வரிசைப்படுத்து",
+    ):
+        return CommandIntent(kind="transform", action="rewrite", target="bullets", raw_text=phrase)
+
+    if t in ("title case that", "make title case", "தலைப்பாக்கு"):
+        return CommandIntent(
+            kind="transform", action="rewrite", target="title_case", raw_text=phrase
+        )
+
+    if t in ("uppercase that", "make uppercase", "பெரிய எழுத்தாக்கு"):
+        return CommandIntent(
+            kind="transform", action="rewrite", target="uppercase", raw_text=phrase
+        )
+
+    if t in ("lowercase that", "make lowercase", "சிறிய எழுத்தாக்கு"):
+        return CommandIntent(
+            kind="transform", action="rewrite", target="lowercase", raw_text=phrase
+        )
     if t in (
         "volume down",
         "decrease volume",
