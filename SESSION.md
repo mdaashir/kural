@@ -1,29 +1,32 @@
 # SESSION.md
 
 ## Current milestone
-**Post-M5: Windows Startup (Autostart) Registration**
+**Post-M5: Local OpenAI-Compatible Speech API Server**
 
 ## Current branch
-`feat/windows-autostart`
+`feat/openai-compatible-server`
 
 ## PR
 PR to be opened with gh after verification passes.
 
 ## Last completed step
-Implemented Windows autostart registration and management:
-- `kural/control/autostart.py` (112 lines):
-  - Windows registry integration via stdlib `winreg` under `HKCU\Software\Microsoft\Windows\CurrentVersion\Run` with value name `"Kural"`.
-  - Windowless background execution: automatically resolves and runs via `pythonw.exe -m kural` so there is no console flash at Windows boot.
-  - Safe opt-in functions: `is_autostart_enabled()`, `enable_autostart()`, `disable_autostart()`, and `get_stored_autostart_command()`.
-- `kural/ui/settings_window.py`: Added `[x] Launch Kural at Windows Startup` checkbox to the "Overlay & Control" tab and synced it on save.
-- `kural/doctor.py`: Added autostart status reporting in the runtime section of the doctor diagnostics report.
-- `kural/__main__.py`: Added `--autostart-status`, `--enable-autostart`, and `--disable-autostart` CLI commands.
-- 12 new unit tests in `tests/control/test_autostart.py` + updated `tests/ui/test_settings.py` (319 total passing, 0 requiring GPU, mic, or network, ruff clean).
+Implemented local OpenAI-compatible Whisper speech API server:
+- `kural/engine/server.py` (284 lines):
+  - Zero extra framework dependencies: built with stdlib `http.server.ThreadingHTTPServer`.
+  - Implements the standard OpenAI audio API endpoints:
+    - `POST /v1/audio/transcriptions`: multipart/form-data upload parsing audio (`file`), optional `language`, `prompt`, and `response_format` (`json` vs `text`).
+    - `GET /v1/models`: OpenAI-compatible model listing (`whisper-1`).
+    - `GET /health`: liveness probe returning engine and status.
+  - Multi-format audio decoding: parses audio bytes via `soundfile` with stdlib `wave` fallback (resampling to 16 kHz float32).
+  - Thread-safe serialized GPU model execution with `threading.Lock`.
+  - Strict local privacy: bound to `127.0.0.1` loopback by default.
+- `kural/__main__.py`: Added `--serve`, `--host` (default `127.0.0.1`), and `--port` (default `7777`) CLI commands.
+- 6 new unit tests in `tests/engine/test_server.py` (325 total passing, 0 requiring GPU, mic, or network, ruff clean).
 
 ## Next step
-1. Push `feat/windows-autostart` and open PR into `main` with `gh pr create`.
+1. Push `feat/openai-compatible-server` and open PR into `main` with `gh pr create`.
 2. Wait for user to review and merge.
-3. Verify status live with `python -m kural --autostart-status` or in the Settings UI!
+3. Test transcribing via local tools or curl: `curl -F file=@sample.wav http://127.0.0.1:7777/v1/audio/transcriptions`!
 
 ## Open questions
 - None.
@@ -41,7 +44,7 @@ Implemented Windows autostart registration and management:
 - Linter: `ruff` only. Reason: handles pycodestyle + isort + pyupgrade in one tool.
 - Sub-package layout: `engine/`, `control/`, `config/`, `ui/` as top-level siblings under `kural/`.
   Reason: clean separation of concerns; each milestone targets exactly one sub-package.
-- Windowless autostart: uses `pythonw.exe` for startup registration.
-  Reason: prevents a black console terminal window from flashing when the user logs into Windows.
-- Opt-in policy: startup registry entries are never written automatically without explicit user action in Settings or CLI.
-  Reason: respects user choice and system hygiene.
+- Local API server: built with stdlib `http.server` instead of pulling heavy frameworks like FastAPI/Uvicorn.
+  Reason: zero extra dependencies, instant startup, minimal footprint.
+- Loopback binding: defaults strictly to `127.0.0.1`.
+  Reason: prevents exposing the GPU speech model or local transcription capabilities to external networks.

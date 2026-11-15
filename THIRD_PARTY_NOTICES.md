@@ -56,6 +56,7 @@ licence texts are reproduced here in full, as required by the MIT licence terms.
 | `kural/engine/audio_feedback.py` | `src/whisper_key/audio_feedback.py` |
 | `kural/engine/snippets.py` | `src/whisper_key/snippets.py` |
 | `kural/engine/dictionary.py` | `src/whisper_key/dictionary.py` |
+| `kural/engine/server.py` | `src/whisper_key/local_server.py` |
 | `kural/config/config_manager.py` | `src/whisper_key/config_manager.py` |
 | `kural/config/defaults_merge.py` | `src/whisper_key/defaults_merge.py` |
 | `kural/config/config.defaults.yaml` | `src/whisper_key/config.defaults.yaml` |
