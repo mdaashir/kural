@@ -82,6 +82,12 @@ class KuralRuntime:
             vad_manager=self.vad_manager,
         )
 
+        # Gestures and Push-to-Talk tracking
+        self.recording_mode = self.hotkey_cfg.get("recording_mode", "toggle")
+        self.double_tap_to_lock = bool(self.hotkey_cfg.get("double_tap_to_lock", False))
+        self._last_dict_press_time = 0.0
+        self._hands_free_locked = False
+
         # Recovery, adaptive learning, and app rules
         from kural.control.app_rules import AppRules
         from kural.engine.adaptive import AdaptiveLearner
@@ -175,19 +181,53 @@ class KuralRuntime:
 
     def toggle_dictation(self) -> None:
         """Toggle dictation recording state on hotkey press."""
+        now = time.time()
         with self._state_lock:
+            # Check double-tap gesture to lock hands-free
+            if (
+                self.double_tap_to_lock
+                and (now - self._last_dict_press_time) < 0.45
+                and self.state == RuntimeState.RECORDING_DICTATION
+            ):
+                self._hands_free_locked = True
+                self._last_dict_press_time = 0.0
+                print("🔒 Hands-Free Dictation Locked (speak freely, tap hotkey to stop)")
+                return
+
+            self._last_dict_press_time = now
+
             if self.state == RuntimeState.IDLE:
                 self.state = RuntimeState.RECORDING_DICTATION
+                self._hands_free_locked = False
                 self.recorder.start_recording()
                 self.overlay.show_recording(is_command=False)
                 self.audio_feedback.play_start()
                 print("\n🎙️  Listening (Dictation Mode)...")
             elif self.state == RuntimeState.RECORDING_DICTATION:
+                self._hands_free_locked = False
                 self.state = RuntimeState.PROCESSING
                 self.overlay.show_processing()
                 self.audio_feedback.play_stop()
                 threading.Thread(
                     target=self._finish_recording, daemon=True, name="finish-dictation"
+                ).start()
+
+    def on_dictation_release(self) -> None:
+        """Handle key release for push-to-talk mode."""
+        if self.recording_mode != "push_to_talk":
+            return
+
+        with self._state_lock:
+            # If hands-free locked via double-tap, do not stop on key release
+            if self._hands_free_locked:
+                return
+
+            if self.state == RuntimeState.RECORDING_DICTATION:
+                self.state = RuntimeState.PROCESSING
+                self.overlay.show_processing()
+                self.audio_feedback.play_stop()
+                threading.Thread(
+                    target=self._finish_recording, daemon=True, name="finish-dictation-ptt"
                 ).start()
 
     def toggle_command(self) -> None:
@@ -341,8 +381,13 @@ class KuralRuntime:
             def _to_bindings(hk_str: str):
                 return hk_str.lower().split("+")
 
+            # In push-to-talk mode, bind on_dictation_release to key_up event
+            key_up_action = (
+                self.on_dictation_release if self.recording_mode == "push_to_talk" else None
+            )
+
             bindings = [
-                [_to_bindings(dict_key), None, self.toggle_dictation],
+                [_to_bindings(dict_key), key_up_action, self.toggle_dictation],
                 [_to_bindings(cmd_key), None, self.toggle_command],
             ]
 

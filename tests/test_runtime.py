@@ -70,3 +70,24 @@ class TestKuralRuntimeStateTransitions:
         self.runtime._process_audio(np.array([], dtype=np.float32))
         assert self.runtime.state == RuntimeState.IDLE
         self.runtime.engine.transcribe_audio.assert_not_called()
+
+    def test_push_to_talk_release_stops_recording(self):
+        self.runtime.recording_mode = "push_to_talk"
+        self.runtime.state = RuntimeState.RECORDING_DICTATION
+
+        with patch.object(self.runtime, "_finish_recording"):
+            self.runtime.on_dictation_release()
+            assert self.runtime.state == RuntimeState.PROCESSING
+
+    def test_double_tap_locks_hands_free(self):
+        self.runtime.double_tap_to_lock = True
+        self.runtime.state = RuntimeState.RECORDING_DICTATION
+        import time
+
+        self.runtime._last_dict_press_time = time.time()
+
+        # Second press within 450ms
+        self.runtime.toggle_dictation()
+        assert self.runtime._hands_free_locked is True
+        # State stays recording
+        assert self.runtime.state == RuntimeState.RECORDING_DICTATION

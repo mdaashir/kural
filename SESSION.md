@@ -1,31 +1,28 @@
 # SESSION.md
 
 ## Current milestone
-**Wispr Flow Experience: Smart Voice Rewrites & Text Transforms**
+**Wispr Flow Experience: Push-to-Talk & Hands-Free Double-Tap Lock**
 
 ## Current branch
-`feat/smart-voice-rewrites`
+`feat/push-to-talk-and-gestures`
 
 ## PR
 PR to be opened with gh after verification passes.
 
 ## Last completed step
-Implemented Wispr Flow smart voice editing and inline text transforms:
-- `kural/engine/transforms.py` (119 lines):
-  - Fast deterministic transforms: bullet lists (`• Item`), numbered lists (`1. Item`), title casing, uppercase, lowercase.
-  - Natural language AI rewrites via air-gapped `LocalLLMFallback` for instructions (*"translate to Tamil"*, *"summarize"*, *"make formal"*).
-- `kural/control/windows.py`: Added `get_selected_text()` to safely capture highlighted text across Windows applications via simulated copy with clipboard restoration.
-- `kural/control/parser.py`: Added voice transform triggers:
-  - *"make that a bullet list"*, *"bullet that"*, *"வரிசைப்படுத்து"*.
-  - *"title case that"*, *"தலைப்பாக்கு"*, *"uppercase that"*, *"பெரிய எழுத்தாக்கு"*.
-  - *"make that [instruction]"*, *"rephrase that [instruction]"*.
-- `kural/control/executor.py`: Wired `intent.kind == "transform"` to grab highlighted text (or fall back to the last dictation take in the ledger), execute the transform, and paste the rewritten text directly over the selection.
-- 8 new unit tests in `tests/engine/test_transforms.py` (351 total passing, 0 requiring GPU, mic, or network, ruff clean).
+Implemented Wispr Flow push-to-talk interactions and double-tap gestures:
+- `kural/runtime.py`:
+  - Push-to-Talk (PTT): listens for hotkey release event (`on_dictation_release()`) via `global_hotkeys` key-up hooks to stop recording the moment the user releases the keys.
+  - Double-Tap Hands-Free Lock: detects rapid successive hotkey presses (<450ms) to lock dictation open for long-form speech, ignoring key release until explicitly tapped again.
+- `kural/ui/settings_window.py`:
+  - Added "Interaction Mode" dropdown on the Hotkeys tab (`toggle` vs `push_to_talk`).
+  - Added `[x] Double-Tap to Lock Hands-Free` checkbox and wired it to `hotkey.double_tap_to_lock` config.
+- 2 new unit tests in `tests/test_runtime.py` covering PTT key release and double-tap hands-free lock transitions (353 total passing, 0 requiring GPU, mic, or network, ruff clean).
 
 ## Next step
-1. Push `feat/smart-voice-rewrites` and open PR into `main` with `gh pr create`.
+1. Push `feat/push-to-talk-and-gestures` and open PR into `main` with `gh pr create`.
 2. Wait for user to review and merge.
-3. Test highlighting text in any app and saying *"bullet that"* or *"make that title case"*!
+3. Test holding down `Ctrl+Space` while talking (PTT) or double-tapping to lock hands-free!
 
 ## Open questions
 - None.
@@ -43,7 +40,7 @@ Implemented Wispr Flow smart voice editing and inline text transforms:
 - Linter: `ruff` only. Reason: handles pycodestyle + isort + pyupgrade in one tool.
 - Sub-package layout: `engine/`, `control/`, `config/`, `ui/` as top-level siblings under `kural/`.
   Reason: clean separation of concerns; each milestone targets exactly one sub-package.
-- Smart Transforms: prioritizes instant deterministic transforms (bullets, casing) and falls back to local air-gapped LLM for complex instructions.
-  Reason: zero-latency for standard edits; full power of LLMs for creative rewriting.
-- Target fallback: if no text is actively highlighted on screen, transforms automatically operate on the user's last dictation take.
-  Reason: eliminates the need to manually select text if you just finished speaking.
+- PTT key-up binding: dynamically attaches release callback only when `recording_mode == "push_to_talk"`.
+  Reason: eliminates redundant release events in default toggle mode.
+- Gesture timing threshold: 450ms window for double-tap detection.
+  Reason: matches standard Windows and macOS double-click latency expectations.
