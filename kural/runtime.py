@@ -288,11 +288,16 @@ class KuralRuntime:
                     self.audio_feedback.play_error()
                     return
 
-                # 3. Apply learned corrections and style formatting
+                # 3. Apply learned corrections and Wispr Flow formatting
                 if getattr(self, "adaptive", None):
                     text = self.adaptive.apply_corrections(text)
 
                 style_name = (matched_rule.get("style") if matched_rule else None) or "formal"
+                is_verbatim = style_name == "verbatim"
+
+                from kural.engine.flow_formatting import apply_flow_formatting
+
+                text = apply_flow_formatting(text, is_verbatim=is_verbatim)
                 text = apply_formatting_style(text, style_name)
 
                 # 4. Expand inline text snippets
