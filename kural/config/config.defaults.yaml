@@ -153,6 +153,13 @@ overlay: # Floating visual status pill (Wispr-style screen edge overlay)
 system_tray: # Windows notification area / tray icon
     enabled: true
 
+audio_feedback: # Audible confirmation cues for recording start/stop/done
+    enabled: true
+    start_sound: "" # Custom .wav file path, or empty for native chime
+    stop_sound: ""
+    complete_sound: ""
+    error_sound: ""
+
 stats:
     typing_wpm: 40
 

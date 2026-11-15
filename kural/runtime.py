@@ -87,6 +87,18 @@ class KuralRuntime:
         # Command execution brain
         self.executor = CommandExecutor()
 
+        # Audible feedback cues
+        from kural.engine.audio_feedback import AudioFeedback
+
+        audio_fb_cfg = self.config_manager.config.get("audio_feedback") or {}
+        self.audio_feedback = AudioFeedback(
+            enabled=bool(audio_fb_cfg.get("enabled", True)),
+            start_sound=audio_fb_cfg.get("start_sound", ""),
+            stop_sound=audio_fb_cfg.get("stop_sound", ""),
+            complete_sound=audio_fb_cfg.get("complete_sound", ""),
+            error_sound=audio_fb_cfg.get("error_sound", ""),
+        )
+
         # Visual overlay (Tkinter pill) and optional system tray
         from kural.ui.overlay import LevelOverlay
         from kural.ui.tray import SystemTray
@@ -116,14 +128,9 @@ class KuralRuntime:
 
     def _current_mic_level(self) -> float:
         """Return the current microphone input level (0.0 - 1.0) for the overlay meter."""
-        recorder = getattr(self, "recorder", None)
-        if recorder is None:
-            return 0.0
-        getter = getattr(recorder, "get_current_level", None)
-        if getter is None:
-            return 0.0
+        rec = getattr(self, "recorder", None)
         try:
-            return float(getter() or 0.0)
+            return float(rec.get_current_level() if rec else 0.0)
         except Exception:
             return 0.0
 
@@ -148,10 +155,12 @@ class KuralRuntime:
                 self.state = RuntimeState.RECORDING_DICTATION
                 self.recorder.start_recording()
                 self.overlay.show_recording(is_command=False)
+                self.audio_feedback.play_start()
                 print("\n🎙️  Listening (Dictation Mode)...")
             elif self.state == RuntimeState.RECORDING_DICTATION:
                 self.state = RuntimeState.PROCESSING
                 self.overlay.show_processing()
+                self.audio_feedback.play_stop()
                 threading.Thread(
                     target=self._finish_recording, daemon=True, name="finish-dictation"
                 ).start()
@@ -163,10 +172,12 @@ class KuralRuntime:
                 self.state = RuntimeState.RECORDING_COMMAND
                 self.recorder.start_recording()
                 self.overlay.show_recording(is_command=True)
+                self.audio_feedback.play_start()
                 print("\n⚡ Listening (Command Mode)...")
             elif self.state == RuntimeState.RECORDING_COMMAND:
                 self.state = RuntimeState.PROCESSING
                 self.overlay.show_processing()
+                self.audio_feedback.play_stop()
                 threading.Thread(
                     target=self._finish_recording, daemon=True, name="finish-command"
                 ).start()
@@ -194,6 +205,7 @@ class KuralRuntime:
             print("⏳ Transcribing on GPU...")
             text = self.engine.transcribe_audio(audio_data)
             if not text:
+                self.audio_feedback.play_error()
                 return
 
             if prior_state == RuntimeState.RECORDING_COMMAND:
@@ -203,12 +215,15 @@ class KuralRuntime:
                 print(f"   {status_icon} {res.feedback}")
                 if res.success:
                     self.overlay.flash_success(res.feedback[:40])
+                    self.audio_feedback.play_complete()
                 else:
                     self.overlay.flash_error(res.feedback[:40])
+                    self.audio_feedback.play_error()
             else:
                 print(f"✍️  Typed: '{text}'")
                 insert_text_at_caret(text)
                 self.overlay.flash_success("Typed")
+                self.audio_feedback.play_complete()
 
         finally:
             with self._state_lock:
