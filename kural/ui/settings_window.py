@@ -21,6 +21,7 @@ DEVICES = ["cuda", "cpu"]
 COMPUTE_TYPES = ["float16", "int8"]
 LANGUAGES = ["en", "ta", "auto"]
 POSITIONS = ["bottom-center", "top-center", "bottom-right", "top-right"]
+RECORDING_MODES = ["toggle", "push_to_talk"]
 
 
 def open_folder(path: str) -> None:
@@ -65,6 +66,8 @@ class SettingsWindow:
         self.var_click_through = None
         self.var_fuzzy = None
         self.var_autostart = None
+        self.var_recording_mode = None
+        self.var_double_tap = None
 
     def show(self) -> None:
         """Construct and display the settings window (blocks until closed)."""
@@ -129,6 +132,12 @@ class SettingsWindow:
         self.var_cmd_hk = tk.StringVar(
             value=self.hotkey_cfg.get("command_hotkey", "ctrl+shift+space")
         )
+        self.var_recording_mode = tk.StringVar(
+            value=self.hotkey_cfg.get("recording_mode", "toggle")
+        )
+        self.var_double_tap = tk.BooleanVar(
+            value=bool(self.hotkey_cfg.get("double_tap_to_lock", False))
+        )
 
         self.var_overlay_enabled = tk.BooleanVar(value=bool(self.overlay_cfg.get("enabled", True)))
         self.var_overlay_pos = tk.StringVar(value=self.overlay_cfg.get("position", "bottom-center"))
@@ -181,6 +190,28 @@ class SettingsWindow:
             parent, text="Voice control (open/close apps, volume, snap windows)", font=("", 8)
         ).grid(row=3, column=1, sticky="w", padx=12, pady=(0, 10))
 
+        ttk.Label(parent, text="Interaction Mode:").grid(row=4, column=0, sticky="w", pady=8)
+        cb_mode = ttk.Combobox(
+            parent,
+            textvariable=self.var_recording_mode,
+            values=RECORDING_MODES,
+            state="readonly",
+            width=22,
+        )
+        cb_mode.grid(row=4, column=1, sticky="w", padx=12, pady=8)
+        ttk.Label(
+            parent,
+            text="toggle: tap to start/stop • push_to_talk: hold key while speaking",
+            font=("", 8),
+        ).grid(row=5, column=1, sticky="w", padx=12, pady=(0, 10))
+
+        c_lock = ttk.Checkbutton(
+            parent,
+            text="Double-Tap to Lock Hands-Free (speak at length)",
+            variable=self.var_double_tap,
+        )
+        c_lock.grid(row=6, column=0, columnspan=2, sticky="w", pady=6)
+
     def _build_ui_tab(self, parent, ttk) -> None:
         c1 = ttk.Checkbutton(
             parent, text="Enable Floating Status Pill", variable=self.var_overlay_enabled
@@ -231,6 +262,12 @@ class SettingsWindow:
                 "command_hotkey": self.var_cmd_hk.get().strip().lower()
                 if self.var_cmd_hk
                 else "ctrl+shift+space",
+                "recording_mode": self.var_recording_mode.get()
+                if self.var_recording_mode
+                else "toggle",
+                "double_tap_to_lock": bool(self.var_double_tap.get())
+                if self.var_double_tap
+                else False,
             },
             "overlay": {
                 "enabled": bool(self.var_overlay_enabled.get())
