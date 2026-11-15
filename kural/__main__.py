@@ -47,6 +47,11 @@ def main() -> None:
         help="Search dictation history (BM25 ranking), or show latest if no query given.",
     )
     parser.add_argument(
+        "--history-gui",
+        action="store_true",
+        help="Open the graphical history browser window.",
+    )
+    parser.add_argument(
         "--stats",
         action="store_true",
         help="Display productivity statistics (words, speaking WPM, time saved, streak).",
@@ -68,6 +73,12 @@ def main() -> None:
         from kural.ui.settings_window import open_settings_window
 
         open_settings_window()
+        return
+
+    if args.history_gui:
+        from kural.ui.history_window import open_history_window
+
+        open_history_window()
         return
 
     if args.dict_list:

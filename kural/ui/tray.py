@@ -21,12 +21,14 @@ class SystemTray:
         self,
         on_toggle_dictation: Callable[[], None] | None = None,
         on_toggle_command: Callable[[], None] | None = None,
+        on_open_history: Callable[[], None] | None = None,
         on_open_settings: Callable[[], None] | None = None,
         on_exit: Callable[[], None] | None = None,
         enabled: bool = True,
     ):
         self.on_toggle_dictation = on_toggle_dictation
         self.on_toggle_command = on_toggle_command
+        self.on_open_history = on_open_history
         self.on_open_settings = on_open_settings
         self.on_exit = on_exit
         self.enabled = enabled
@@ -100,6 +102,10 @@ class SystemTray:
                     lambda icon, item: self.on_toggle_command() if self.on_toggle_command else None,
                 ),
                 pystray.Menu.SEPARATOR,
+                pystray.MenuItem(
+                    "History...",
+                    lambda icon, item: self.on_open_history() if self.on_open_history else None,
+                ),
                 pystray.MenuItem(
                     "Settings...",
                     lambda icon, item: self.on_open_settings() if self.on_open_settings else None,

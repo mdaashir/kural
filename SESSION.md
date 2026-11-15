@@ -1,30 +1,31 @@
 # SESSION.md
 
 ## Current milestone
-**Post-M5: History Search & Productivity Stats**
+**Post-M5: Graphical History Window**
 
 ## Current branch
-`feat/history-and-stats`
+`feat/history-window-gui`
 
 ## PR
 PR to be opened with gh after verification passes.
 
 ## Last completed step
-Implemented dictation history logging, BM25 full-text search, and productivity stats:
-- `kural/engine/history.py` (188 lines):
-  - Local JSONL logging to `%APPDATA%\kural\history.jsonl` recording text, task (`transcribe`/`command`), duration, app, and timestamp.
-  - Dependency-free BM25 full-text ranking over historical dictations with prefix scoring.
-  - `compute_stats()`: calculates total words dictated, speaking speed in WPM, time saved vs manual typing, active daily streak, and top apps.
-- `kural/__main__.py`: Added CLI commands:
-  - `python -m kural --history [query]`: searches past dictations using BM25 ranking.
-  - `python -m kural --stats`: displays productivity statistics and streak.
-- `kural/runtime.py`: Automatically appends completed dictations and commands to `history.jsonl`.
-- 5 new unit tests in `tests/engine/test_history.py` (301 total passing, 0 requiring GPU, mic, or network, ruff clean).
+Implemented searchable graphical history browser:
+- `kural/ui/history_window.py` (282 lines):
+  - Self-contained Tkinter dialog matching Kural's dark theme palette (`#0d1117`).
+  - Search bar with live search-as-you-type querying `search_history()` (BM25 ranking).
+  - Treeview displaying timestamps, task tag (`transcribe` vs `command`), foreground app, and transcribed text.
+  - Double-click and "Copy Selected" button for one-click clipboard copying.
+  - Singleton guard to ensure re-opening raises and focuses the existing window rather than stacking multiple instances.
+- `kural/ui/tray.py`: Added `on_open_history` callback and `"History..."` tray menu item.
+- `kural/runtime.py`: Connected tray `"History..."` to `open_history_window()`.
+- `kural/__main__.py`: Added `--history-gui` CLI flag to launch the history window directly.
+- 6 new unit tests in `tests/ui/test_history_window.py` + updated `tests/ui/test_tray.py` (307 total passing, 0 requiring GPU, mic, or network, ruff clean).
 
 ## Next step
-1. Push `feat/history-and-stats` and open PR into `main` with `gh pr create`.
+1. Push `feat/history-window-gui` and open PR into `main` with `gh pr create`.
 2. Wait for user to review and merge.
-3. Review your personal dictation history and metrics live via `python -m kural --stats`!
+3. Test browsing past dictations graphically via `python -m kural --history-gui`!
 
 ## Open questions
 - None.
@@ -42,7 +43,7 @@ Implemented dictation history logging, BM25 full-text search, and productivity s
 - Linter: `ruff` only. Reason: handles pycodestyle + isort + pyupgrade in one tool.
 - Sub-package layout: `engine/`, `control/`, `config/`, `ui/` as top-level siblings under `kural/`.
   Reason: clean separation of concerns; each milestone targets exactly one sub-package.
-- History storage: local `%APPDATA%\kural\history.jsonl`, strictly private with zero cloud telemetry.
-  Reason: complies with core principles in AGENTS.md.
-- Search algorithm: pure BM25 full-text ranking without third-party search dependencies.
-  Reason: lightweight, lightning-fast ranking over thousands of speech records.
+- Graphical History Browser: pure Tkinter without heavy external GUI frameworks.
+  Reason: native, instant startup, lightweight, and works seamlessly with dark Windows 11 desktop theme.
+- Singleton window guard: only one instance of the History Window exists at a time; subsequent triggers lift and focus the window.
+  Reason: prevents clutter and memory leaks from multiple open windows.
