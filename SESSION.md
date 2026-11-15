@@ -1,28 +1,31 @@
 # SESSION.md
 
 ## Current milestone
-**Post-M5: Visual Overlay & System Tray** (desktop polish)
+**Post-M5: Settings UI Window** (desktop configuration)
 
 ## Current branch
-`feat/system-tray-and-overlay`
+`feat/settings-ui`
 
 ## PR
 PR to be opened with gh after verification passes.
 
 ## Last completed step
-Added the desktop visual surface to Kural:
-- `kural/ui/overlay.py` (239 lines): Floating, always-on-top, click-through Tkinter status pill showing live microphone level while recording, a processing indicator while transcribing, and green/red success/failure flashes. Runs on its own daemon thread with a thread-safe command queue.
-- `kural/ui/tray.py` (111 lines): Optional Windows notification area icon via `pystray` with a context menu (Dictate, Voice Command, Exit). Gracefully degrades to a no-op when `pystray`/`Pillow` are absent.
-- `kural/runtime.py`: Wires the overlay and tray into the state machine, so pressing `ctrl+space` or `ctrl+shift+space` immediately shows the pill.
-- `kural/config/config.defaults.yaml`: Added `overlay` (enabled, position, click_through) and `system_tray` (enabled) configuration blocks.
-- `pyproject.toml`: Split dependencies into `runtime`, `tray`, and `vad` optional extras so the core package stays installable on a bare Python.
-- `kural/doctor.py`: Reports the new optional dependencies.
-- 15 new unit tests in `tests/ui/test_overlay.py` and `tests/ui/test_tray.py` (248 total passing, 0 requiring GPU, mic, or network, ruff clean).
+Built the desktop Settings UI window:
+- `kural/ui/settings_window.py` (268 lines): Tkinter notebook dialog with 3 tabs:
+  - **Speech Engine**: Whisper model (`large-v3-turbo`, `distil-large-v3.5`, `large-v3`, etc.), device, compute precision, default language (`en`, `ta`, `auto`), and idle VRAM unload timeout (minutes).
+  - **Hotkeys**: Dictation hotkey and Voice Command hotkey configuration.
+  - **Overlay & Control**: Toggle status pill, overlay position dropdown, click-through toggle, and fuzzy command matching.
+  - **Action bar**: Save (writes overrides to `%APPDATA%\kural\user_settings.yaml`), Cancel, and "Open Config Folder".
+- `kural/__main__.py`: Added `--settings` CLI flag to launch the Settings window.
+- `kural/ui/tray.py`: Added "Settings..." item to the notification area context menu.
+- `kural/ui/__init__.py`: Exported `SettingsWindow` and `open_settings_window`.
+- `kural/runtime.py`: Wired `open_settings()` callback to tray icon.
+- 6 new unit tests in `tests/ui/test_settings.py` (254 total passing, 0 requiring GPU, mic, or network, ruff clean).
 
 ## Next step
-1. Push `feat/system-tray-and-overlay` and open PR into `main` with `gh pr create`.
+1. Push `feat/settings-ui` and open PR into `main` with `gh pr create`.
 2. Wait for user to review and merge.
-3. After merge: install the `runtime` extras on this machine and do the first real end-to-end dictation test in Notepad.
+3. After merge: run `python -m kural --settings` on the real machine to visually inspect the window.
 
 ## Open questions
 - None.
@@ -40,7 +43,7 @@ Added the desktop visual surface to Kural:
 - Linter: `ruff` only. Reason: handles pycodestyle + isort + pyupgrade in one tool.
 - Sub-package layout: `engine/`, `control/`, `config/`, `ui/` as top-level siblings under `kural/`.
   Reason: clean separation of concerns; each milestone targets exactly one sub-package.
-- Overlay uses only Python's built-in Tkinter (no new dependency) and is click-through on Windows
-  via `WS_EX_TRANSPARENT | WS_EX_LAYERED`. Reason: zero-dependency visual feedback.
-- Tray icon and audio runtime are optional extras, never hard dependencies.
-  Reason: keeps `pip install kural` lightweight and lets the library run headless on CI.
+- Settings window is built with standard Tkinter (zero external dependencies) and only writes
+  user-modified overrides to `%APPDATA%\kural\user_settings.yaml` via `ConfigManager`.
+- Testability: Settings extraction and saving logic is separated from Tk widget calls so unit tests
+  run cleanly on headless environments without a display server.
