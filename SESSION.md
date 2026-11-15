@@ -1,32 +1,33 @@
 # SESSION.md
 
 ## Current milestone
-**Post-M5: Snippets & Never-Lose-a-Dictation Recovery**
+**Post-M5: Application Rules & Formatting Styles**
 
 ## Current branch
-`feat/snippets-and-recovery`
+`feat/app-rules-and-styles`
 
 ## PR
 PR to be opened with gh after verification passes.
 
 ## Last completed step
-Built text snippets and never-lose-a-dictation recovery subsystems:
-- `kural/engine/recovery.py` (174 lines):
-  - `LastTake`: Encrypts raw 16 kHz audio on disk using Windows Data Protection API (DPAPI `CryptProtectData`). Only the current Windows user account can decrypt it. Automatically expires after 24 hours. Enables retrying a failed or interrupted dictation without speaking again.
-  - `Ledger`: Ephemeral in-memory store of the last successfully inserted text.
-- `kural/engine/snippets.py` (94 lines):
-  - Spoken shortcuts expanding inline during dictation (e.g. *"today's date"* -> `2026-11-15`).
-  - Supports dynamic variable interpolation (`${date}`, `${time}`, `${clipboard}`). Matches longest triggers first.
-- `kural/control/parser.py`: Added voice commands for recovery:
-  - *"paste last dictation"*, *"paste that again"*, *"கடைசி உரையை தட்டச்சு செய்"* -> calls `ledger.last()` and pastes at caret.
-  - *"retry last take"*, *"retry last dictation"*, *"கடைசி பதிவை மீண்டும் செய்"* -> re-transcribes the cached take.
-- `kural/runtime.py`: Integrates `LastTake`, `Ledger`, and `apply_snippets` into the dictation pipeline.
-- 13 new unit tests in `tests/engine/test_recovery.py` and `tests/engine/test_snippets.py` (278 total passing, 0 requiring GPU, mic, or network, ruff clean).
+Implemented per-application formatting styles and delivery rules:
+- `kural/config/app_rules.defaults.yaml` (68 lines): Shipped default rules covering:
+  - `password-managers`: (`1password`, `bitwarden`, `keepass`, `lastpass`) -> `suppress: true` to prevent dictation into password fields.
+  - `terminals`: (`wt.exe`, `cmd.exe`, `powershell.exe`, `pwsh.exe`) -> `style: verbatim`.
+  - `code-editors`: (`code.exe`, `cursor.exe`, `windsurf.exe`, `pycharm`) -> `style: verbatim`.
+  - `chat-apps`: (`slack`, `discord`, `whatsapp`, `teams`) -> `style: casual`.
+  - `email-and-docs`: (`outlook`, `thunderbird`, `winword.exe`, `gmail`) -> `style: formal`.
+- `kural/control/app_rules.py` (150 lines): Evaluates foreground window `(exe, title)` against layered rules (`%APPDATA%\kural\app_rules.yaml` over shipped defaults), and provides `apply_formatting_style()` (`formal`, `casual`, `verbatim`).
+- `kural/control/windows.py`: Added `get_foreground_window_info()` to capture active app metadata cleanly.
+- `kural/runtime.py`: Integrated app rules into the dictation loop before text insertion:
+  - Checks if delivery is suppressed (password managers).
+  - Applies contextual formatting style (`verbatim` vs `formal` vs `casual`).
+- 9 new unit tests in `tests/control/test_app_rules.py` (287 total passing, 0 requiring GPU, mic, or network, ruff clean).
 
 ## Next step
-1. Push `feat/snippets-and-recovery` and open PR into `main` with `gh pr create`.
+1. Push `feat/app-rules-and-styles` and open PR into `main` with `gh pr create`.
 2. Wait for user to review and merge.
-3. Test inline snippets (*"today's date"*) and *"paste last dictation"* live!
+3. Test dictation in VS Code (verbatim) vs Outlook/Word (formal) live!
 
 ## Open questions
 - None.
@@ -44,7 +45,7 @@ Built text snippets and never-lose-a-dictation recovery subsystems:
 - Linter: `ruff` only. Reason: handles pycodestyle + isort + pyupgrade in one tool.
 - Sub-package layout: `engine/`, `control/`, `config/`, `ui/` as top-level siblings under `kural/`.
   Reason: clean separation of concerns; each milestone targets exactly one sub-package.
-- Retained audio security: single-take raw audio is encrypted via Windows DPAPI `CryptProtectData`.
-  Reason: strictly conforms to AGENTS.md privacy requirement ("Retained audio only DPAPI-encrypted, one take, short expiry").
-- Text snippets: applied inline before caret insertion without requiring a separate hotkey.
-  Reason: natural dictation shortcuts for dates, signatures, and clipboard text.
+- Password managers: delivery is explicitly suppressed when a password manager is the foreground window.
+  Reason: critical security protection preventing speech from leaking into credentials fields.
+- Contextual formatting: terminals and code editors receive raw verbatim text; chat apps receive casual text; documents receive formal full sentences.
+  Reason: eliminates manual punctuation cleanup across different types of applications.

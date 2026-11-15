@@ -1,0 +1,68 @@
+# =============================================================================
+# KURAL - DEFAULT APPLICATION RULES & FORMATTING STYLES
+# =============================================================================
+# When a dictation is about to be delivered, the foreground window is inspected.
+# If its executable name OR window title matches any string in "match", the rule
+# applies and customizes formatting and delivery behavior.
+#
+# Supported overrides:
+#   suppress:   true | false   - skip text delivery entirely (e.g. password managers)
+#   style:      verbatim | casual | formal
+#   auto_send:  true | false   - press ENTER after delivery (e.g. chat apps)
+
+rules:
+  # Password managers: never deliver speech into password fields (security protection)
+  - id: password-managers
+    match:
+      - "1password"
+      - "bitwarden"
+      - "keepass"
+      - "lastpass"
+      - "dashlane"
+    suppress: true
+
+  # Command lines and terminals: format verbatim without prose punctuation
+  - id: terminals
+    match:
+      - "wt.exe"
+      - "windowsterminal.exe"
+      - "cmd.exe"
+      - "powershell.exe"
+      - "pwsh.exe"
+      - "conhost.exe"
+      - "alacritty.exe"
+      - "wezterm"
+    style: verbatim
+
+  # Code editors: identifiers and paths, no auto-capitalization or trailing period
+  - id: code-editors
+    match:
+      - "code.exe"
+      - "cursor.exe"
+      - "windsurf.exe"
+      - "pycharm"
+      - "idea64"
+      - "sublime_text"
+      - "notepad++.exe"
+    style: verbatim
+
+  # Chat apps: casual formatting, keep natural phrasing
+  - id: chat-apps
+    match:
+      - "slack"
+      - "discord"
+      - "whatsapp"
+      - "teams"
+      - "telegram"
+    style: casual
+
+  # Documents and email: formal full sentences with capitalization
+  - id: email-and-docs
+    match:
+      - "outlook"
+      - "thunderbird"
+      - "winword.exe"
+      - "word.exe"
+      - "gmail"
+      - "docs.google.com"
+    style: formal

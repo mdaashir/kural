@@ -83,6 +83,7 @@ class KuralRuntime:
         )
 
         # Recovery and snippets
+        from kural.control.app_rules import AppRules
         from kural.engine.recovery import LastTake, Ledger
         from kural.engine.utils import get_user_app_data_path
 
@@ -90,6 +91,7 @@ class KuralRuntime:
         max_age_s = float(recovery_cfg.get("max_age_hours", 24)) * 3600
         self.last_take = LastTake(storage_dir=get_user_app_data_path(), max_age_s=max_age_s)
         self.ledger = Ledger()
+        self.app_rules = AppRules()
 
         # Command execution brain with ledger
         self.executor = CommandExecutor(ledger=self.ledger)
@@ -236,11 +238,37 @@ class KuralRuntime:
                     self.overlay.flash_error(res.feedback[:40])
                     self.audio_feedback.play_error()
             else:
+                from kural.control.app_rules import apply_formatting_style
+                from kural.control.windows import get_foreground_window_info
                 from kural.engine.snippets import apply_snippets
 
+                # 1. Match foreground app rule
+                fg_info = get_foreground_window_info()
+                matched_rule = (
+                    self.app_rules.match_rule(
+                        exe=fg_info.exe if fg_info else "",
+                        title=fg_info.title if fg_info else "",
+                    )
+                    if fg_info
+                    else None
+                )
+
+                # 2. Check if delivery is suppressed (e.g. password managers)
+                if matched_rule and matched_rule.get("suppress", False):
+                    print(f"🔒 Delivery suppressed by app rule ({matched_rule.get('id', 'rule')})")
+                    self.overlay.flash_error("Suppressed (Password Field)")
+                    self.audio_feedback.play_error()
+                    return
+
+                # 3. Apply style formatting (verbatim, formal, casual)
+                style_name = (matched_rule.get("style") if matched_rule else None) or "formal"
+                text = apply_formatting_style(text, style_name)
+
+                # 4. Expand inline text snippets
                 snippets_cfg = self.config_manager.get_postprocess_config().get("snippets") or []
                 text = apply_snippets(text, snippets_cfg)
-                print(f"✍️  Typed: '{text}'")
+
+                print(f"✍️  Typed ({style_name}): '{text}'")
                 insert_text_at_caret(text)
                 if getattr(self, "ledger", None):
                     self.ledger.record(text)

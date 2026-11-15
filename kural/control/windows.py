@@ -260,6 +260,43 @@ def is_window_elevated(hwnd: int) -> bool:
     return elevated
 
 
+def get_foreground_window_info() -> WindowInfo | None:
+    """Get the title and executable name of the current foreground window."""
+    if sys.platform != "win32":
+        return None
+
+    import ctypes
+    import ctypes.wintypes as wintypes
+
+    user32 = ctypes.windll.user32
+    kernel32 = ctypes.windll.kernel32
+
+    hwnd = user32.GetForegroundWindow()
+    if not hwnd:
+        return None
+
+    length = user32.GetWindowTextLengthW(hwnd)
+    title = ""
+    if length > 0:
+        buf = ctypes.create_unicode_buffer(length + 1)
+        user32.GetWindowTextW(hwnd, buf, length + 1)
+        title = buf.value.strip()
+
+    pid = wintypes.DWORD()
+    user32.GetWindowThreadProcessId(hwnd, ctypes.byref(pid))
+    exe = ""
+    if pid.value:
+        h_proc = kernel32.OpenProcess(0x1000, False, pid.value)
+        if h_proc:
+            size = wintypes.DWORD(260)
+            path_buf = ctypes.create_unicode_buffer(260)
+            if kernel32.QueryFullProcessImageNameW(h_proc, 0, path_buf, ctypes.byref(size)):
+                exe = os.path.basename(path_buf.value)
+            kernel32.CloseHandle(h_proc)
+
+    return WindowInfo(hwnd=hwnd, title=title, exe=exe)
+
+
 def check_foreground_elevation() -> tuple[bool, str]:
     """Check if the current foreground window is elevated, returning (is_elevated, warning_message)."""
     if sys.platform != "win32":
