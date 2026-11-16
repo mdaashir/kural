@@ -1,32 +1,31 @@
 # SESSION.md
 
 ## Current milestone
-**Voice Notes & Obsidian Vault Quick-Capture**
+**Wispr Flow Experience: Live Partial Streaming Preview in Pill**
 
 ## Current branch
-`feat/obsidian-voice-notes`
+`feat/live-partial-preview`
 
 ## PR
 PR to be opened with gh after verification passes.
 
 ## Last completed step
-Implemented voice notes quick-capture to Obsidian / daily Markdown journal:
-- `kural/engine/notes.py` (80 lines):
-  - Formatted daily voice log appending entries to `YYYY-MM-DD.md`.
-  - Creates frontmatter on new days (`tags: [kural, voice-note]`) and appends timestamped bullets (`- **14:30** Thought content.`).
-  - Strict sandboxing: prevents path traversal outside the configured vault folder via `os.path.commonpath`.
-  - Defaults to `Documents/Kural Notes/` if no Obsidian vault path is configured.
-- `kural/control/parser.py`: Added voice capture triggers:
-  - *"note [text]"*, *"take a note [text]"*, *"quick note [text]"*.
-  - Tamil: *"குறிப்பு [text]"*, *"நோட் பண்ணு [text]"*, *"note பண்ணு [text]"*.
-- `kural/control/executor.py`: Wired `kind == "note"` to `save_voice_note()` and returned feedback confirmation.
-- `kural/config/config.defaults.yaml` & `kural/ui/settings_window.py`: Added `notes.vault_path` configuration and UI input box.
-- 5 new unit tests in `tests/engine/test_notes.py` (371 total passing, 0 requiring GPU, mic, or network, ruff clean).
+Implemented live partial speech transcription and UI preview:
+- `kural/engine/streaming.py` (91 lines):
+  - `StreamingTranscriber`: runs a lightweight daemon loop taking periodic non-destructive snapshots of the growing audio buffer (`get_audio_data()`).
+  - Gated emission: only transcribes when buffer has grown by at least 0.3s of fresh audio, avoiding redundant passes on unchanged audio.
+  - Emits live interim phrases to `on_partial(text)` callback.
+- `kural/ui/overlay.py`:
+  - Added `update_partial_text(text)`: displays live speech words directly inside the floating soundwave pill as the user is speaking.
+- `kural/runtime.py`:
+  - Starts `StreamingTranscriber` when recording begins; stops it upon recording completion.
+  - Pipes interim words directly into `overlay.update_partial_text()`.
+- 3 new unit tests in `tests/engine/test_streaming.py` (374 total passing, 0 requiring GPU, mic, or network, ruff clean).
 
 ## Next step
-1. Push `feat/obsidian-voice-notes` and open PR into `main` with `gh pr create`.
+1. Push `feat/live-partial-preview` and open PR into `main` with `gh pr create`.
 2. Wait for user to review and merge.
-3. Test saying *"Take a note: Prepare quarterly speech recognition benchmark"*!
+3. Test speaking live to see interim words stream inside the animated waveform pill!
 
 ## Open questions
 - None.
@@ -44,7 +43,5 @@ Implemented voice notes quick-capture to Obsidian / daily Markdown journal:
 - Linter: `ruff` only. Reason: handles pycodestyle + isort + pyupgrade in one tool.
 - Sub-package layout: `engine/`, `control/`, `config/`, `ui/` as top-level siblings under `kural/`.
   Reason: clean separation of concerns; each milestone targets exactly one sub-package.
-- Obsidian sandboxing: paths are validated via `_is_within_folder()` using `os.path.commonpath`.
-  Reason: guarantees voice commands cannot write outside the designated vault or notes folder.
-- Fallback location: defaults to `%USERPROFILE%\Documents\Kural Notes` if no Obsidian vault path is given.
-  Reason: works out-of-the-box even for users without Obsidian installed.
+- Live partials: preview words only update the floating pill display; final authoritative batch transcription, flow disfluency cleanup, and caret typing run on the full buffer upon stop.
+  Reason: gives instant visual reassurance without risking premature or unstable typing into the document.
