@@ -99,6 +99,26 @@ class LevelOverlay:
         """Show the overlay pill in transcribing/processing mode."""
         self._dispatch(lambda: self._set_mode("processing"))
 
+    def update_partial_text(self, text: str) -> None:
+        """Update the pill label with live partial transcription words."""
+        if not text:
+            return
+
+        def _update():
+            if (
+                not self._canvas
+                or not self._text_item
+                or self._mode not in ("dictation", "command")
+            ):
+                return
+            # Truncate text nicely to fit in pill
+            display = text.strip()
+            if len(display) > 24:
+                display = "..." + display[-22:]
+            self._canvas.itemconfig(self._text_item, text=display, fill=self.TEXT_COLOR)
+
+        self._dispatch(_update)
+
     def flash_success(self, message: str = "Done") -> None:
         """Flash green success status and hide."""
         self._dispatch(lambda: self._flash(self.LEVEL_COLOR, f"✓ {message}"))
