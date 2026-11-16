@@ -144,6 +144,70 @@ def parse_command(phrase: str) -> CommandIntent | None:
         return CommandIntent(kind="volume", action="up", target="10", raw_text=phrase)
 
     # 3. Smart voice transforms / text rewrites (Wispr Flow style)
+    # Check "replace X with Y" / "swap X for Y"
+    if re.match(
+        r"^(?:please\s+)?(?:replace|change|swap)\s+.+?\s+(?:with|to|for|into)\s+.+$",
+        t,
+        re.IGNORECASE,
+    ):
+        return CommandIntent(kind="transform", action="rewrite", target=phrase, raw_text=phrase)
+
+    # Check wrappers and code blocks
+    if t in ("wrap that in quotes", "wrap in quotes", "put in quotes", "quote that", "மேற்கோள் காட்டு"):
+        return CommandIntent(kind="transform", action="rewrite", target="quotes", raw_text=phrase)
+
+    if t in ("put in backticks", "wrap in backticks", "backtick that", "inline code"):
+        return CommandIntent(
+            kind="transform", action="rewrite", target="backticks", raw_text=phrase
+        )
+
+    if t in ("make that a code block", "code block that", "put in code block"):
+        return CommandIntent(
+            kind="transform", action="rewrite", target="code block", raw_text=phrase
+        )
+
+    if t in ("wrap in parentheses", "put in parentheses", "brackets"):
+        return CommandIntent(
+            kind="transform", action="rewrite", target="parentheses", raw_text=phrase
+        )
+
+    # Developer casing
+    if t in ("make that camel case", "camelcase that", "camel case"):
+        return CommandIntent(
+            kind="transform", action="rewrite", target="camelcase", raw_text=phrase
+        )
+
+    if t in ("make that snake case", "snakecase that", "snake case"):
+        return CommandIntent(
+            kind="transform", action="rewrite", target="snakecase", raw_text=phrase
+        )
+
+    if t in ("make that kebab case", "kebabcase that", "kebab case"):
+        return CommandIntent(
+            kind="transform", action="rewrite", target="kebabcase", raw_text=phrase
+        )
+
+    if t in ("make that pascal case", "pascalcase that", "pascal case"):
+        return CommandIntent(
+            kind="transform", action="rewrite", target="pascalcase", raw_text=phrase
+        )
+
+    # Structural edits
+    if t in ("sort these lines", "sort lines", "sort this list", "alphabetize", "வரிசைப்படுத்து"):
+        return CommandIntent(
+            kind="transform", action="rewrite", target="sort lines", raw_text=phrase
+        )
+
+    if t in ("join these lines", "join lines", "make single paragraph", "one paragraph"):
+        return CommandIntent(
+            kind="transform", action="rewrite", target="join lines", raw_text=phrase
+        )
+
+    if t in ("delete last sentence", "remove last sentence"):
+        return CommandIntent(
+            kind="transform", action="rewrite", target="delete last sentence", raw_text=phrase
+        )
+
     m_transform = re.match(
         r"^(?:make\s+(?:that|this)\s+(?:a\s+)?|transform\s+(?:that|this)\s+(?:to\s+)?|rephrase\s+(?:that|this)\s+(?:to\s+)?)(.+)$",
         t,
@@ -159,7 +223,6 @@ def parse_command(phrase: str) -> CommandIntent | None:
         "make that bullets",
         "bulletize",
         "bullet list",
-        "வரிசைப்படுத்து",
     ):
         return CommandIntent(kind="transform", action="rewrite", target="bullets", raw_text=phrase)
 
