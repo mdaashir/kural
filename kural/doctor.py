@@ -222,6 +222,16 @@ def _section_config() -> int:
 
         lang = whisper_cfg.get("language", "en")
         Check("Language").info(f"{lang}").print()
+
+        # Schema & integrity validation
+        from kural.config.configcheck import validate_config
+
+        _, issues = validate_config(cfg.config)
+        if not issues:
+            Check("Config integrity").ok("All settings valid").print()
+        else:
+            for issue in issues[:3]:
+                Check("Config integrity").warn(issue).print()
     except Exception as e:
         Check("ConfigManager").fail(str(e)).print()
         failures += 1
