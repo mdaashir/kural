@@ -88,6 +88,15 @@ class KuralRuntime:
         self._last_dict_press_time = 0.0
         self._hands_free_locked = False
 
+        # Live partial streaming preview
+        from kural.engine.streaming import StreamingTranscriber
+
+        self.streaming = StreamingTranscriber(
+            audio_source=self.recorder,
+            engine=self.engine,
+            on_partial=self._on_live_partial,
+        )
+
         # Recovery, adaptive learning, and app rules
         from kural.control.app_rules import AppRules
         from kural.engine.adaptive import AdaptiveLearner
@@ -179,6 +188,11 @@ class KuralRuntime:
         """Handle max duration reached."""
         self._process_audio(audio_data)
 
+    def _on_live_partial(self, partial_text: str) -> None:
+        """Receive live partial interim text and update the floating pill."""
+        if self.state in (RuntimeState.RECORDING_DICTATION, RuntimeState.RECORDING_COMMAND):
+            self.overlay.update_partial_text(partial_text)
+
     def toggle_dictation(self) -> None:
         """Toggle dictation recording state on hotkey press."""
         now = time.time()
@@ -200,12 +214,16 @@ class KuralRuntime:
                 self.state = RuntimeState.RECORDING_DICTATION
                 self._hands_free_locked = False
                 self.recorder.start_recording()
+                if getattr(self, "streaming", None):
+                    self.streaming.start()
                 self.overlay.show_recording(is_command=False)
                 self.audio_feedback.play_start()
                 print("\n🎙️  Listening (Dictation Mode)...")
             elif self.state == RuntimeState.RECORDING_DICTATION:
                 self._hands_free_locked = False
                 self.state = RuntimeState.PROCESSING
+                if getattr(self, "streaming", None):
+                    self.streaming.stop()
                 self.overlay.show_processing()
                 self.audio_feedback.play_stop()
                 threading.Thread(
@@ -224,6 +242,8 @@ class KuralRuntime:
 
             if self.state == RuntimeState.RECORDING_DICTATION:
                 self.state = RuntimeState.PROCESSING
+                if getattr(self, "streaming", None):
+                    self.streaming.stop()
                 self.overlay.show_processing()
                 self.audio_feedback.play_stop()
                 threading.Thread(
@@ -252,6 +272,8 @@ class KuralRuntime:
         with self._state_lock:
             if self.state in (RuntimeState.RECORDING_DICTATION, RuntimeState.RECORDING_COMMAND):
                 self.state = RuntimeState.PROCESSING
+                if getattr(self, "streaming", None):
+                    self.streaming.stop()
                 threading.Thread(
                     target=self._finish_recording, daemon=True, name="finish-recording"
                 ).start()
