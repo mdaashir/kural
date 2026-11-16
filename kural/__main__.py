@@ -94,6 +94,11 @@ def main() -> None:
         help="Port to bind local server to (default: 7777).",
     )
     parser.add_argument(
+        "--config-check",
+        action="store_true",
+        help="Audit configuration integrity and check for invalid or out-of-bounds keys.",
+    )
+    parser.add_argument(
         "--version",
         action="version",
         version=f"%(prog)s {get_version()}",
@@ -105,6 +110,21 @@ def main() -> None:
         from kural.doctor import run_doctor
 
         sys.exit(run_doctor())
+
+    if args.config_check:
+        from kural.config import ConfigManager
+        from kural.config.configcheck import validate_config
+
+        cm = ConfigManager(quiet=True)
+        _, issues = validate_config(cm.config)
+        print("Kural Configuration Audit:")
+        if not issues:
+            print("  ✓ All configuration keys and values are valid.")
+        else:
+            print(f"  ⚠️  Found {len(issues)} anomaly/anomalies:")
+            for issue in issues:
+                print(f"    • {issue}")
+        return
 
     if args.settings:
         from kural.ui.settings_window import open_settings_window
