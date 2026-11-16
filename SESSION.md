@@ -1,31 +1,30 @@
 # SESSION.md
 
 ## Current milestone
-**Wispr Flow Experience: Live Partial Streaming Preview in Pill**
+**Configuration Integrity Validator & Auto-Healing Engine**
 
 ## Current branch
-`feat/live-partial-preview`
+`feat/config-validator`
 
 ## PR
 PR to be opened with gh after verification passes.
 
 ## Last completed step
-Implemented live partial speech transcription and UI preview:
-- `kural/engine/streaming.py` (91 lines):
-  - `StreamingTranscriber`: runs a lightweight daemon loop taking periodic non-destructive snapshots of the growing audio buffer (`get_audio_data()`).
-  - Gated emission: only transcribes when buffer has grown by at least 0.3s of fresh audio, avoiding redundant passes on unchanged audio.
-  - Emits live interim phrases to `on_partial(text)` callback.
-- `kural/ui/overlay.py`:
-  - Added `update_partial_text(text)`: displays live speech words directly inside the floating soundwave pill as the user is speaking.
-- `kural/runtime.py`:
-  - Starts `StreamingTranscriber` when recording begins; stops it upon recording completion.
-  - Pipes interim words directly into `overlay.update_partial_text()`.
-- 3 new unit tests in `tests/engine/test_streaming.py` (374 total passing, 0 requiring GPU, mic, or network, ruff clean).
+Implemented configuration schema validation and auto-healing:
+- `kural/config/configcheck.py` (145 lines):
+  - Validates user settings across all configuration sections (`whisper`, `hotkey`, `overlay`, `audio`, `notes`).
+  - Clamps out-of-range numeric values (e.g. `beam_size` clamped to [1, 10], `max_duration` clamped to [5, 300], non-negative idle timeouts).
+  - Falls back gracefully to verified defaults for invalid devices, compute types, or recording modes.
+  - Warns about non-existent Obsidian vault paths without breaking execution.
+  - Never raises unhandled exceptions and never mutates input dictionaries directly.
+- `kural/doctor.py`: Added configuration integrity verification to the doctor diagnostic suite (`[OK] Config integrity  All settings valid`).
+- `kural/__main__.py`: Added `--config-check` CLI command for instant integrity audits.
+- 7 new unit tests in `tests/config/test_configcheck.py` (381 total passing, 0 requiring GPU, mic, or network, ruff clean).
 
 ## Next step
-1. Push `feat/live-partial-preview` and open PR into `main` with `gh pr create`.
+1. Push `feat/config-validator` and open PR into `main` with `gh pr create`.
 2. Wait for user to review and merge.
-3. Test speaking live to see interim words stream inside the animated waveform pill!
+3. Run `python -m kural --config-check` live!
 
 ## Open questions
 - None.
@@ -43,5 +42,5 @@ Implemented live partial speech transcription and UI preview:
 - Linter: `ruff` only. Reason: handles pycodestyle + isort + pyupgrade in one tool.
 - Sub-package layout: `engine/`, `control/`, `config/`, `ui/` as top-level siblings under `kural/`.
   Reason: clean separation of concerns; each milestone targets exactly one sub-package.
-- Live partials: preview words only update the floating pill display; final authoritative batch transcription, flow disfluency cleanup, and caret typing run on the full buffer upon stop.
-  Reason: gives instant visual reassurance without risking premature or unstable typing into the document.
+- Non-destructive config validation: invalid fields fall back individually to their defaults rather than rewriting or wiping user_settings.yaml.
+  Reason: complies with AGENTS.md requirement ("validate every key on load; a bad value falls back to its default and logs a warning").
