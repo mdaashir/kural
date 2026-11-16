@@ -1,30 +1,32 @@
 # SESSION.md
 
 ## Current milestone
-**Wispr Flow Experience: In-Place Voice Editing, Replacements & Code Casing**
+**Voice Notes & Obsidian Vault Quick-Capture**
 
 ## Current branch
-`feat/wispr-flow-voice-editing`
+`feat/obsidian-voice-notes`
 
 ## PR
 PR to be opened with gh after verification passes.
 
 ## Last completed step
-Implemented Wispr Flow voice editing, phrase replacement, code casing, and structural line edits:
-- `kural/engine/transforms.py` (288 lines):
-  - In-place word & phrase replacements: `"replace [old] with [new]"`, `"swap [old] for [new]"`, `"delete the word [word]"`.
-  - Code casing conversions: `camelCase`, `snake_case`, `kebab-case`, `PascalCase`, `CONSTANT_CASE`.
-  - Enclosures & Markdown wrappers: quotes (`"..."`), parentheses (`(...)`), backticks (`` `...` ``), code blocks (` ```...``` `).
-  - Structural line edits: sorting lines alphabetically (`transform_sort_lines`), line joining into one paragraph, deleting the last sentence.
-  - Retained deterministic list transforms (bullets, numbers) and local LLM fallback.
-- `kural/control/parser.py`:
-  - Added regex patterns to recognize `"replace ... with ..."`, `"swap ... for ..."`, wrappers (*"wrap in quotes"*, *"backtick that"*, *"code block that"*), code casing (*"camelcase that"*, *"snake case"*), and structural line commands (*"sort these lines"*, *"delete last sentence"*).
-- 13 new unit tests in `tests/engine/test_transforms.py` (366 total passing, 0 requiring GPU, mic, or network, ruff clean).
+Implemented voice notes quick-capture to Obsidian / daily Markdown journal:
+- `kural/engine/notes.py` (80 lines):
+  - Formatted daily voice log appending entries to `YYYY-MM-DD.md`.
+  - Creates frontmatter on new days (`tags: [kural, voice-note]`) and appends timestamped bullets (`- **14:30** Thought content.`).
+  - Strict sandboxing: prevents path traversal outside the configured vault folder via `os.path.commonpath`.
+  - Defaults to `Documents/Kural Notes/` if no Obsidian vault path is configured.
+- `kural/control/parser.py`: Added voice capture triggers:
+  - *"note [text]"*, *"take a note [text]"*, *"quick note [text]"*.
+  - Tamil: *"குறிப்பு [text]"*, *"நோட் பண்ணு [text]"*, *"note பண்ணு [text]"*.
+- `kural/control/executor.py`: Wired `kind == "note"` to `save_voice_note()` and returned feedback confirmation.
+- `kural/config/config.defaults.yaml` & `kural/ui/settings_window.py`: Added `notes.vault_path` configuration and UI input box.
+- 5 new unit tests in `tests/engine/test_notes.py` (371 total passing, 0 requiring GPU, mic, or network, ruff clean).
 
 ## Next step
-1. Push `feat/wispr-flow-voice-editing` and open PR into `main` with `gh pr create`.
+1. Push `feat/obsidian-voice-notes` and open PR into `main` with `gh pr create`.
 2. Wait for user to review and merge.
-3. Test highlighting text in VS Code or Notepad and saying *"replace Monday with Tuesday"* or *"camelcase that"*!
+3. Test saying *"Take a note: Prepare quarterly speech recognition benchmark"*!
 
 ## Open questions
 - None.
@@ -42,7 +44,7 @@ Implemented Wispr Flow voice editing, phrase replacement, code casing, and struc
 - Linter: `ruff` only. Reason: handles pycodestyle + isort + pyupgrade in one tool.
 - Sub-package layout: `engine/`, `control/`, `config/`, `ui/` as top-level siblings under `kural/`.
   Reason: clean separation of concerns; each milestone targets exactly one sub-package.
-- Voice replacement matching: uses word-boundary regex (`\bword\b`) to prevent accidental partial-word replacements.
-  Reason: ensures changing "cat" doesn't corrupt "catch" or "certificate".
-- Developer code casings: split across spaces, dashes, underscores, and camelCase boundaries before re-casing.
-  Reason: robustly converts any source string into the requested identifier convention.
+- Obsidian sandboxing: paths are validated via `_is_within_folder()` using `os.path.commonpath`.
+  Reason: guarantees voice commands cannot write outside the designated vault or notes folder.
+- Fallback location: defaults to `%USERPROFILE%\Documents\Kural Notes` if no Obsidian vault path is given.
+  Reason: works out-of-the-box even for users without Obsidian installed.
