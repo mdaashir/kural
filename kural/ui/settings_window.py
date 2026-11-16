@@ -68,6 +68,7 @@ class SettingsWindow:
         self.var_autostart = None
         self.var_recording_mode = None
         self.var_double_tap = None
+        self.var_vault = None
 
     def show(self) -> None:
         """Construct and display the settings window (blocks until closed)."""
@@ -150,6 +151,9 @@ class SettingsWindow:
         from kural.control.autostart import is_autostart_enabled
 
         self.var_autostart = tk.BooleanVar(value=is_autostart_enabled())
+
+        notes_cfg = self.config_manager.config.get("notes") or {}
+        self.var_vault = tk.StringVar(value=notes_cfg.get("vault_path", ""))
 
     def _build_engine_tab(self, parent, ttk) -> None:
         row = 0
@@ -239,6 +243,15 @@ class SettingsWindow:
         )
         c4.grid(row=4, column=0, columnspan=2, sticky="w", pady=6)
 
+        ttk.Label(parent, text="Obsidian / Notes Vault Path:").grid(
+            row=5, column=0, sticky="w", pady=6
+        )
+        e_vault = ttk.Entry(parent, textvariable=self.var_vault, width=22)
+        e_vault.grid(row=5, column=1, sticky="w", padx=12, pady=6)
+        ttk.Label(parent, text="(Empty = Documents/Kural Notes)", font=("", 8)).grid(
+            row=6, column=1, sticky="w", padx=12, pady=(0, 6)
+        )
+
     def _on_open_folder(self) -> None:
         from kural.engine.utils import get_user_app_data_path
 
@@ -280,6 +293,9 @@ class SettingsWindow:
             },
             "voice_commands": {
                 "fuzzy_match": bool(self.var_fuzzy.get()) if self.var_fuzzy else True,
+            },
+            "notes": {
+                "vault_path": self.var_vault.get().strip() if self.var_vault else "",
             },
         }
 

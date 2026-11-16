@@ -144,6 +144,17 @@ def parse_command(phrase: str) -> CommandIntent | None:
         return CommandIntent(kind="volume", action="up", target="10", raw_text=phrase)
 
     # 3. Smart voice transforms / text rewrites (Wispr Flow style)
+    # Voice notes to Obsidian / Markdown quick-capture
+    m_note = re.match(
+        r"^(?:take\s+a\s+note|quick\s+note|note|take\s+note|memo|குறிப்பு|நோட்\s+பண்ணு|note\s+பண்ணு)\s*[:,\-]?\s+(.+)$",
+        t,
+        re.IGNORECASE,
+    )
+    if m_note:
+        return CommandIntent(
+            kind="note", action="save", target=m_note.group(1).strip(), raw_text=phrase
+        )
+
     # Check "replace X with Y" / "swap X for Y"
     if re.match(
         r"^(?:please\s+)?(?:replace|change|swap)\s+.+?\s+(?:with|to|for|into)\s+.+$",

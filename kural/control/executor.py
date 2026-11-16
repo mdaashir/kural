@@ -348,6 +348,18 @@ class CommandExecutor:
                 action_type="transform",
             )
 
+        # Voice notes to Obsidian / Markdown quick-capture
+        if intent.kind == "note":
+            from kural.engine.notes import save_voice_note
+
+            vault_dir = None
+            if getattr(self, "config_manager", None):
+                notes_cfg = self.config_manager.config.get("notes") or {}
+                vault_dir = notes_cfg.get("vault_path")
+
+            ok, msg = save_voice_note(intent.target, vault_dir=vault_dir)
+            return CommandResult(success=ok, feedback=msg, action_type="note")
+
         return CommandResult(
             success=False, feedback=f"Unhandled action: {intent.action}", action_type="unhandled"
         )

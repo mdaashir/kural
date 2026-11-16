@@ -183,3 +183,6 @@ wake_word: # Optional hands-free keyword activation (off by default)
     enabled: false
     trigger_phrase: "kural" # Activation keyword (e.g. "kural" or "குரல்")
     sensitivity: 0.6
+
+notes: # Voice notes and Obsidian vault quick-capture
+    vault_path: "" # Path to Obsidian vault or custom notes directory (empty = Documents/Kural Notes)
