@@ -92,6 +92,9 @@ audio: # Audio input configuration
     host: null
     max_duration: 30
     channels: 1
+    whisper_mode: # Boost quiet speech / whisper mode
+        enabled: true
+        max_gain: 8.0
 
 hotkey: # Hotkey trigger configuration
     recording_hotkey: "ctrl+space"

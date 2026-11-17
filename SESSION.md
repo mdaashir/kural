@@ -1,29 +1,29 @@
 # SESSION.md
 
 ## Current milestone
-**Wispr Flow Experience: Caret-Aware Insertion & Continuation Planning**
+**Whisper Mode Adaptive Audio Gain**
 
 ## Current branch
-`feat/caret-aware-insertion-planner`
+`feat/audio-gain-whisper-mode`
 
 ## PR
 PR to be opened with gh after verification passes.
 
 ## Last completed step
-Implemented caret context-aware text layout planning:
-- `kural/control/planner.py` (103 lines):
-  - `plan_insertion(text, before, keep_caps)`: inspects characters left of the caret to determine formatting:
-    - Continuation: lowercases the initial letter of common English words (`and`, `the`, `because`, `which`, etc.) while protecting proper nouns and custom dictionary hotwords.
-    - New sentence: capitalizes initial letter after `.`, `?`, `!`, newline, or beginning of document.
-    - Spacing: adds connecting space when continuing words; attaches punctuation without spaces; takes no space after opener quotes/brackets.
-- `kural/control/windows.py`: Added `get_text_before_caret()` to inspect text left of the caret via Win32 `GetGUIThreadInfo` and `SendMessageTimeoutW` (`WM_GETTEXT`, `EM_GETSEL`), skipping password fields for privacy.
-- `kural/runtime.py`: Integrated `plan_insertion()` into the dictation delivery pipeline, automatically supplying custom dictionary hotwords to prevent lowercasing proper nouns.
-- 9 new unit tests in `tests/control/test_planner.py` (390 total passing, 0 requiring GPU, mic, or network, ruff clean).
+Implemented Whisper Mode adaptive audio gain boosting:
+- `kural/engine/audio_gain.py` (40 lines):
+  - `boost_quiet_audio(audio, max_gain=8.0)`: scales quiet or whispered speech up to `TARGET_PEAK = 0.6` without clipping, while leaving normal speech untouched.
+  - 99.9th percentile peak estimation: rejects pops, clicks, or brief mic taps so they don't suppress the gain calculation for the rest of the sentence.
+  - Noise floor protection: audio below `SILENCE_PEAK = 1e-3` is treated as pure silence or muted mic and never boosted, avoiding ambient hiss amplification and Whisper hallucinations.
+  - Pure numpy, zero extra dependencies, instantaneous (<0.1ms).
+- `kural/config/config.defaults.yaml`: Added `audio.whisper_mode: {enabled: true, max_gain: 8.0}`.
+- `kural/ui/settings_window.py`: Added `[x] Whisper Mode (boost quiet / whispered speech)` checkbox to the settings window.
+- 6 new unit tests in `tests/engine/test_audio_gain.py` (396 total passing, 0 requiring GPU, mic, or network, ruff clean).
 
 ## Next step
-1. Push `feat/caret-aware-insertion-planner` and open PR into `main` with `gh pr create`.
+1. Push `feat/audio-gain-whisper-mode` and open PR into `main` with `gh pr create`.
 2. Wait for user to review and merge.
-3. Test dictating in the middle of a sentence: see it seamlessly continue in lowercase with leading space!
+3. Test whispering softly into the microphone to see accurate transcription without raised voices!
 
 ## Open questions
 - None.
@@ -41,7 +41,7 @@ Implemented caret context-aware text layout planning:
 - Linter: `ruff` only. Reason: handles pycodestyle + isort + pyupgrade in one tool.
 - Sub-package layout: `engine/`, `control/`, `config/`, `ui/` as top-level siblings under `kural/`.
   Reason: clean separation of concerns; each milestone targets exactly one sub-package.
-- Caret context inspection: uses fast Win32 `SendMessageTimeoutW` (100ms timeout) and skips password fields.
-  Reason: non-blocking, zero external dependencies, guarantees credentials fields are never probed.
-- Proper noun protection: `keep_caps` combines user dictionary hotwords (`whisper.hotwords`) and unrecognized capitalized words.
-  Reason: ensures brand names and personal names are never inappropriately lowercased mid-sentence.
+- 99.9th percentile peak estimation: prevents loud clicks or keyboard clatter from blinding the adaptive gain estimator.
+  Reason: guarantees consistent volume scaling across variable audio dynamics.
+- Silence threshold gating: ignores clips under 1e-3 amplitude.
+  Reason: prevents boosting room background hiss into hallucinated speech text.

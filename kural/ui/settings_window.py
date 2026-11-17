@@ -69,6 +69,7 @@ class SettingsWindow:
         self.var_recording_mode = None
         self.var_double_tap = None
         self.var_vault = None
+        self.var_whisper_mode = None
 
     def show(self) -> None:
         """Construct and display the settings window (blocks until closed)."""
@@ -155,6 +156,10 @@ class SettingsWindow:
         notes_cfg = self.config_manager.config.get("notes") or {}
         self.var_vault = tk.StringVar(value=notes_cfg.get("vault_path", ""))
 
+        audio_cfg = self.config_manager.config.get("audio") or {}
+        wm_cfg = audio_cfg.get("whisper_mode") or {}
+        self.var_whisper_mode = tk.BooleanVar(value=bool(wm_cfg.get("enabled", True)))
+
     def _build_engine_tab(self, parent, ttk) -> None:
         row = 0
 
@@ -178,6 +183,14 @@ class SettingsWindow:
         ttk.Label(parent, text="(0 = never unload, frees ~1.5 GB on RTX 3050)", font=("", 8)).grid(
             row=row + 1, column=1, sticky="w", padx=12, pady=(0, 6)
         )
+        row += 2
+
+        c_wm = ttk.Checkbutton(
+            parent,
+            text="Whisper Mode (boost quiet / whispered speech)",
+            variable=self.var_whisper_mode,
+        )
+        c_wm.grid(row=row, column=0, columnspan=2, sticky="w", pady=6)
 
     def _build_hotkeys_tab(self, parent, ttk) -> None:
         ttk.Label(parent, text="Dictation Mode:").grid(row=0, column=0, sticky="w", pady=8)
@@ -296,6 +309,12 @@ class SettingsWindow:
             },
             "notes": {
                 "vault_path": self.var_vault.get().strip() if self.var_vault else "",
+            },
+            "audio": {
+                "whisper_mode": {
+                    "enabled": bool(self.var_whisper_mode.get()) if self.var_whisper_mode else True,
+                    "max_gain": 8.0,
+                }
             },
         }
 
