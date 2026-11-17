@@ -376,8 +376,15 @@ class KuralRuntime:
                     custom_hotwords = list_hotwords()
                     text = plan_insertion(text, before=before_text, keep_caps=custom_hotwords)
 
+                clip_cfg = (
+                    self.config_manager.get_clipboard_config()
+                    if hasattr(self.config_manager, "get_clipboard_config")
+                    else {}
+                )
+                delivery_method = clip_cfg.get("delivery_method", "paste")
+
                 print(f"✍️  Typed ({style_name}): '{text}'")
-                insert_text_at_caret(text)
+                insert_text_at_caret(text, delivery_method=delivery_method)
 
                 # 6. Record to ledger, adaptive learner, and history.jsonl
                 if getattr(self, "ledger", None):

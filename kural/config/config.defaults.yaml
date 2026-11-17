@@ -109,6 +109,7 @@ hotkey: # Hotkey trigger configuration
 clipboard: # Insertion settings
     auto_paste: true
     restore_clipboard: true
+    delivery_method: paste # paste (clipboard + Ctrl+V) or type (SendInput Unicode keystrokes)
 
 logging: # Logging configuration
     level: INFO

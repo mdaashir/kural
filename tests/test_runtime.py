@@ -48,7 +48,7 @@ class TestKuralRuntimeStateTransitions:
             fake_audio = np.zeros(16000, dtype=np.float32)
             self.runtime._process_audio(fake_audio)
             # Default style is formal (capitalized + trailing period)
-            mock_insert.assert_called_once_with("Hello world.")
+            assert mock_insert.call_args[0][0] == "Hello world."
             assert self.runtime.state == RuntimeState.IDLE
 
     def test_process_audio_command_routes_to_executor(self):

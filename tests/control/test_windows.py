@@ -89,3 +89,33 @@ class TestWindowState:
             ok, msg = set_window_state("snap_left")
             assert ok is True
             assert mock_keybd.call_count >= 2
+
+    def test_type_text_at_caret_calls_send_input(self):
+        from kural.control.windows import type_text_at_caret
+
+        with (
+            patch("ctypes.windll.user32.SendInput") as mock_send,
+            patch("kural.control.windows.check_foreground_elevation", return_value=(False, "")),
+            patch("sys.platform", "win32"),
+        ):
+            ok = type_text_at_caret("Tamil குரல்\n")
+            assert ok is True
+            assert mock_send.call_count >= 10
+
+    def test_insert_text_at_caret_fallback_on_clipboard_error(self):
+        from unittest.mock import MagicMock
+
+        from kural.control.windows import insert_text_at_caret
+
+        fake_pyperclip = MagicMock()
+        fake_pyperclip.copy.side_effect = Exception("Clipboard locked")
+
+        with (
+            patch.dict("sys.modules", {"pyperclip": fake_pyperclip}),
+            patch("kural.control.windows.type_text_at_caret", return_value=True) as mock_type,
+            patch("kural.control.windows.check_foreground_elevation", return_value=(False, "")),
+            patch("sys.platform", "win32"),
+        ):
+            ok = insert_text_at_caret("Fallback test", delivery_method="paste")
+            assert ok is True
+            mock_type.assert_called_once_with("Fallback test")
