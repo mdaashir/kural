@@ -431,3 +431,105 @@ def get_selected_text(timeout: float = 0.1) -> str:
         pass
 
     return captured.strip()
+
+
+def get_text_before_caret(max_chars: int = 120) -> str | None:
+    """Read the text immediately to the left of the active caret in the foreground control.
+
+    Uses Win32 GUI thread info and standard Edit/RichEdit messages (WM_GETTEXT, EM_GETSEL).
+    Returns None if the control is not an accessible text field or if in a password field.
+    Never raises an exception.
+    """
+    if sys.platform != "win32":
+        return None
+
+    try:
+        import ctypes
+        import ctypes.wintypes as wintypes
+
+        class _RECT(ctypes.Structure):
+            _fields_ = [
+                ("left", wintypes.LONG),
+                ("top", wintypes.LONG),
+                ("right", wintypes.LONG),
+                ("bottom", wintypes.LONG),
+            ]
+
+        class _GUITHREADINFO(ctypes.Structure):
+            _fields_ = [
+                ("cbSize", wintypes.DWORD),
+                ("flags", wintypes.DWORD),
+                ("hwndActive", wintypes.HWND),
+                ("hwndFocus", wintypes.HWND),
+                ("hwndCapture", wintypes.HWND),
+                ("hwndMenuOwner", wintypes.HWND),
+                ("hwndMoveSize", wintypes.HWND),
+                ("hwndCaret", wintypes.HWND),
+                ("rcCaret", _RECT),
+            ]
+
+        user32 = ctypes.windll.user32
+        hwnd_fg = user32.GetForegroundWindow()
+        if not hwnd_fg:
+            return None
+
+        # Resolve focused child control
+        tid = user32.GetWindowThreadProcessId(hwnd_fg, None)
+        gui_info = _GUITHREADINFO(cbSize=ctypes.sizeof(_GUITHREADINFO))
+        target_hwnd = hwnd_fg
+        if user32.GetGUIThreadInfo(tid, ctypes.byref(gui_info)) and gui_info.hwndFocus:
+            target_hwnd = gui_info.hwndFocus
+
+        # Never inspect password fields (GWL_STYLE & ES_PASSWORD)
+        GWL_STYLE = -16
+        ES_PASSWORD = 0x0020
+        style = user32.GetWindowLongW(target_hwnd, GWL_STYLE)
+        if style & ES_PASSWORD:
+            return None
+
+        # Query text length with timeout
+        WM_GETTEXTLENGTH = 0x000E
+        WM_GETTEXT = 0x000D
+        EM_GETSEL = 0x00B0
+        SMTO_ABORTIFHUNG = 0x0002
+
+        res_len = ctypes.c_size_t()
+        if not user32.SendMessageTimeoutW(
+            target_hwnd, WM_GETTEXTLENGTH, 0, 0, SMTO_ABORTIFHUNG, 100, ctypes.byref(res_len)
+        ):
+            return None
+
+        length = res_len.value
+        if length == 0:
+            return ""
+
+        buf = ctypes.create_unicode_buffer(length + 1)
+        res_text = ctypes.c_size_t()
+        if not user32.SendMessageTimeoutW(
+            target_hwnd,
+            WM_GETTEXT,
+            length + 1,
+            ctypes.addressof(buf),
+            SMTO_ABORTIFHUNG,
+            100,
+            ctypes.byref(res_text),
+        ):
+            return None
+
+        full_text = buf.value
+
+        # Query caret selection start position
+        res_sel = ctypes.c_size_t()
+        if not user32.SendMessageTimeoutW(
+            target_hwnd, EM_GETSEL, 0, 0, SMTO_ABORTIFHUNG, 100, ctypes.byref(res_sel)
+        ):
+            return None
+
+        start_pos = res_sel.value & 0xFFFF
+        if start_pos > length:
+            start_pos = length
+
+        return full_text[max(0, start_pos - max_chars) : start_pos]
+    except Exception as e:
+        logger.debug(f"Could not read text before caret: {e}")
+        return None
