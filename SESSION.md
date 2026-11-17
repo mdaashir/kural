@@ -1,30 +1,29 @@
 # SESSION.md
 
 ## Current milestone
-**Configuration Integrity Validator & Auto-Healing Engine**
+**Wispr Flow Experience: Caret-Aware Insertion & Continuation Planning**
 
 ## Current branch
-`feat/config-validator`
+`feat/caret-aware-insertion-planner`
 
 ## PR
 PR to be opened with gh after verification passes.
 
 ## Last completed step
-Implemented configuration schema validation and auto-healing:
-- `kural/config/configcheck.py` (145 lines):
-  - Validates user settings across all configuration sections (`whisper`, `hotkey`, `overlay`, `audio`, `notes`).
-  - Clamps out-of-range numeric values (e.g. `beam_size` clamped to [1, 10], `max_duration` clamped to [5, 300], non-negative idle timeouts).
-  - Falls back gracefully to verified defaults for invalid devices, compute types, or recording modes.
-  - Warns about non-existent Obsidian vault paths without breaking execution.
-  - Never raises unhandled exceptions and never mutates input dictionaries directly.
-- `kural/doctor.py`: Added configuration integrity verification to the doctor diagnostic suite (`[OK] Config integrity  All settings valid`).
-- `kural/__main__.py`: Added `--config-check` CLI command for instant integrity audits.
-- 7 new unit tests in `tests/config/test_configcheck.py` (381 total passing, 0 requiring GPU, mic, or network, ruff clean).
+Implemented caret context-aware text layout planning:
+- `kural/control/planner.py` (103 lines):
+  - `plan_insertion(text, before, keep_caps)`: inspects characters left of the caret to determine formatting:
+    - Continuation: lowercases the initial letter of common English words (`and`, `the`, `because`, `which`, etc.) while protecting proper nouns and custom dictionary hotwords.
+    - New sentence: capitalizes initial letter after `.`, `?`, `!`, newline, or beginning of document.
+    - Spacing: adds connecting space when continuing words; attaches punctuation without spaces; takes no space after opener quotes/brackets.
+- `kural/control/windows.py`: Added `get_text_before_caret()` to inspect text left of the caret via Win32 `GetGUIThreadInfo` and `SendMessageTimeoutW` (`WM_GETTEXT`, `EM_GETSEL`), skipping password fields for privacy.
+- `kural/runtime.py`: Integrated `plan_insertion()` into the dictation delivery pipeline, automatically supplying custom dictionary hotwords to prevent lowercasing proper nouns.
+- 9 new unit tests in `tests/control/test_planner.py` (390 total passing, 0 requiring GPU, mic, or network, ruff clean).
 
 ## Next step
-1. Push `feat/config-validator` and open PR into `main` with `gh pr create`.
+1. Push `feat/caret-aware-insertion-planner` and open PR into `main` with `gh pr create`.
 2. Wait for user to review and merge.
-3. Run `python -m kural --config-check` live!
+3. Test dictating in the middle of a sentence: see it seamlessly continue in lowercase with leading space!
 
 ## Open questions
 - None.
@@ -42,5 +41,7 @@ Implemented configuration schema validation and auto-healing:
 - Linter: `ruff` only. Reason: handles pycodestyle + isort + pyupgrade in one tool.
 - Sub-package layout: `engine/`, `control/`, `config/`, `ui/` as top-level siblings under `kural/`.
   Reason: clean separation of concerns; each milestone targets exactly one sub-package.
-- Non-destructive config validation: invalid fields fall back individually to their defaults rather than rewriting or wiping user_settings.yaml.
-  Reason: complies with AGENTS.md requirement ("validate every key on load; a bad value falls back to its default and logs a warning").
+- Caret context inspection: uses fast Win32 `SendMessageTimeoutW` (100ms timeout) and skips password fields.
+  Reason: non-blocking, zero external dependencies, guarantees credentials fields are never probed.
+- Proper noun protection: `keep_caps` combines user dictionary hotwords (`whisper.hotwords`) and unrecognized capitalized words.
+  Reason: ensures brand names and personal names are never inappropriately lowercased mid-sentence.
