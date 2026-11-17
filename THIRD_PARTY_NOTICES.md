@@ -54,6 +54,7 @@ licence texts are reproduced here in full, as required by the MIT licence terms.
 | `kural/engine/whisper_engine.py` | `src/whisper_key/whisper_engine.py` |
 | `kural/engine/hardware_detection.py` | `src/whisper_key/hardware_detection.py` + `src/whisper_key/platform/windows/gpu.py` |
 | `kural/engine/audio_feedback.py` | `src/whisper_key/audio_feedback.py` |
+| `kural/engine/audio_gain.py` | `src/whisper_key/audio_gain.py` |
 | `kural/engine/snippets.py` | `src/whisper_key/snippets.py` |
 | `kural/engine/dictionary.py` | `src/whisper_key/dictionary.py` |
 | `kural/engine/server.py` | `src/whisper_key/local_server.py` |
