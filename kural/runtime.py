@@ -366,10 +366,20 @@ class KuralRuntime:
                 snippets_cfg = self.config_manager.get_postprocess_config().get("snippets") or []
                 text = apply_snippets(text, snippets_cfg)
 
+                # 5. Caret context-aware layout planning
+                if not is_verbatim:
+                    from kural.control.planner import plan_insertion
+                    from kural.control.windows import get_text_before_caret
+                    from kural.engine.dictionary import list_hotwords
+
+                    before_text = get_text_before_caret()
+                    custom_hotwords = list_hotwords()
+                    text = plan_insertion(text, before=before_text, keep_caps=custom_hotwords)
+
                 print(f"✍️  Typed ({style_name}): '{text}'")
                 insert_text_at_caret(text)
 
-                # 5. Record to ledger, adaptive learner, and history.jsonl
+                # 6. Record to ledger, adaptive learner, and history.jsonl
                 if getattr(self, "ledger", None):
                     self.ledger.record(text)
                 if getattr(self, "adaptive", None):

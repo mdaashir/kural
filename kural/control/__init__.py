@@ -23,12 +23,14 @@ from .media import (
     toggle_mute,
 )
 from .parser import CommandIntent, normalize_command_text, parse_command
+from .planner import plan_insertion
 from .windows import (
     WindowInfo,
     check_foreground_elevation,
     close_window,
     focus_window,
     get_foreground_window_info,
+    get_text_before_caret,
     insert_text_at_caret,
     is_window_elevated,
     list_windows,
@@ -58,6 +60,7 @@ __all__ = [
     "focus_window",
     "get_foreground_window_info",
     "get_stored_autostart_command",
+    "get_text_before_caret",
     "get_volume",
     "insert_text_at_caret",
     "is_autostart_enabled",
@@ -68,6 +71,7 @@ __all__ = [
     "media_prev",
     "normalize_command_text",
     "parse_command",
+    "plan_insertion",
     "sanitize_llm_output",
     "set_volume",
     "set_window_state",
