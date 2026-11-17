@@ -1,29 +1,29 @@
 # SESSION.md
 
 ## Current milestone
-**Whisper Mode Adaptive Audio Gain**
+**Direct Unicode Keystroke Injection & Fallback**
 
 ## Current branch
-`feat/audio-gain-whisper-mode`
+`feat/unicode-keystroke-injection`
 
 ## PR
 PR to be opened with gh after verification passes.
 
 ## Last completed step
-Implemented Whisper Mode adaptive audio gain boosting:
-- `kural/engine/audio_gain.py` (40 lines):
-  - `boost_quiet_audio(audio, max_gain=8.0)`: scales quiet or whispered speech up to `TARGET_PEAK = 0.6` without clipping, while leaving normal speech untouched.
-  - 99.9th percentile peak estimation: rejects pops, clicks, or brief mic taps so they don't suppress the gain calculation for the rest of the sentence.
-  - Noise floor protection: audio below `SILENCE_PEAK = 1e-3` is treated as pure silence or muted mic and never boosted, avoiding ambient hiss amplification and Whisper hallucinations.
-  - Pure numpy, zero extra dependencies, instantaneous (<0.1ms).
-- `kural/config/config.defaults.yaml`: Added `audio.whisper_mode: {enabled: true, max_gain: 8.0}`.
-- `kural/ui/settings_window.py`: Added `[x] Whisper Mode (boost quiet / whispered speech)` checkbox to the settings window.
-- 6 new unit tests in `tests/engine/test_audio_gain.py` (396 total passing, 0 requiring GPU, mic, or network, ruff clean).
+Implemented SendInput Unicode keystroke injection and fallback:
+- `kural/control/windows.py`:
+  - `type_text_at_caret(text)`: direct character-by-character typing using Win32 `SendInput` with `KEYEVENTF_UNICODE` (0x0004), completely bypassing the Windows clipboard.
+  - Correctly encodes multi-byte Unicode (including Tamil script glyphs and UTF-16 surrogate pairs) and translates `\n` to `VK_RETURN`.
+  - Paced inter-character timing (15ms) ensures busy target apps keep up without dropping characters.
+  - `insert_text_at_caret(text, delivery_method)`: supports `"paste"` (clipboard + Ctrl+V) and `"type"`, automatically falling back to `type_text_at_caret()` if clipboard access fails (e.g. locked by another app).
+- `kural/config/config.defaults.yaml`: Added `clipboard.delivery_method: paste` (`paste` or `type`).
+- `kural/runtime.py`: Passed `delivery_method` from config to `insert_text_at_caret()`.
+- 2 new unit tests in `tests/control/test_windows.py` (398 total passing, 0 requiring GPU, mic, or network, ruff clean).
 
 ## Next step
-1. Push `feat/audio-gain-whisper-mode` and open PR into `main` with `gh pr create`.
+1. Push `feat/unicode-keystroke-injection` and open PR into `main` with `gh pr create`.
 2. Wait for user to review and merge.
-3. Test whispering softly into the microphone to see accurate transcription without raised voices!
+3. Test dictating into paste-blocked applications or with `delivery_method: type`!
 
 ## Open questions
 - None.
@@ -41,7 +41,7 @@ Implemented Whisper Mode adaptive audio gain boosting:
 - Linter: `ruff` only. Reason: handles pycodestyle + isort + pyupgrade in one tool.
 - Sub-package layout: `engine/`, `control/`, `config/`, `ui/` as top-level siblings under `kural/`.
   Reason: clean separation of concerns; each milestone targets exactly one sub-package.
-- 99.9th percentile peak estimation: prevents loud clicks or keyboard clatter from blinding the adaptive gain estimator.
-  Reason: guarantees consistent volume scaling across variable audio dynamics.
-- Silence threshold gating: ignores clips under 1e-3 amplitude.
-  Reason: prevents boosting room background hiss into hallucinated speech text.
+- Fallback delivery: if clipboard copy fails due to lock contention, automatically fallback to `type_text_at_caret()`.
+  Reason: guarantees the user's speech is never lost even if the Windows clipboard API is blocked.
+- Unicode keystrokes: uses `KEYEVENTF_UNICODE` with UTF-16 surrogate pairs.
+  Reason: ensures native non-ASCII typing (Tamil glyphs, accents, emojis) works regardless of active Windows keyboard layout.

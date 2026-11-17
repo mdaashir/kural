@@ -320,10 +320,12 @@ def check_foreground_elevation() -> tuple[bool, str]:
     return False, ""
 
 
-def insert_text_at_caret(text: str, restore_clipboard_delay: float = 0.05) -> bool:
-    """Insert text at the current cursor position by pasting (Ctrl+V) via clipboard.
+def type_text_at_caret(text: str) -> bool:
+    """Type text directly as OS-level Unicode key events using SendInput.
 
-    Preserves existing clipboard contents and checks for elevated windows before pasting.
+    Bypasses the Windows clipboard entirely. Works in apps where Ctrl+V is
+    blocked or when the clipboard is locked by another process. Properly
+    encodes multi-byte Unicode (including Tamil glyphs) and newlines.
     """
     if not text:
         return False
@@ -337,9 +339,88 @@ def insert_text_at_caret(text: str, restore_clipboard_delay: float = 0.05) -> bo
 
     import ctypes
     import time
+    from ctypes import wintypes
 
-    # Optional pyperclip for Unicode clipboard handling
+    INPUT_KEYBOARD = 1
+    KEYEVENTF_KEYUP = 0x0002
+    KEYEVENTF_UNICODE = 0x0004
+    VK_RETURN = 0x0D
+
+    class _KEYBDINPUT(ctypes.Structure):
+        _fields_ = [
+            ("wVk", wintypes.WORD),
+            ("wScan", wintypes.WORD),
+            ("dwFlags", wintypes.DWORD),
+            ("time", wintypes.DWORD),
+            ("dwExtraInfo", ctypes.c_size_t),
+        ]
+
+    class _INPUTUNION(ctypes.Union):
+        _fields_ = [("ki", _KEYBDINPUT)]
+
+    class _INPUT(ctypes.Structure):
+        _fields_ = [("type", wintypes.DWORD), ("u", _INPUTUNION)]
+
+    def _build_events(ch: str):
+        events = []
+        if ch == "\n":
+            events.append((VK_RETURN, 0, 0))
+            events.append((VK_RETURN, 0, KEYEVENTF_KEYUP))
+        else:
+            utf16_units = [
+                int.from_bytes(ch.encode("utf-16-le")[i : i + 2], "little")
+                for i in range(0, len(ch.encode("utf-16-le")), 2)
+            ]
+            for u in utf16_units:
+                events.append((0, u, KEYEVENTF_UNICODE))
+                events.append((0, u, KEYEVENTF_UNICODE | KEYEVENTF_KEYUP))
+        return events
+
+    user32 = ctypes.windll.user32
+    for char in text.replace("\r\n", "\n"):
+        char_events = _build_events(char)
+        arr = (_INPUT * len(char_events))()
+        for idx, (vk, scan, flags) in enumerate(char_events):
+            arr[idx].type = INPUT_KEYBOARD
+            arr[idx].u.ki = _KEYBDINPUT(vk, scan, flags, 0, 0)
+        user32.SendInput(len(char_events), arr, ctypes.sizeof(_INPUT))
+        time.sleep(0.015)
+
+    return True
+
+
+def insert_text_at_caret(
+    text: str,
+    delivery_method: str = "paste",
+    restore_clipboard_delay: float = 0.05,
+) -> bool:
+    """Insert text at the current cursor position.
+
+    Strategies:
+    - 'paste' (default): places text on clipboard and sends Ctrl+V, then restores
+      the user's prior clipboard. Falls back to 'type' if clipboard access fails.
+    - 'type': sends keystrokes directly via SendInput KEYEVENTF_UNICODE without
+      touching the clipboard buffer.
+    """
+    if not text:
+        return False
+
+    if delivery_method == "type":
+        return type_text_at_caret(text)
+
+    is_elev, warn_msg = check_foreground_elevation()
+    if is_elev:
+        print(f"⚠️  {warn_msg}")
+
+    if sys.platform != "win32":
+        return False
+
+    import ctypes
+    import time
+
     saved_clipboard = None
+    clipboard_succeeded = False
+
     try:
         import pyperclip
 
@@ -349,9 +430,13 @@ def insert_text_at_caret(text: str, restore_clipboard_delay: float = 0.05) -> bo
             saved_clipboard = None
 
         pyperclip.copy(text)
-    except ImportError:
-        # Minimal ctypes clipboard fallback
-        pass
+        clipboard_succeeded = True
+    except Exception as e:
+        logger.debug(f"Clipboard access failed, falling back to direct typing: {e}")
+
+    # If clipboard copy failed (e.g. locked by another app), fall back to typing
+    if not clipboard_succeeded:
+        return type_text_at_caret(text)
 
     # Simulate Ctrl+V keypress
     user32 = ctypes.windll.user32
