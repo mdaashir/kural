@@ -132,6 +132,7 @@ class KuralRuntime:
             phrases=sp_cfg.get("phrases"),
         )
         self._stop_phrase_detected = False
+        self._capture_generation = 0
         self._origin_hwnd: int | None = None
 
         # Recovery, adaptive learning, and app rules
@@ -303,11 +304,19 @@ class KuralRuntime:
             ):
                 matched = matcher.check_match(partial_text)
                 if matched:
-                    logger.info(f"Stop phrase detected: '{matched}'. Auto-stopping dictation.")
-                    self._stop_phrase_detected = True
-                    # Dispatched on separate thread to avoid deadlock in streaming loop
+                    with self._state_lock:
+                        if (
+                            self.state != RuntimeState.RECORDING_DICTATION
+                            or self._stop_phrase_detected
+                        ):
+                            return
+                        self._stop_phrase_detected = True
+                        generation = self._capture_generation
+                    logger.info("Stop phrase detected; auto-stopping dictation.")
+                    # Dispatched on separate thread to avoid deadlock in streaming loop.
                     threading.Thread(
-                        target=self.stop_and_process,
+                        target=self._stop_capture_if_current,
+                        args=(generation,),
                         daemon=True,
                         name="stop-phrase-trigger",
                     ).start()
@@ -331,6 +340,8 @@ class KuralRuntime:
 
             if self.state == RuntimeState.IDLE:
                 self.state = RuntimeState.RECORDING_DICTATION
+                self._capture_generation += 1
+                self._stop_phrase_detected = False
                 self._hands_free_locked = False
                 from kural.control.windows import get_foreground_hwnd
 
@@ -389,6 +400,8 @@ class KuralRuntime:
         with self._state_lock:
             if self.state == RuntimeState.IDLE:
                 self.state = RuntimeState.RECORDING_COMMAND
+                self._capture_generation += 1
+                self._stop_phrase_detected = False
                 self.recorder.start_recording()
                 if getattr(self, "ducker", None):
                     self.ducker.start()
@@ -409,9 +422,15 @@ class KuralRuntime:
                     target=self._finish_recording, daemon=True, name="finish-command"
                 ).start()
 
-    def stop_and_process(self) -> None:
+    def _stop_capture_if_current(self, generation: int) -> None:
+        """Ignore a queued voice-stop request from a previous capture."""
+        self.stop_and_process(expected_generation=generation)
+
+    def stop_and_process(self, expected_generation: int | None = None) -> None:
         """Stop any active recording and process audio."""
         with self._state_lock:
+            if expected_generation is not None and expected_generation != self._capture_generation:
+                return
             if self.state in (RuntimeState.RECORDING_DICTATION, RuntimeState.RECORDING_COMMAND):
                 self.state = RuntimeState.PROCESSING
                 if getattr(self, "ducker", None):
@@ -433,6 +452,7 @@ class KuralRuntime:
             logger.info("Cancelling recording and discarding audio buffer.")
             self.state = RuntimeState.IDLE
             self._hands_free_locked = False
+            self._stop_phrase_detected = False
             self._origin_hwnd = None
 
             # Stop recorder and discard audio
@@ -584,16 +604,16 @@ class KuralRuntime:
                 if getattr(self, "adaptive", None):
                     text = self.adaptive.apply_corrections(text)
 
-                # Strip trailing stop phrase if detected during hands-free dictation
-                if getattr(self, "stop_phrase_matcher", None) and getattr(
-                    self, "_stop_phrase_detected", False
-                ):
+                # A partial may differ from the final transcript; only strip a
+                # phrase actually present at the end of this capture's result.
+                if getattr(self, "stop_phrase_matcher", None) and self._stop_phrase_detected:
                     self._stop_phrase_detected = False
-                    text = self.stop_phrase_matcher.strip_stop_phrase(text)
-                    if not text.strip():
-                        logger.info("Speech contained only the stop phrase; nothing to insert.")
-                        self.overlay.flash_success("Cancelled")
-                        return
+                    if self.stop_phrase_matcher.check_match(text):
+                        text = self.stop_phrase_matcher.strip_stop_phrase(text)
+                        if not text.strip():
+                            logger.info("Speech contained only the stop phrase; nothing to insert.")
+                            self.overlay.flash_success("Cancelled")
+                            return
 
                 style_name = (matched_rule.get("style") if matched_rule else None) or "formal"
                 is_verbatim = style_name == "verbatim"
@@ -663,6 +683,7 @@ class KuralRuntime:
         finally:
             self._origin_hwnd = None
             with self._state_lock:
+                self._stop_phrase_detected = False
                 self.state = RuntimeState.IDLE
             if getattr(self, "terminal_title", None):
                 self.terminal_title.update_state("idle")
