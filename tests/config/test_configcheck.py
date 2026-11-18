@@ -91,3 +91,10 @@ class TestConfigValidation:
         assert len(issues) == 1
         assert "clamped to 1.0" in issues[0]
         assert clean["audio"]["ducking"]["factor"] == 1.0
+
+    def test_delivery_method_validation(self):
+        cfg = {"clipboard": {"delivery_method": "invalid_method"}}
+        clean, issues = validate_config(cfg)
+        assert len(issues) == 1
+        assert "Falling back to 'paste'" in issues[0]
+        assert clean["clipboard"]["delivery_method"] == "paste"

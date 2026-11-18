@@ -565,7 +565,8 @@ class KuralRuntime:
                         )
                     )
 
-                self.overlay.flash_success("Typed")
+                success_label = "Copied" if delivery_method == "copy" else "Typed"
+                self.overlay.flash_success(success_label)
                 self.audio_feedback.play_complete()
 
         finally:

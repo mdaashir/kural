@@ -24,7 +24,7 @@ INDIC_SCRIPTS = ["native", "roman"]
 POSITIONS = ["bottom-center", "top-center", "bottom-right", "top-right"]
 RECORDING_MODES = ["toggle", "push_to_talk"]
 MOUSE_BUTTONS = ["", "x1", "x2", "both", "middle"]
-DELIVERY_METHODS = ["paste", "type"]
+DELIVERY_METHODS = ["paste", "type", "copy"]
 
 
 def open_folder(path: str) -> None:
@@ -324,7 +324,7 @@ class SettingsWindow:
         cb_del.grid(row=5, column=1, sticky="w", padx=12, pady=6)
         ttk.Label(
             parent,
-            text="paste = clipboard (Ctrl+V) • type = SendInput direct keystrokes",
+            text="paste: Ctrl+V • type: SendInput keystrokes • copy: clipboard only",
             font=("", 8),
         ).grid(row=6, column=1, sticky="w", padx=12, pady=(0, 6))
 

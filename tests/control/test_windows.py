@@ -119,3 +119,19 @@ class TestWindowState:
             ok = insert_text_at_caret("Fallback test", delivery_method="paste")
             assert ok is True
             mock_type.assert_called_once_with("Fallback test")
+
+    def test_insert_text_at_caret_copy_only(self):
+        from unittest.mock import MagicMock
+
+        from kural.control.windows import insert_text_at_caret
+
+        fake_pyperclip = MagicMock()
+
+        with (
+            patch.dict("sys.modules", {"pyperclip": fake_pyperclip}),
+            patch("kural.control.windows.type_text_at_caret") as mock_type,
+        ):
+            ok = insert_text_at_caret("Copy only speech", delivery_method="copy")
+            assert ok is True
+            fake_pyperclip.copy.assert_called_once_with("Copy only speech")
+            mock_type.assert_not_called()
