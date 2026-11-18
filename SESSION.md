@@ -1,28 +1,25 @@
 # SESSION.md
 
 ## Current milestone
-**Tray Recovery Actions ("Paste Last" & "Retry Last")**
+**README Refresh**
 
 ## Current branch
-`feat/tray-recovery-actions`
+`docs/readme-refresh`
 
 ## PR
 PR to be opened with gh after verification passes.
 
 ## Last completed step
-Implemented tray recovery actions for never-lose-a-dictation workflow:
-- `kural/runtime.py`:
-  - `paste_last()`: retrieves last inserted text from `self.ledger.last()`; inserts at active caret after 0.25s focus return delay (or displays `"Nothing dictated yet"` on overlay).
-  - `retry_last()`: retrieves DPAPI-encrypted audio take from `self.last_take.load()`; re-processes the recording through the speech pipeline after 0.25s delay (or displays `"No recent recording"` on overlay).
-- `kural/ui/tray.py`:
-  - Added `on_paste_last` and `on_retry_last` callbacks to `SystemTray`.
-  - Added `"Paste last dictation"` and `"Retry last recording"` menu items to tray menu.
-- 2 new unit tests in `tests/test_runtime.py` and updated `tests/ui/test_tray.py` (419 total passing, 0 requiring GPU, mic, or network, ruff clean).
+Updated README.md to reflect all 39 merged PRs:
+- Architecture tree: added all new modules (cues.py, chords.py, mouse.py, audio_gain.py, streaming.py, recovery.py, notes.py, server.py, flow_formatting.py, adaptive.py, history.py, snippets.py, cheat_sheet.py, history_window.py, settings_window.py, elevation.py, autostart.py, app_rules.py, planner.py, tamil_parser.py).
+- Feature highlights: Wispr Flow-style pill, synthesized cues, Mouse Flow PTT, chord PTT, Incognito Mode, Paste Last / Retry Last recovery, text delivery method.
+- Configuration table: documents all key hotkey, clipboard, overlay, and audio settings.
+- Privacy & Safety table: formalizes guarantees.
+- Test count: 248 → 419.
 
 ## Next step
-1. Push `feat/tray-recovery-actions` and open PR into `main` with `gh pr create`.
+1. Push `docs/readme-refresh` and open PR into `main` with `gh pr create`.
 2. Wait for user to review and merge.
-3. Test right-clicking tray icon to retry a recording or re-paste the last dictation!
 
 ## Open questions
 - None.
@@ -35,10 +32,6 @@ Implemented tray recovery actions for never-lose-a-dictation workflow:
 - [x] **Elevated window message implemented** — UIPI token inspection warns user with actionable advice.
 
 ## Decisions recorded (this session)
-- Package manager: `uv` + `pyproject.toml` (hatchling backend). Reason: matches system uv
-  available on dev machine; avoids setup.py legacy.
-- Linter: `ruff` only. Reason: handles pycodestyle + isort + pyupgrade in one tool.
-- Sub-package layout: `engine/`, `control/`, `config/`, `ui/` as top-level siblings under `kural/`.
-  Reason: clean separation of concerns; each milestone targets exactly one sub-package.
-- Focus restoration delay: 0.25s sleep on a background thread before pasting or retrying from tray.
-  Reason: gives Windows time to dismiss the popup tray menu and return keyboard focus to the target application.
+- README reflects all features as of PR #39 merged.
+- Test count badge updated: 248 → 419.
+- Architecture tree expanded with all current modules.
