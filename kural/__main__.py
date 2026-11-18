@@ -23,6 +23,13 @@ def main() -> None:
         help="Run live end-to-end operational self-test diagnostics (mic, model, inference, clipboard).",
     )
     parser.add_argument(
+        "--bundle-logs",
+        nargs="?",
+        const="",
+        metavar="ZIP_PATH",
+        help="Create a redacted diagnostic zip archive for bug reports.",
+    )
+    parser.add_argument(
         "--settings",
         action="store_true",
         help="Open the graphical settings configuration window.",
@@ -120,6 +127,12 @@ def main() -> None:
         from kural.selftest import run_selftest
 
         sys.exit(run_selftest())
+
+    if args.bundle_logs is not None:
+        from kural.engine.bundle_logs import bundle_logs
+
+        out = args.bundle_logs if args.bundle_logs.strip() else None
+        sys.exit(bundle_logs(out))
 
     if args.config_check:
         from kural.config import ConfigManager
