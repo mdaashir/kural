@@ -1,30 +1,26 @@
 # SESSION.md
 
 ## Current milestone
-**Mouse Push-to-Talk Trigger (Mouse Flow)**
+**Settings UI Controls for Mouse PTT and Delivery Method**
 
 ## Current branch
-`feat/mouse-push-to-talk`
+`feat/settings-ui-mouse-and-delivery`
 
 ## PR
 PR to be opened with gh after verification passes.
 
 ## Last completed step
-Implemented Win32 low-level mouse button push-to-talk:
-- `kural/control/mouse.py` (187 lines):
-  - `MouseButtonTrigger`: runs a `WH_MOUSE_LL` hook on a dedicated Win32 message-loop thread.
-  - Intercepts and swallows events (`return 1`) for configured buttons (`middle`, `x1`, `x2`, or `both`) so the button's native action (e.g. browser Back) does not interrupt dictation.
-  - Sub-millisecond non-blocking dispatch to daemon threads prevents mouse cursor stutter.
-  - Safe thread shutdown via `PostThreadMessageW(WM_QUIT)` and `UnhookWindowsHookEx`.
-- `kural/runtime.py`:
-  - Automatically initializes and starts `MouseButtonTrigger` when `hotkey.mouse_button` is configured.
-  - Cleans up hook on runtime shutdown.
-- 7 new unit tests in `tests/control/test_mouse.py` (416 total passing, 0 requiring GPU, mic, or network, ruff clean).
+Added graphical controls to `SettingsWindow`:
+- `kural/ui/settings_window.py`:
+  - Added Mouse Push-to-Talk Combobox (`""`, `"x1"`, `"x2"`, `"both"`, `"middle"`) to Hotkeys tab.
+  - Added Text Delivery Method Combobox (`"paste"` via clipboard or `"type"` via direct `SendInput` keystrokes) to Overlay & Control tab.
+  - Updated `collect_settings()` to persist `hotkey.mouse_button` and `clipboard.delivery_method`.
+- Updated unit test in `tests/ui/test_settings.py` (416 total passing, 0 requiring GPU, mic, or network, ruff clean).
 
 ## Next step
-1. Push `feat/mouse-push-to-talk` and open PR into `main` with `gh pr create`.
+1. Push `feat/settings-ui-mouse-and-delivery` and open PR into `main` with `gh pr create`.
 2. Wait for user to review and merge.
-3. Test holding mouse thumb button (X1/X2) to dictate with hands on mouse!
+3. Open Settings window from system tray to easily configure mouse buttons and text delivery mode!
 
 ## Open questions
 - None.
@@ -42,7 +38,5 @@ Implemented Win32 low-level mouse button push-to-talk:
 - Linter: `ruff` only. Reason: handles pycodestyle + isort + pyupgrade in one tool.
 - Sub-package layout: `engine/`, `control/`, `config/`, `ui/` as top-level siblings under `kural/`.
   Reason: clean separation of concerns; each milestone targets exactly one sub-package.
-- Event swallowing: returns 1 in `WH_MOUSE_LL` hook for active trigger button.
-  Reason: prevents browser Back or auto-scroll from navigating away during speech.
-- Dedicated hook thread: runs Win32 `GetMessage` loop on its own thread with sub-millisecond callback offloading.
-  Reason: prevents any mouse cursor hitching or Windows auto-unhooking due to timeout.
+- Mouse button empty string: represents disabled mouse push-to-talk.
+  Reason: clean fallback to keyboard-only hotkeys without error.
