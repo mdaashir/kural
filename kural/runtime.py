@@ -169,6 +169,10 @@ class KuralRuntime:
             enabled=bool(tray_cfg.get("enabled", True)),
         )
 
+        from kural.ui.terminal_title import TerminalTitle
+
+        self.terminal_title = TerminalTitle()
+
     def open_history(self) -> None:
         """Launch the graphical speech & command history window."""
         from kural.ui.history_window import open_history_window
@@ -286,6 +290,8 @@ class KuralRuntime:
                 self.recorder.start_recording()
                 if getattr(self, "streaming", None):
                     self.streaming.start()
+                if getattr(self, "terminal_title", None):
+                    self.terminal_title.update_state("recording")
                 self.overlay.show_recording(is_command=False)
                 self.audio_feedback.play_start()
                 print("\n🎙️  Listening (Dictation Mode)...")
@@ -294,6 +300,8 @@ class KuralRuntime:
                 self.state = RuntimeState.PROCESSING
                 if getattr(self, "streaming", None):
                     self.streaming.stop()
+                if getattr(self, "terminal_title", None):
+                    self.terminal_title.update_state("processing")
                 self.overlay.show_processing()
                 self.audio_feedback.play_stop()
                 threading.Thread(
@@ -314,6 +322,8 @@ class KuralRuntime:
                 self.state = RuntimeState.PROCESSING
                 if getattr(self, "streaming", None):
                     self.streaming.stop()
+                if getattr(self, "terminal_title", None):
+                    self.terminal_title.update_state("processing")
                 self.overlay.show_processing()
                 self.audio_feedback.play_stop()
                 threading.Thread(
@@ -326,11 +336,15 @@ class KuralRuntime:
             if self.state == RuntimeState.IDLE:
                 self.state = RuntimeState.RECORDING_COMMAND
                 self.recorder.start_recording()
+                if getattr(self, "terminal_title", None):
+                    self.terminal_title.update_state("recording")
                 self.overlay.show_recording(is_command=True)
                 self.audio_feedback.play_start()
                 print("\n⚡ Listening (Command Mode)...")
             elif self.state == RuntimeState.RECORDING_COMMAND:
                 self.state = RuntimeState.PROCESSING
+                if getattr(self, "terminal_title", None):
+                    self.terminal_title.update_state("processing")
                 self.overlay.show_processing()
                 self.audio_feedback.play_stop()
                 threading.Thread(
@@ -344,6 +358,8 @@ class KuralRuntime:
                 self.state = RuntimeState.PROCESSING
                 if getattr(self, "streaming", None):
                     self.streaming.stop()
+                if getattr(self, "terminal_title", None):
+                    self.terminal_title.update_state("processing")
                 threading.Thread(
                     target=self._finish_recording, daemon=True, name="finish-recording"
                 ).start()
@@ -488,6 +504,8 @@ class KuralRuntime:
         finally:
             with self._state_lock:
                 self.state = RuntimeState.IDLE
+            if getattr(self, "terminal_title", None):
+                self.terminal_title.update_state("idle")
 
     def start_hotkeys(self) -> bool:
         """Register global Windows hotkeys."""
@@ -536,6 +554,8 @@ class KuralRuntime:
         self.start_hotkeys()
         if self.mouse_trigger:
             self.mouse_trigger.start()
+        if getattr(self, "terminal_title", None):
+            self.terminal_title.start()
         self.overlay.start()
         self.tray.start()
 
@@ -554,6 +574,7 @@ class KuralRuntime:
             getattr(self.overlay, "stop", None),
             getattr(self.tray, "stop", None),
             getattr(self.mouse_trigger, "stop", None),
+            getattr(self.terminal_title, "stop", None),
             getattr(self.recorder, "shutdown", None),
             getattr(self.engine, "_cancel_idle_timer", None),
         ):

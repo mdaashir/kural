@@ -76,6 +76,7 @@ licence texts are reproduced here in full, as required by the MIT licence terms.
 | `kural/ui/settings_window.py` | `src/whisper_key/settings_ui.py` + `whisp/settings.py` |
 | `kural/ui/history_window.py` | `src/whisper_key/history_window.py` |
 | `kural/ui/cheat_sheet.py` | `src/whisper_key/cheat_sheet.py` |
+| `kural/ui/terminal_title.py` | `src/whisper_key/terminal_title.py` |
 | `kural/doctor.py` | `src/whisper_key/doctor.py` |
 
 ---
