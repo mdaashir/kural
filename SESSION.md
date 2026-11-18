@@ -1,35 +1,33 @@
 # SESSION.md
 
 ## Current milestone
-**Terminal Tab Title Live State Indicator**
+**Fallback Window Safety Net for Un-deliverable Dictation**
 
 ## Current branch
-`feat/terminal-title`
+`feat/fallback-window`
 
 ## PR
 PR to be opened with gh after verification passes.
 
 ## Last completed step
-Implemented dynamic terminal tab/window title state updates:
-- `kural/ui/terminal_title.py` (152 lines):
-  - `TerminalTitle`: manages ANSI `OSC 0` escape sequence emission (`\033]0;<title>\007`) to set console tab headers in Windows Terminal, PowerShell, CMD, or VS Code terminal.
-  - Live state transitions:
-    - `"idle"`: `"Kural"`
-    - `"recording"`: pulsing animation `🔴 Kural` <-> `⚪ Kural`
-    - `"processing"`: `⏳ Kural`
-  - Wakes immediately on state transitions via `threading.Event`.
-  - Safe TTY suppression: automatically disabled when `sys.stdout` is not a TTY (`pythonw.exe`, windowless mode, redirected output), preventing ANSI escape sequences from corrupting log files.
+Implemented fallback window safety net dialog:
+- `kural/ui/fallback_window.py` (251 lines):
+  - `FallbackWindow`: dark-themed dialog (`#0d1117`, `#161b22`, `#30363d`, `#3fb950`) centered on screen that rescues unplaced speech when `insert_text_at_caret()` fails.
+  - Inserts transcript into `tk.Text` pre-selected (`tag_add('sel', ...)`) so a single `Ctrl+C` or clicking "Copy" rescues it.
+  - Automatically copies to clipboard on open and provides a "✓ Copied" confirmation button.
+  - Keyboard shortcuts: `Escape` closes, `Ctrl+C` copies.
+  - Thread-safe guard: single-instance lock prevents stacking duplicate dialogs on rapid failures.
 - `kural/runtime.py`:
-  - Initialized `TerminalTitle` and wired state transitions in `toggle_dictation`, `on_dictation_release`, `toggle_command`, `stop_and_process`, and `_process_audio`.
-  - Started loop in `run()` and cleaned up in `shutdown()`.
+  - Initialized `FallbackWindow` and wired automatic popup when `insert_text_at_caret()` returns `False`.
 - `THIRD_PARTY_NOTICES.md`:
-  - Recorded provenance for `terminal_title.py` (ported from `src/whisper_key/terminal_title.py`).
+  - Recorded provenance for `fallback_window.py` (ported from `src/whisper_key/fallback_window.py`).
 - Unit tests:
-  - 6 new unit tests in `tests/ui/test_terminal_title.py` covering title composition, frame parsing, non-TTY suppression, TTY animation, and stream error handling.
-  - 464 total passing tests, 0 requiring GPU or mic, ruff clean.
+  - 5 new unit tests in `tests/ui/test_fallback_window.py` covering availability, empty text suppression, thread dispatch, stacking prevention, text pre-selection, and clipboard copy.
+  - Added test in `tests/test_runtime.py` verifying fallback window popup on failed caret insertion.
+  - 470 total passing tests, 0 requiring GPU or mic, ruff clean.
 
 ## Next step
-1. Push `feat/terminal-title` and open PR into `main` with `gh pr create`.
+1. Push `feat/fallback-window` and open PR into `main` with `gh pr create`.
 2. Wait for user to review and merge.
 
 ## Open questions
@@ -43,7 +41,5 @@ Implemented dynamic terminal tab/window title state updates:
 - [x] **Elevated window message implemented** — UIPI token inspection warns user with actionable advice.
 
 ## Decisions recorded (this session)
-- ANSI OSC 0 terminal title: provides an immediate secondary status surface for console users without requiring GUI windows.
-  Reason: complies with base project features in `whisper-local`; allows users running in visible terminal to view recording state in tab headers.
-- Non-TTY suppression: writes skipped when stdout is not a TTY.
-  Reason: prevents escape codes from polluting redirected log files or windowless pythonw instances.
+- Fallback dialog safety net: prevents dictations from being lost when the foreground application lacks an editable text caret or is an elevated Admin window blocking keystrokes.
+  Reason: complies with base project features in `whisper-local`; fulfills core "never-lose-a-dictation" promise.

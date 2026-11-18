@@ -44,12 +44,25 @@ class TestKuralRuntimeStateTransitions:
         self.runtime.state = RuntimeState.RECORDING_DICTATION
         self.runtime.engine.transcribe_audio.return_value = "hello world"
 
-        with patch("kural.runtime.insert_text_at_caret") as mock_insert:
+        with patch("kural.runtime.insert_text_at_caret", return_value=True) as mock_insert:
             fake_audio = np.zeros(16000, dtype=np.float32)
             self.runtime._process_audio(fake_audio)
             # Default style is formal (capitalized + trailing period)
             assert mock_insert.call_args[0][0] == "Hello world."
             assert self.runtime.state == RuntimeState.IDLE
+
+    def test_failed_insertion_triggers_fallback_window(self):
+        self.runtime.state = RuntimeState.RECORDING_DICTATION
+        self.runtime.engine.transcribe_audio.return_value = "unplaced speech"
+        self.runtime.fallback_window = MagicMock()
+
+        # Simulate failed insertion (e.g. no focused window / dropped keystrokes)
+        with patch("kural.runtime.insert_text_at_caret", return_value=False):
+            fake_audio = np.zeros(16000, dtype=np.float32)
+            self.runtime._process_audio(fake_audio)
+            self.runtime.fallback_window.show.assert_called_once()
+            call_text = self.runtime.fallback_window.show.call_args[0][0]
+            assert "Unplaced speech" in call_text
 
     def test_process_audio_command_routes_to_executor(self):
         self.runtime.state = RuntimeState.RECORDING_COMMAND
