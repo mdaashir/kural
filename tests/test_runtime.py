@@ -119,6 +119,24 @@ class TestKuralRuntimeStateTransitions:
         self.runtime.cancel_dictation()
         self.runtime.recorder.stop_recording.assert_not_called()
 
+    def test_stop_phrase_triggers_auto_stop_and_strips_phrase(self):
+        self.runtime.state = RuntimeState.RECORDING_DICTATION
+        self.runtime.recording_mode = "toggle"
+        from kural.engine.stop_phrase import StopPhraseMatcher
+
+        self.runtime.stop_phrase_matcher = StopPhraseMatcher(enabled=True)
+        self.runtime.stop_and_process = MagicMock()
+
+        # Feed partial text ending with "stop dictation"
+        self.runtime._on_live_partial("Let's wrap up this work stop dictation")
+
+        assert self.runtime._stop_phrase_detected is True
+        # Verify background stop trigger thread was scheduled
+        import time
+
+        time.sleep(0.05)
+        self.runtime.stop_and_process.assert_called_once()
+
     def test_push_to_talk_release_stops_recording(self):
         self.runtime.recording_mode = "push_to_talk"
         self.runtime.state = RuntimeState.RECORDING_DICTATION

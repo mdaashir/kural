@@ -123,6 +123,16 @@ class KuralRuntime:
             factor=float(duck_cfg.get("factor", 0.25)),
         )
 
+        # Voice stop phrase matcher (Hex-inspired)
+        from kural.engine.stop_phrase import StopPhraseMatcher
+
+        sp_cfg = self.hotkey_cfg.get("stop_phrase") or {}
+        self.stop_phrase_matcher = StopPhraseMatcher(
+            enabled=bool(sp_cfg.get("enabled", False)),
+            phrases=sp_cfg.get("phrases"),
+        )
+        self._stop_phrase_detected = False
+
         # Recovery, adaptive learning, and app rules
         from kural.control.app_rules import AppRules
         from kural.engine.adaptive import AdaptiveLearner
@@ -278,6 +288,28 @@ class KuralRuntime:
         """Receive live partial interim text and update the floating pill."""
         if self.state in (RuntimeState.RECORDING_DICTATION, RuntimeState.RECORDING_COMMAND):
             self.overlay.update_partial_text(partial_text)
+
+            # Check for hands-free voice stop phrase
+            matcher = getattr(self, "stop_phrase_matcher", None)
+            is_hands_free = self.recording_mode == "toggle" or getattr(
+                self, "_hands_free_locked", False
+            )
+            if (
+                matcher
+                and matcher.enabled
+                and is_hands_free
+                and self.state == RuntimeState.RECORDING_DICTATION
+            ):
+                matched = matcher.check_match(partial_text)
+                if matched:
+                    logger.info(f"Stop phrase detected: '{matched}'. Auto-stopping dictation.")
+                    self._stop_phrase_detected = True
+                    # Dispatched on separate thread to avoid deadlock in streaming loop
+                    threading.Thread(
+                        target=self.stop_and_process,
+                        daemon=True,
+                        name="stop-phrase-trigger",
+                    ).start()
 
     def toggle_dictation(self) -> None:
         """Toggle dictation recording state on hotkey press."""
@@ -511,6 +543,17 @@ class KuralRuntime:
                 # 3. Apply learned corrections and Wispr Flow formatting
                 if getattr(self, "adaptive", None):
                     text = self.adaptive.apply_corrections(text)
+
+                # Strip trailing stop phrase if detected during hands-free dictation
+                if getattr(self, "stop_phrase_matcher", None) and getattr(
+                    self, "_stop_phrase_detected", False
+                ):
+                    self._stop_phrase_detected = False
+                    text = self.stop_phrase_matcher.strip_stop_phrase(text)
+                    if not text.strip():
+                        logger.info("Speech contained only the stop phrase; nothing to insert.")
+                        self.overlay.flash_success("Cancelled")
+                        return
 
                 style_name = (matched_rule.get("style") if matched_rule else None) or "formal"
                 is_verbatim = style_name == "verbatim"

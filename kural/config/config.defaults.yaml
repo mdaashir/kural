@@ -116,6 +116,14 @@ hotkey: # Hotkey trigger configuration
     recording_mode: toggle # toggle or push_to_talk
     mouse_button: ""
     double_tap_to_lock: false
+    stop_phrase: # Hands-free voice stop phrase detection (Hex-inspired)
+        enabled: false
+        phrases:
+            - "stop dictation"
+            - "stop recording"
+            - "முடி"
+            - "நிறுத்து"
+            - "stop பண்ணு"
 
 clipboard: # Insertion settings
     auto_paste: true
