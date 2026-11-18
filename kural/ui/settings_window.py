@@ -20,6 +20,7 @@ MODELS = ["large-v3-turbo", "distil-large-v3.5", "large-v3", "small", "base", "t
 DEVICES = ["cuda", "cpu"]
 COMPUTE_TYPES = ["float16", "int8"]
 LANGUAGES = ["en", "ta", "auto"]
+INDIC_SCRIPTS = ["native", "roman"]
 POSITIONS = ["bottom-center", "top-center", "bottom-right", "top-right"]
 RECORDING_MODES = ["toggle", "push_to_talk"]
 MOUSE_BUTTONS = ["", "x1", "x2", "both", "middle"]
@@ -60,6 +61,7 @@ class SettingsWindow:
         self.var_device = None
         self.var_compute = None
         self.var_lang = None
+        self.var_indic_script = None
         self.var_idle_vram = None
         self.var_dict_hk = None
         self.var_cmd_hk = None
@@ -132,6 +134,7 @@ class SettingsWindow:
         self.var_device = tk.StringVar(value=self.whisper_cfg.get("device", "cuda"))
         self.var_compute = tk.StringVar(value=self.whisper_cfg.get("compute_type", "float16"))
         self.var_lang = tk.StringVar(value=self.whisper_cfg.get("language", "en"))
+        self.var_indic_script = tk.StringVar(value=self.whisper_cfg.get("indic_script", "native"))
         self.var_idle_vram = tk.IntVar(value=int(self.whisper_cfg.get("idle_unload_minutes", 5)))
 
         self.var_dict_hk = tk.StringVar(value=self.hotkey_cfg.get("recording_hotkey", "ctrl+space"))
@@ -181,6 +184,7 @@ class SettingsWindow:
         _add_combo("Inference Device:", self.var_device, DEVICES)
         _add_combo("Compute Precision:", self.var_compute, COMPUTE_TYPES)
         _add_combo("Default Language:", self.var_lang, LANGUAGES)
+        _add_combo("Tamil Script Style:", self.var_indic_script, INDIC_SCRIPTS)
 
         ttk.Label(parent, text="Idle VRAM Unload (min):").grid(
             row=row, column=0, sticky="w", pady=6
@@ -316,6 +320,9 @@ class SettingsWindow:
                 "device": self.var_device.get() if self.var_device else "cuda",
                 "compute_type": self.var_compute.get() if self.var_compute else "float16",
                 "language": self.var_lang.get() if self.var_lang else "en",
+                "indic_script": (
+                    self.var_indic_script.get() if self.var_indic_script else "native"
+                ),
                 "idle_unload_minutes": int(self.var_idle_vram.get()) if self.var_idle_vram else 5,
             },
             "hotkey": {

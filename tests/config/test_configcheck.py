@@ -70,3 +70,10 @@ class TestConfigValidation:
         assert len(issues) == 1
         assert "clamped to 300" in issues[0]
         assert clean["audio"]["max_duration"] == 300
+
+    def test_invalid_indic_script_falls_back(self):
+        cfg = {"whisper": {"indic_script": "latin_invalid"}}
+        clean, issues = validate_config(cfg)
+        assert len(issues) == 1
+        assert "Invalid whisper.indic_script" in issues[0]
+        assert clean["whisper"]["indic_script"] == "native"

@@ -71,6 +71,7 @@ class KuralRuntime:
             vad_manager=self.vad_manager,
             idle_unload_minutes=int(self.whisper_cfg.get("idle_unload_minutes", 5)),
             languages=self.whisper_cfg.get("languages", ["en", "ta"]),
+            indic_script=self.whisper_cfg.get("indic_script", "native"),
         )
 
         from kural.engine.audio_recorder import AudioRecorder

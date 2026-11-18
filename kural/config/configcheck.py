@@ -31,6 +31,7 @@ VALID_OVERLAY_POSITIONS = {
     "top-left",
 }
 VALID_BACKENDS = {"faster_whisper", "whisper_cpp"}
+VALID_INDIC_SCRIPTS = {"native", "roman"}
 
 
 def validate_config(config: dict[str, Any]) -> tuple[dict[str, Any], list[str]]:
@@ -63,6 +64,11 @@ def validate_config(config: dict[str, Any]) -> tuple[dict[str, Any], list[str]]:
     if backend is not None and backend not in VALID_BACKENDS:
         issues.append(f"Invalid whisper.backend '{backend}'. Falling back to 'faster_whisper'.")
         whisper["backend"] = "faster_whisper"
+
+    script = whisper.get("indic_script")
+    if script is not None and script not in VALID_INDIC_SCRIPTS:
+        issues.append(f"Invalid whisper.indic_script '{script}'. Falling back to 'native'.")
+        whisper["indic_script"] = "native"
 
     idle = whisper.get("idle_unload_minutes")
     if idle is not None:
