@@ -1,20 +1,20 @@
 # SESSION.md
 
 ## Current milestone
-**Verify original app focus before dictation delivery**
+**Apply app rules to verified dictation destination**
 
 ## Current branch
-`fix/return-to-app-focus-verification`
+`fix/app-rules-verified-destination`
 
 ## PR
 PR to be opened with gh after verification passes.
 
 ## Last completed step
-PR #55 merged into main. Follow-up safety fix: `restore_foreground_window` now checks the actual foreground HWND after activation. When Return to App is on, paste/type is withheld unless the recorded window is confirmed foreground; the fallback window offers the transcript instead. Copy-only never refocuses an app. Focused tests cover successful activation, refusal, unconfirmed activation, missing origin, and copy-only behavior. `ruff check .`, `ruff format --check .`, and `pytest -q` passed (510 tests); diff reviewed.
+PR #56 merged into main. This follow-up resolves the destination before matching the app rule: with Return to App enabled, Kural restores and verifies the original window before selecting formatting or suppression. It checks focus again before insertion and uses the fallback window if focus has shifted. Copy-only still does not refocus an app; Return to App off retains existing foreground behavior. Mocked tests cover focus shifting to/from password managers, formatting, failed restoration, and copy-only. `ruff check .`, `ruff format --check .` and `pytest -q` passed (514 tests); diff reviewed.
 
 ## Next step
-1. Push `fix/return-to-app-focus-verification` and open PR into `main` with `gh`.
-2. Wait for user to review and merge.
+1. Push `fix/app-rules-verified-destination` and open its PR into `main` with gh.
+2. Wait for user review and merge.
 
 ## Open questions
 - HWND verification is a point-in-time check; a separate process can still change focus afterward. A Windows hardware run is still needed to assess real foreground behavior.
@@ -27,6 +27,6 @@ PR #55 merged into main. Follow-up safety fix: `restore_foreground_window` now c
 - [x] **Elevated window message implemented** — UIPI token inspection warns user with actionable advice.
 
 ## Decisions recorded (this session)
-- Foreground activation is a request, not proof: only a matching foreground HWND permits paste/type delivery when Return to App is enabled.
-  Reason: Windows may refuse activation or the original window may have closed; do not inject private text into the wrong app.
-- Copy-only delivery skips focus restoration because it sends no keystrokes; fallback UI retains the transcript if focus confirmation fails.
+- When Return to App is enabled for paste/type, apply app rules only after the original HWND has been confirmed as the foreground window; verify focus once more before sending keystrokes.
+  Reason: formatting or password-manager suppression must describe the actual delivery app, not a temporary notification or other app.
+- Copy-only and Return to App disabled retain their previous behavior; HWND checks are point-in-time and do not eliminate later OS focus races.
