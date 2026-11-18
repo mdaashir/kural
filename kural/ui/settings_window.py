@@ -75,6 +75,7 @@ class SettingsWindow:
         self.var_mouse_button = None
         self.var_delivery_method = None
         self.var_double_tap = None
+        self.var_stop_phrase = None
         self.var_vault = None
         self.var_whisper_mode = None
         self.var_noise_suppression = None
@@ -154,6 +155,8 @@ class SettingsWindow:
         self.var_double_tap = tk.BooleanVar(
             value=bool(self.hotkey_cfg.get("double_tap_to_lock", False))
         )
+        sp_cfg = self.hotkey_cfg.get("stop_phrase") or {}
+        self.var_stop_phrase = tk.BooleanVar(value=bool(sp_cfg.get("enabled", False)))
 
         self.var_overlay_enabled = tk.BooleanVar(value=bool(self.overlay_cfg.get("enabled", True)))
         self.var_overlay_pos = tk.StringVar(value=self.overlay_cfg.get("position", "bottom-center"))
@@ -286,6 +289,13 @@ class SettingsWindow:
         )
         c_lock.grid(row=10, column=0, columnspan=2, sticky="w", pady=6)
 
+        c_sp = ttk.Checkbutton(
+            parent,
+            text="Voice Stop Phrase (say 'stop dictation' to finish hands-free)",
+            variable=self.var_stop_phrase,
+        )
+        c_sp.grid(row=11, column=0, columnspan=2, sticky="w", pady=6)
+
     def _build_ui_tab(self, parent, ttk) -> None:
         c1 = ttk.Checkbutton(
             parent, text="Enable Floating Status Pill", variable=self.var_overlay_enabled
@@ -375,6 +385,9 @@ class SettingsWindow:
                 "double_tap_to_lock": bool(self.var_double_tap.get())
                 if self.var_double_tap
                 else False,
+                "stop_phrase": {
+                    "enabled": bool(self.var_stop_phrase.get()) if self.var_stop_phrase else False,
+                },
             },
             "clipboard": {
                 "delivery_method": self.var_delivery_method.get().strip().lower()

@@ -119,6 +119,21 @@ def validate_config(config: dict[str, Any]) -> tuple[dict[str, Any], list[str]]:
             elif not re.match(r"^[a-zA-Z0-9_+ -]+$", hk_val):
                 issues.append(f"hotkey.{hk_name} contains invalid characters: '{hk_val}'.")
 
+    sp = hotkey.get("stop_phrase")
+    if isinstance(sp, dict):
+        phrases = sp.get("phrases")
+        if phrases is not None and not isinstance(phrases, list):
+            issues.append(
+                "hotkey.stop_phrase.phrases must be a list of strings; resetting to defaults."
+            )
+            sp["phrases"] = [
+                "stop dictation",
+                "stop recording",
+                "முடி",
+                "நிறுத்து",
+                "stop பண்ணு",
+            ]
+
     # 3. Validate 'overlay' section
     overlay = cfg.setdefault("overlay", {})
     if isinstance(overlay, dict):
