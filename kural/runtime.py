@@ -388,6 +388,44 @@ class KuralRuntime:
                     target=self._finish_recording, daemon=True, name="finish-recording"
                 ).start()
 
+    def cancel_dictation(self) -> None:
+        """Abort and discard active recording without transcribing or pasting (Hex-inspired)."""
+        with self._state_lock:
+            if self.state not in (RuntimeState.RECORDING_DICTATION, RuntimeState.RECORDING_COMMAND):
+                return
+
+            logger.info("Cancelling recording and discarding audio buffer.")
+            self.state = RuntimeState.IDLE
+            self._hands_free_locked = False
+
+            # Stop recorder and discard audio
+            try:
+                self.recorder.stop_recording()
+            except Exception as e:
+                logger.debug(f"Error stopping recorder on cancel: {e}")
+
+            # Stop streaming interim preview
+            if getattr(self, "streaming", None):
+                self.streaming.stop()
+
+            # Restore audio ducking
+            if getattr(self, "ducker", None):
+                self.ducker.restore()
+
+            # Reset visual overlay
+            if getattr(self, "overlay", None):
+                self.overlay.hide()
+
+            # Reset terminal title
+            if getattr(self, "terminal_title", None):
+                self.terminal_title.update_state("idle")
+
+            # Audio cue for cancellation (stop sound)
+            if getattr(self, "audio_feedback", None):
+                self.audio_feedback.play_stop()
+
+            print("\n🚫 Dictation cancelled (audio discarded).")
+
     def _finish_recording(self) -> None:
         audio_data = self.recorder.stop_recording()
         self._process_audio(audio_data)
@@ -543,6 +581,7 @@ class KuralRuntime:
 
             dict_key = self.hotkey_cfg.get("recording_hotkey", "ctrl+space")
             cmd_key = self.hotkey_cfg.get("command_hotkey", "ctrl+shift+space")
+            cancel_key = self.hotkey_cfg.get("cancel_hotkey", "escape")
 
             # Parse hotkey strings to global_hotkeys format
             def _to_bindings(hk_str: str):
@@ -557,6 +596,8 @@ class KuralRuntime:
                 [_to_bindings(dict_key), key_up_action, self.toggle_dictation],
                 [_to_bindings(cmd_key), None, self.toggle_command],
             ]
+            if cancel_key:
+                bindings.append([_to_bindings(cancel_key), None, self.cancel_dictation])
 
             global_hotkeys.register_hotkeys(bindings)
             global_hotkeys.start_checking_hotkeys()

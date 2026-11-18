@@ -1,37 +1,34 @@
 # SESSION.md
 
 ## Current milestone
-**Automatic Output Audio Ducking (inspired by anomalyco/hex)**
+**Instant Dictation Cancel / Discard Hotkey (inspired by anomalyco/hex)**
 
 ## Current branch
-`feat/audio-output-ducking`
+`feat/dictation-cancel-hotkey`
 
 ## PR
 PR to be opened with gh after verification passes.
 
 ## Last completed step
-Implemented output audio ducking inspired by `anomalyco/hex`:
-- `kural/engine/audio_ducking.py` (111 lines):
-  - `AudioDucker`: automatically and smoothly lowers system playback volume (music, videos, podcasts) when recording starts, preventing speaker audio from bleeding into the microphone.
-  - Smooth 4-step ramp down (~100ms) on start, and smooth 5-step ramp up (~200ms) on restore to prevent audible clicks or pops.
-  - User volume protection: if user manually adjusts system volume during dictation, restore is safely skipped to respect manual override.
-- `kural/config/config.defaults.yaml`:
-  - Added `audio.ducking: {enabled: false, factor: 0.25}`.
-- `kural/config/configcheck.py`:
-  - Added schema validation ensuring `0.0 <= factor <= 1.0` with automatic clamping.
+Implemented dictation cancel and discard hotkey inspired by `anomalyco/hex`:
 - `kural/runtime.py`:
-  - Initialized `AudioDucker` and wired `start()` into dictation/command start and `restore()` into recording finish/cancellation.
+  - `cancel_dictation()`: immediately aborts active recording (dictation or voice control), discards audio without transcribing or typing, stops recorder, halts live streaming preview, restores audio ducking, resets overlay to idle, updates terminal title, and plays stop cue.
+  - Global hotkey listener binds `hotkey.cancel_hotkey` (default: `escape`).
+- `kural/config/config.defaults.yaml`:
+  - Added `hotkey.cancel_hotkey: "escape"`.
+- `kural/config/configcheck.py`:
+  - Added validation for `cancel_hotkey` ensuring valid characters.
 - `kural/ui/settings_window.py`:
-  - Added `[ ] Audio Ducking (lower music/video volume while dictating)` checkbox to Settings.
+  - Added "Cancel Recording:" configuration row in Hotkeys tab.
 - `README.md`:
-  - Documented Audio Ducking in architecture tree and smart text features; updated test badge to 484 passing.
+  - Documented Instant Cancel Hotkey in smart text highlights; updated test badge to 486 passing.
 - Unit tests:
-  - 5 new unit tests in `tests/engine/test_audio_ducking.py` covering factor clamping, ramp down and restoration, ducked state prevention, and restore no-ops.
-  - Updated tests in `tests/config/test_configcheck.py` and `tests/ui/test_settings.py`.
-  - 484 total passing tests, 0 requiring GPU or mic, ruff clean.
+  - 2 new unit tests in `tests/test_runtime.py` covering abort & discard, and idle no-op.
+  - Updated `tests/ui/test_settings.py` for `cancel_hotkey`.
+  - 486 total passing tests, 0 requiring GPU or mic, ruff clean.
 
 ## Next step
-1. Push `feat/audio-output-ducking` and open PR into `main` with `gh pr create`.
+1. Push `feat/dictation-cancel-hotkey` and open PR into `main` with `gh pr create`.
 2. Wait for user to review and merge.
 
 ## Open questions
@@ -45,7 +42,5 @@ Implemented output audio ducking inspired by `anomalyco/hex`:
 - [x] **Elevated window message implemented** — UIPI token inspection warns user with actionable advice.
 
 ## Decisions recorded (this session)
-- Output audio ducking: inspired by `anomalyco/hex` (`src/audio/output_ducking.rs`).
-  Reason: prevents background music/video playback from being picked up by the microphone and hallucinated by Whisper.
-- Asynchronous ramp: volume ramp runs on daemon threads with 4/5 micro-steps.
-  Reason: completely eliminates audio pops or harsh sudden volume jumps without blocking the recording thread.
+- Cancel hotkey: inspired by `anomalyco/hex` (`dictation cancel` / `cancel_hotkey: escape`).
+  Reason: gives users an instant escape hatch to abort recording if cough, phone call, or accidental trigger happens, without running GPU inference or inserting unwanted text.

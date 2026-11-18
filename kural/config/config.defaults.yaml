@@ -112,6 +112,7 @@ hotkey: # Hotkey trigger configuration
     auto_send_key: ""
     command_hotkey: "ctrl+shift+space"
     paste_last_hotkey: "ctrl+alt+v"
+    cancel_hotkey: "escape" # Discard recording without transcribing or pasting (Hex-inspired)
     recording_mode: toggle # toggle or push_to_talk
     mouse_button: ""
     double_tap_to_lock: false
