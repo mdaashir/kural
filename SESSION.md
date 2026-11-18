@@ -1,36 +1,28 @@
 # SESSION.md
 
 ## Current milestone
-**Synthesized Soft Audio Cues (Wispr Flow Style)**
+**Multi-Key Push-to-Talk Chord Tracking**
 
 ## Current branch
-`feat/synthesized-audio-cues`
+`feat/chord-matcher`
 
 ## PR
 PR to be opened with gh after verification passes.
 
 ## Last completed step
-Implemented pure-Python synthesized soft musical chimes:
-- `kural/engine/cues.py` (80 lines):
-  - In-memory sine-tone harmonic synthesis using stdlib `wave`, `struct`, and `math` (zero external audio files required on disk).
-  - Smooth 6ms attack envelope and exponential decay with octave partials, giving a warm bell-like chime body.
-  - Chimes for all dictation states:
-    - `"start"`: rising two-tone chime (E5 -> B5, 659 Hz -> 988 Hz).
-    - `"stop"`: falling two-tone chime (B5 -> E5, 988 Hz -> 659 Hz).
-    - `"done"`: bright confirmation chord (G5 -> C6, 784 Hz -> 1046 Hz).
-    - `"transform"`: harmonic triple chime (C5 -> E5 -> G5, 523 Hz -> 659 Hz -> 784 Hz).
-    - `"error"`: warm low rejection tone (A3 -> F3, 220 Hz -> 175 Hz).
-  - Thread-safe in-memory caching.
-- `kural/engine/audio_feedback.py`:
-  - Updated `AudioFeedback` to play modern synthesized soft chimes by default.
-  - Added `play_transform()` for smart voice edits and rewrites.
-  - Retained fallback to custom WAV files or Windows system aliases.
-- 4 new unit tests in `tests/engine/test_cues.py` (402 total passing, 0 requiring GPU, mic, or network, ruff clean).
+Implemented multi-key hold-to-talk chord matcher:
+- `kural/control/chords.py` (90 lines):
+  - `ChordMatcher`: tracks raw key down and key up events to determine multi-key chord satisfaction.
+  - Generates clear state transitions: `"press"` when all keys in the chord are held, `"release"` the instant any single key is released.
+  - Normalizes aliases: `control` -> `ctrl`, `win`/`super`/`cmd` -> `windows`, `option` -> `alt`, `altgr` -> `right alt`.
+  - Handles generic vs. sided modifiers: `ctrl` matches either Left or Right Ctrl, while `right ctrl` matches only the right one.
+  - Resolves Windows driver asymmetry where a sided key is sent on key down and a generic key on key up.
+- 7 new unit tests in `tests/control/test_chords.py` (409 total passing, 0 requiring GPU, mic, or network, ruff clean).
 
 ## Next step
-1. Push `feat/synthesized-audio-cues` and open PR into `main` with `gh pr create`.
+1. Push `feat/chord-matcher` and open PR into `main` with `gh pr create`.
 2. Wait for user to review and merge.
-3. Test pressing `Ctrl+Space` with headphones on to hear the gentle rising bell chime!
+3. Test using multi-key hold combinations like `ctrl+windows` or `ctrl+alt` for push-to-talk dictation!
 
 ## Open questions
 - None.
@@ -48,5 +40,7 @@ Implemented pure-Python synthesized soft musical chimes:
 - Linter: `ruff` only. Reason: handles pycodestyle + isort + pyupgrade in one tool.
 - Sub-package layout: `engine/`, `control/`, `config/`, `ui/` as top-level siblings under `kural/`.
   Reason: clean separation of concerns; each milestone targets exactly one sub-package.
-- Synthesized cues: pure-Python in-memory WAV generation without bundling audio asset files.
-  Reason: keeps package lightweight, eliminates broken asset path issues, and produces gentle headphone-friendly tones.
+- Instant release transition: breaks the chord immediately when any member key is released.
+  Reason: guarantees crisp push-to-talk stop and minimizes trailing mic silence.
+- Asymmetric driver handling: drops generic modifier keys when sided keys are released.
+  Reason: prevents stuck keys in raw Windows event streams.
