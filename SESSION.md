@@ -1,35 +1,39 @@
 # SESSION.md
 
 ## Current milestone
-**Copy Only Delivery Method (`delivery_method: copy`, inspired by anomalyco/hex)**
+**Voice Stop Phrase for Hands-Free Dictation (inspired by anomalyco/hex)**
 
 ## Current branch
-`feat/copy-only-delivery`
+`feat/voice-stop-phrase`
 
 ## PR
 PR to be opened with gh after verification passes.
 
 ## Last completed step
-Implemented Copy Only text delivery method inspired by `anomalyco/hex` (`copy_only`):
-- `kural/control/windows.py`:
-  - Extended `insert_text_at_caret(text, delivery_method)` to support `delivery_method == "copy"`.
-  - Places transcribed text on the system clipboard via `pyperclip.copy()` without simulating `Ctrl+V` or injecting keystrokes into the active window.
+Implemented voice stop phrase detection and transcript stripping inspired by `anomalyco/hex` (`labs.stop_phrase`):
+- `kural/engine/stop_phrase.py` (74 lines):
+  - `StopPhraseMatcher`: detects spoken finish phrases at the end of streaming interim speech.
+  - Supports English (`"stop dictation"`, `"stop recording"`) and Tamil/Tanglish aliases (`"முடி"`, `"நிறுத்து"`, `"stop பண்ணு"`).
+  - `strip_stop_phrase(text)`: cleanly removes trailing stop phrases and associated punctuation from finalized transcripts.
 - `kural/runtime.py`:
-  - When `delivery_method == "copy"`, overlay flashes **"Copied"** (instead of "Typed").
+  - Initialized `StopPhraseMatcher` and fed incoming partial text from `_on_live_partial()`.
+  - When matched during hands-free dictation (`toggle` or double-tap locked mode), immediately auto-finalizes recording on a background thread and cleanly strips the stop phrase before typing.
+- `kural/config/config.defaults.yaml`:
+  - Added `hotkey.stop_phrase: {enabled: false, phrases: [...]}`.
 - `kural/config/configcheck.py`:
-  - Added `VALID_DELIVERY_METHODS = {"paste", "type", "copy"}` and validation rule falling back to `"paste"` if unrecognized.
+  - Added validation for `hotkey.stop_phrase.phrases`.
 - `kural/ui/settings_window.py`:
-  - Added `"copy"` to `DELIVERY_METHODS` list with updated descriptive helper text.
+  - Added `[ ] Voice Stop Phrase (say 'stop dictation' to finish hands-free)` checkbox in Hotkeys tab.
 - `README.md`:
-  - Documented `"copy"` delivery method in key highlights and updated test badge to 489 passing.
+  - Added `stop_phrase.py` to architecture tree, documented feature in highlights, and updated test badge to 499 passing.
 - Unit tests:
-  - Added unit test in `tests/control/test_windows.py` testing copy only delivery without keystroke injection.
-  - Added unit test in `tests/test_runtime.py` testing overlay "Copied" feedback.
-  - Added unit test in `tests/config/test_configcheck.py` testing delivery method validation.
-  - 489 total passing tests, 0 requiring GPU or mic, ruff clean.
+  - 9 new unit tests in `tests/engine/test_stop_phrase.py` covering matching, case-insensitivity, Tamil phrases, mid-sentence protection, and clean stripping.
+  - Unit test in `tests/test_runtime.py` verifying auto-stopping and phrase stripping.
+  - Updated `tests/ui/test_settings.py` for `stop_phrase` serialization.
+  - 499 total passing tests, 0 requiring GPU or mic, ruff clean.
 
 ## Next step
-1. Push `feat/copy-only-delivery` and open PR into `main` with `gh pr create`.
+1. Push `feat/voice-stop-phrase` and open PR into `main` with `gh pr create`.
 2. Wait for user to review and merge.
 
 ## Open questions
@@ -43,5 +47,7 @@ Implemented Copy Only text delivery method inspired by `anomalyco/hex` (`copy_on
 - [x] **Elevated window message implemented** — UIPI token inspection warns user with actionable advice.
 
 ## Decisions recorded (this session)
-- Copy Only delivery: inspired by `anomalyco/hex` (`labs.copy_only`).
-  Reason: allows users to dictate notes or speech directly to their clipboard without overwriting selections or typing into focused windows.
+- Voice stop phrase: inspired by `anomalyco/hex` (`labs.stop_phrase`).
+  Reason: allows hands-free dictation from a distance or with hands occupied, cleanly dropping the trigger phrase from typed text.
+- Punctuation & prefix tolerance: stripped without slicing off prior sentence-ending periods.
+  Reason: preserves grammatically complete sentences before the stop phrase.
