@@ -361,6 +361,15 @@ class KuralRuntime:
             if getattr(self, "last_take", None) and not self.incognito:
                 self.last_take.save(audio_data)
 
+            # Optional spectral noise suppression
+            audio_cfg = self.config_manager.get_audio_config()
+            ns_cfg = audio_cfg.get("noise_suppression") or {}
+            if ns_cfg.get("enabled", False):
+                from kural.engine.noise_suppression import apply_noise_reduction
+
+                strength = float(ns_cfg.get("strength", 0.75))
+                audio_data = apply_noise_reduction(audio_data, sample_rate=16000, strength=strength)
+
             prior_state = self.state
             print("⏳ Transcribing on GPU...")
             text = self.engine.transcribe_audio(audio_data)

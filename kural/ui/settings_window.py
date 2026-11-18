@@ -76,6 +76,7 @@ class SettingsWindow:
         self.var_double_tap = None
         self.var_vault = None
         self.var_whisper_mode = None
+        self.var_noise_suppression = None
 
     def show(self) -> None:
         """Construct and display the settings window (blocks until closed)."""
@@ -169,6 +170,8 @@ class SettingsWindow:
         audio_cfg = self.config_manager.config.get("audio") or {}
         wm_cfg = audio_cfg.get("whisper_mode") or {}
         self.var_whisper_mode = tk.BooleanVar(value=bool(wm_cfg.get("enabled", True)))
+        ns_cfg = audio_cfg.get("noise_suppression") or {}
+        self.var_noise_suppression = tk.BooleanVar(value=bool(ns_cfg.get("enabled", False)))
 
     def _build_engine_tab(self, parent, ttk) -> None:
         row = 0
@@ -202,6 +205,13 @@ class SettingsWindow:
             variable=self.var_whisper_mode,
         )
         c_wm.grid(row=row, column=0, columnspan=2, sticky="w", pady=6)
+
+        c_ns = ttk.Checkbutton(
+            parent,
+            text="Noise Suppression (reduce fan/room hum)",
+            variable=self.var_noise_suppression,
+        )
+        c_ns.grid(row=row + 1, column=0, columnspan=2, sticky="w", pady=6)
 
     def _build_hotkeys_tab(self, parent, ttk) -> None:
         ttk.Label(parent, text="Dictation Mode:").grid(row=0, column=0, sticky="w", pady=8)
@@ -366,7 +376,13 @@ class SettingsWindow:
                 "whisper_mode": {
                     "enabled": bool(self.var_whisper_mode.get()) if self.var_whisper_mode else True,
                     "max_gain": 8.0,
-                }
+                },
+                "noise_suppression": {
+                    "enabled": bool(self.var_noise_suppression.get())
+                    if self.var_noise_suppression
+                    else False,
+                    "strength": 0.75,
+                },
             },
         }
 

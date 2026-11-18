@@ -52,6 +52,8 @@ class TestSettingsCollectionAndSave:
         assert "overlay" in data
         assert "voice_commands" in data
         assert "clipboard" in data
+        assert "audio" in data
+        assert data["audio"]["noise_suppression"]["enabled"] is False
         assert data["whisper"]["model"] == "large-v3-turbo"
         assert data["whisper"]["indic_script"] == "native"
         assert data["whisper"]["idle_unload_minutes"] == 5
