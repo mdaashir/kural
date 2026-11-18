@@ -235,16 +235,28 @@ def main() -> None:
 
     # Configure logging before starting the runtime
     from kural.config import ConfigManager
+    from kural.engine.instance_manager import (
+        acquire_single_instance_lock,
+        release_single_instance_lock,
+    )
     from kural.engine.log_setup import setup_logging
 
     cfg = ConfigManager(quiet=True)
     setup_logging(cfg.config)
 
-    # Launch live background runtime
-    from kural.runtime import KuralRuntime
+    # Acquire single-instance lock before launching background runtime
+    lock_ok, lock_handle = acquire_single_instance_lock()
+    if not lock_ok:
+        sys.exit(1)
 
-    runtime = KuralRuntime(config_manager=cfg)
-    runtime.run()
+    try:
+        # Launch live background runtime
+        from kural.runtime import KuralRuntime
+
+        runtime = KuralRuntime(config_manager=cfg)
+        runtime.run()
+    finally:
+        release_single_instance_lock(lock_handle)
 
 
 if __name__ == "__main__":
