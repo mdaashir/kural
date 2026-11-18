@@ -1,36 +1,31 @@
 # SESSION.md
 
 ## Current milestone
-**Configurable Native vs. Roman Tamil Script Output**
+**Single-Instance Process Mutex & Graceful Takeover**
 
 ## Current branch
-`feat/indic-script-roman-option`
+`feat/single-instance-lock`
 
 ## PR
 PR to be opened with gh after verification passes.
 
 ## Last completed step
-Implemented configurable native vs. Roman-script Tamil output:
-- `kural/engine/whisper_engine.py`:
-  - Added `ROMAN_PRIMER_TAMIL` ("Aamaa, naalai meeting evvalavu manikku? Naan konjam late-aa varuven.") to steer Whisper toward Latin Tanglish chat output.
-  - Added `indic_script` ("native" vs "roman") configuration parameter to `WhisperEngine`.
-  - When `indic_script == "roman"` and `language == "ta"`, Whisper is steered with `ROMAN_PRIMER_TAMIL`; otherwise with `SCRIPT_PRIMER_TAMIL`.
-- `kural/config/config.defaults.yaml`:
-  - Added `whisper.indic_script: native` (options: `native`, `roman`).
-- `kural/config/configcheck.py`:
-  - Added `VALID_INDIC_SCRIPTS = {"native", "roman"}` with auto-fallback to `"native"`.
-- `kural/runtime.py`:
-  - Passed `indic_script` from config to `WhisperEngine`.
-- `kural/ui/settings_window.py`:
-  - Added Tamil Script Style dropdown (`native`, `roman`) in the Speech Engine tab.
-  - Persisted `whisper.indic_script` in `collect_settings()`.
+Implemented single-instance mutex and graceful takeover:
+- `kural/engine/instance_manager.py`:
+  - `acquire_single_instance_lock(app_name, timeout=5.0, allow_takeover=True)`: creates named Win32 mutex (`Local\Kural_SingleInstance`).
+  - Graceful takeover: if another instance is already running, reads `%APPDATA%\kural\kural.pid`, signals old instance with `SIGTERM`, and polls for lock release up to 5s.
+  - `write_pid_file(app_name)` / `cleanup_pid_file(app_name)`: tracks active process ID in `kural.pid`.
+  - `release_single_instance_lock(handle, app_name)`: closes Win32 mutex handle and removes PID file.
+- `kural/__main__.py`:
+  - Acquires single-instance lock before starting background runtime; releases lock on shutdown.
+- `THIRD_PARTY_NOTICES.md`:
+  - Recorded provenance for `instance_manager.py` (ported from `src/whisper_key/instance_manager.py` + `src/whisper_key/platform/windows/instance_lock.py`).
 - Unit tests:
-  - Added test in `tests/engine/test_whisper_engine.py` for Roman prompt injection.
-  - Added test in `tests/config/test_configcheck.py` for schema validation.
-  - Updated `tests/ui/test_settings.py` (424 total passing, 0 requiring GPU or mic, ruff clean).
+  - 8 new unit tests in `tests/engine/test_instance_manager.py` covering PID file lifecycle, process termination, fresh lock acquisition, blocked without takeover, graceful takeover, and cleanup.
+  - 432 total passing tests, 0 requiring GPU or mic, ruff clean.
 
 ## Next step
-1. Push `feat/indic-script-roman-option` and open PR into `main` with `gh pr create`.
+1. Push `feat/single-instance-lock` and open PR into `main` with `gh pr create`.
 2. Wait for user to review and merge.
 
 ## Open questions
@@ -44,5 +39,7 @@ Implemented configurable native vs. Roman-script Tamil output:
 - [x] **Elevated window message implemented** — UIPI token inspection warns user with actionable advice.
 
 ## Decisions recorded (this session)
-- Roman transliteration option: kept from donor repo per AGENTS.md Architecture Decisions ("Native Tamil script output; Roman option kept from donor").
-  Reason: enables users who prefer Tanglish chat typing in Latin characters without forcing Tamil script.
+- Graceful takeover: launching Kural when already running replaces the previous background instance.
+  Reason: complies with desktop user expectations when double-clicking desktop shortcut or restarting app.
+- Mutex via ctypes: native Windows `CreateMutexW` without external heavy pywin32 dependency.
+  Reason: lightweight and works out-of-the-box in standalone PyInstaller bundles.
