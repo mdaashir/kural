@@ -88,6 +88,21 @@ class KuralRuntime:
         self._last_dict_press_time = 0.0
         self._hands_free_locked = False
 
+        # Mouse button push-to-talk trigger ("Mouse Flow")
+        self.mouse_trigger = None
+        mouse_button = self.hotkey_cfg.get("mouse_button", "")
+        if mouse_button:
+            try:
+                from kural.control.mouse import MouseButtonTrigger
+
+                self.mouse_trigger = MouseButtonTrigger(
+                    button=mouse_button,
+                    on_press=self.toggle_dictation,
+                    on_release=self.release_dictation_ptt,
+                )
+            except Exception as e:
+                logger.warning(f"Could not initialize mouse button trigger: {e}")
+
         # Live partial streaming preview
         from kural.engine.streaming import StreamingTranscriber
 
@@ -453,6 +468,8 @@ class KuralRuntime:
         print("   Press Ctrl+C to exit.\n")
 
         self.start_hotkeys()
+        if self.mouse_trigger:
+            self.mouse_trigger.start()
         self.overlay.start()
         self.tray.start()
 
@@ -470,6 +487,7 @@ class KuralRuntime:
         for c in (
             getattr(self.overlay, "stop", None),
             getattr(self.tray, "stop", None),
+            getattr(self.mouse_trigger, "stop", None),
             getattr(self.recorder, "shutdown", None),
             getattr(self.engine, "_cancel_idle_timer", None),
         ):
