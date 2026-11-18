@@ -1,26 +1,29 @@
 # SESSION.md
 
 ## Current milestone
-**Settings UI Controls for Mouse PTT and Delivery Method**
+**Incognito Mode (Zero Retention & Privacy Mode)**
 
 ## Current branch
-`feat/settings-ui-mouse-and-delivery`
+`feat/incognito-mode`
 
 ## PR
 PR to be opened with gh after verification passes.
 
 ## Last completed step
-Added graphical controls to `SettingsWindow`:
-- `kural/ui/settings_window.py`:
-  - Added Mouse Push-to-Talk Combobox (`""`, `"x1"`, `"x2"`, `"both"`, `"middle"`) to Hotkeys tab.
-  - Added Text Delivery Method Combobox (`"paste"` via clipboard or `"type"` via direct `SendInput` keystrokes) to Overlay & Control tab.
-  - Updated `collect_settings()` to persist `hotkey.mouse_button` and `clipboard.delivery_method`.
-- Updated unit test in `tests/ui/test_settings.py` (416 total passing, 0 requiring GPU, mic, or network, ruff clean).
+Implemented Incognito Mode across the runtime and system tray:
+- `kural/runtime.py`:
+  - `self.incognito`: session privacy state toggle.
+  - `toggle_incognito()`: toggles incognito, immediately clears `self.last_take` when activated, flashes `"Incognito On"` / `"Incognito Off"` on the overlay, and refreshes the tray menu.
+  - Gated data persistence: in Incognito mode, `append_history(...)`, `self.adaptive.learn_text(...)`, and `self.last_take.save(...)` are completely bypassed so zero persistent speech text, vocabulary adjustments, or audio takes are retained on disk.
+- `kural/ui/tray.py`:
+  - Added checkable `Incognito (save nothing)` menu item with dynamic checkmark linked to `is_incognito()`.
+  - Added `update_menu()` to reflect state changes immediately.
+- 2 updated/new unit tests in `tests/test_runtime.py` and `tests/ui/test_tray.py` (417 total passing, 0 requiring GPU, mic, or network, ruff clean).
 
 ## Next step
-1. Push `feat/settings-ui-mouse-and-delivery` and open PR into `main` with `gh pr create`.
+1. Push `feat/incognito-mode` and open PR into `main` with `gh pr create`.
 2. Wait for user to review and merge.
-3. Open Settings window from system tray to easily configure mouse buttons and text delivery mode!
+3. Test toggling Incognito from the tray icon to verify private dictation without disk logging!
 
 ## Open questions
 - None.
@@ -38,5 +41,5 @@ Added graphical controls to `SettingsWindow`:
 - Linter: `ruff` only. Reason: handles pycodestyle + isort + pyupgrade in one tool.
 - Sub-package layout: `engine/`, `control/`, `config/`, `ui/` as top-level siblings under `kural/`.
   Reason: clean separation of concerns; each milestone targets exactly one sub-package.
-- Mouse button empty string: represents disabled mouse push-to-talk.
-  Reason: clean fallback to keyboard-only hotkeys without error.
+- Incognito privacy guarantee: when active, neither history.jsonl, adaptive vocabulary, nor DPAPI-retained audio are saved to disk.
+  Reason: fulfills AGENTS.md architecture decision ("Retained audio only DPAPI-encrypted, one take, short expiry, off in Incognito").
