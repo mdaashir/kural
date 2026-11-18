@@ -368,7 +368,10 @@ class KuralRuntime:
                 self.overlay.show_processing()
                 self.audio_feedback.play_stop()
                 threading.Thread(
-                    target=self._finish_recording, daemon=True, name="finish-dictation"
+                    target=self._finish_recording,
+                    args=(RuntimeState.RECORDING_DICTATION,),
+                    daemon=True,
+                    name="finish-dictation",
                 ).start()
 
     def on_dictation_release(self) -> None:
@@ -392,7 +395,10 @@ class KuralRuntime:
                 self.overlay.show_processing()
                 self.audio_feedback.play_stop()
                 threading.Thread(
-                    target=self._finish_recording, daemon=True, name="finish-dictation-ptt"
+                    target=self._finish_recording,
+                    args=(RuntimeState.RECORDING_DICTATION,),
+                    daemon=True,
+                    name="finish-dictation-ptt",
                 ).start()
 
     def toggle_command(self) -> None:
@@ -419,7 +425,10 @@ class KuralRuntime:
                 self.overlay.show_processing()
                 self.audio_feedback.play_stop()
                 threading.Thread(
-                    target=self._finish_recording, daemon=True, name="finish-command"
+                    target=self._finish_recording,
+                    args=(RuntimeState.RECORDING_COMMAND,),
+                    daemon=True,
+                    name="finish-command",
                 ).start()
 
     def _stop_capture_if_current(self, generation: int) -> None:
@@ -432,6 +441,7 @@ class KuralRuntime:
             if expected_generation is not None and expected_generation != self._capture_generation:
                 return
             if self.state in (RuntimeState.RECORDING_DICTATION, RuntimeState.RECORDING_COMMAND):
+                capture_mode = self.state
                 self.state = RuntimeState.PROCESSING
                 if getattr(self, "ducker", None):
                     self.ducker.restore()
@@ -440,7 +450,10 @@ class KuralRuntime:
                 if getattr(self, "terminal_title", None):
                     self.terminal_title.update_state("processing")
                 threading.Thread(
-                    target=self._finish_recording, daemon=True, name="finish-recording"
+                    target=self._finish_recording,
+                    args=(capture_mode,),
+                    daemon=True,
+                    name="finish-recording",
                 ).start()
 
     def cancel_dictation(self) -> None:
@@ -483,11 +496,13 @@ class KuralRuntime:
 
             print("\n🚫 Dictation cancelled (audio discarded).")
 
-    def _finish_recording(self) -> None:
+    def _finish_recording(self, capture_mode: RuntimeState) -> None:
         audio_data = self.recorder.stop_recording()
-        self._process_audio(audio_data)
+        self._process_audio(audio_data, capture_mode=capture_mode)
 
-    def _process_audio(self, audio_data: np.ndarray | None) -> None:
+    def _process_audio(
+        self, audio_data: np.ndarray | None, capture_mode: RuntimeState | None = None
+    ) -> None:
         try:
             if audio_data is None or len(audio_data) == 0:
                 print("   ✗ No audio data captured.")
@@ -505,14 +520,14 @@ class KuralRuntime:
                 strength = float(ns_cfg.get("strength", 0.75))
                 audio_data = apply_noise_reduction(audio_data, sample_rate=16000, strength=strength)
 
-            prior_state = self.state
+            mode = capture_mode or self.state
             print("⏳ Transcribing on GPU...")
             text = self.engine.transcribe_audio(audio_data)
             if not text:
                 self.audio_feedback.play_error()
                 return
 
-            if prior_state == RuntimeState.RECORDING_COMMAND:
+            if mode == RuntimeState.RECORDING_COMMAND:
                 print(f"👉 Command: '{text}'")
                 res = self.executor.execute(text)
                 status_icon = "✓" if res.success else "✗"
