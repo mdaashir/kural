@@ -527,8 +527,43 @@ class KuralRuntime:
                 from kural.engine.history import HistoryEntry, append_history
                 from kural.engine.snippets import apply_snippets
 
-                # 1. Match foreground app rule
+                clip_cfg = (
+                    self.config_manager.get_clipboard_config()
+                    if hasattr(self.config_manager, "get_clipboard_config")
+                    else {}
+                )
+                delivery_method = clip_cfg.get("delivery_method", "paste")
+                restore_clip = bool(clip_cfg.get("restore_clipboard", True))
+                return_to_app = bool(clip_cfg.get("return_to_app", True))
+                origin = getattr(self, "_origin_hwnd", None)
+
+                # Resolve the delivery window *before* selecting its formatting and
+                # suppression rule. Copy-only has no window destination.
+                if return_to_app and delivery_method != "copy" and origin is not None:
+                    from kural.control.windows import get_foreground_hwnd, restore_foreground_window
+
+                    if get_foreground_hwnd() != origin:
+                        restore_foreground_window(origin)
+
                 fg_info = get_foreground_window_info()
+                if (
+                    return_to_app
+                    and delivery_method != "copy"
+                    and (origin is None or fg_info is None or fg_info.hwnd != origin)
+                ):
+                    logger.warning(
+                        "Original dictation app could not be verified; delivery withheld."
+                    )
+                    if getattr(self, "fallback_window", None):
+                        self.fallback_window.show(
+                            text,
+                            reason="Could not return to the original app. Copy your dictation here.",
+                        )
+                    self.overlay.flash_error("App focus changed")
+                    self.audio_feedback.play_error()
+                    return
+
+                # 1. Match the verified delivery app's rule
                 matched_rule = (
                     self.app_rules.match_rule(
                         exe=fg_info.exe if fg_info else "",
@@ -582,35 +617,18 @@ class KuralRuntime:
                     custom_hotwords = list_hotwords()
                     text = plan_insertion(text, before=before_text, keep_caps=custom_hotwords)
 
-                clip_cfg = (
-                    self.config_manager.get_clipboard_config()
-                    if hasattr(self.config_manager, "get_clipboard_config")
-                    else {}
-                )
-                delivery_method = clip_cfg.get("delivery_method", "paste")
-                restore_clip = bool(clip_cfg.get("restore_clipboard", True))
-                return_to_app = bool(clip_cfg.get("return_to_app", True))
-
-                # Copy-only does not deliver to a window. For paste/type, never send
-                # text to an unverified foreground window when return-to-app is on.
-                if return_to_app and delivery_method != "copy":
-                    from kural.control.windows import get_foreground_hwnd, restore_foreground_window
-
-                    origin = getattr(self, "_origin_hwnd", None)
-                    if origin is not None and get_foreground_hwnd() != origin:
-                        restore_foreground_window(origin)
-                    if origin is None or get_foreground_hwnd() != origin:
-                        logger.warning(
-                            "Original dictation window is not foreground; delivery withheld."
+                # Focus can change again during formatting. Do not inject into a
+                # different window even after the delivery rule has been selected.
+                if return_to_app and delivery_method != "copy" and get_foreground_hwnd() != origin:
+                    logger.warning("Original dictation window lost focus; delivery withheld.")
+                    if getattr(self, "fallback_window", None):
+                        self.fallback_window.show(
+                            text,
+                            reason="Could not return to the original app. Copy your dictation here.",
                         )
-                        if getattr(self, "fallback_window", None):
-                            self.fallback_window.show(
-                                text,
-                                reason="Could not return to the original app. Copy your dictation here.",
-                            )
-                        self.overlay.flash_error("App focus changed")
-                        self.audio_feedback.play_error()
-                        return
+                    self.overlay.flash_error("App focus changed")
+                    self.audio_feedback.play_error()
+                    return
 
                 print(f"✍️  Typed ({style_name}): '{text}'")
                 inserted = insert_text_at_caret(

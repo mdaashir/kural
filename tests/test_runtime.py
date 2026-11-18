@@ -4,6 +4,7 @@ from unittest.mock import MagicMock, patch
 
 import numpy as np
 
+from kural.control.windows import WindowInfo
 from kural.runtime import KuralRuntime, RuntimeState
 
 
@@ -79,6 +80,10 @@ class TestKuralRuntimeStateTransitions:
         with (
             patch("kural.control.windows.get_foreground_hwnd", side_effect=[2002, 1001]),
             patch(
+                "kural.control.windows.get_foreground_window_info",
+                return_value=WindowInfo(1001, "Document", "winword.exe"),
+            ),
+            patch(
                 "kural.control.windows.restore_foreground_window", return_value=True
             ) as mock_restore,
             patch("kural.runtime.insert_text_at_caret", return_value=True) as mock_insert,
@@ -86,6 +91,77 @@ class TestKuralRuntimeStateTransitions:
             self.runtime._process_audio(np.zeros(16000, dtype=np.float32))
             mock_restore.assert_called_once_with(1001)
             mock_insert.assert_called_once()
+
+    def test_restored_password_manager_suppresses_delivery(self):
+        self.runtime.state = RuntimeState.RECORDING_DICTATION
+        self.runtime.engine.transcribe_audio.return_value = "secret dictation"
+        self.runtime._origin_hwnd = 1001
+        self.runtime.config_manager.get_clipboard_config.return_value = {"return_to_app": True}
+        self.runtime.app_rules.match_rule = MagicMock(return_value={"suppress": True})
+
+        with (
+            patch("kural.control.windows.get_foreground_hwnd", return_value=2002),
+            patch("kural.control.windows.restore_foreground_window", return_value=True),
+            patch(
+                "kural.control.windows.get_foreground_window_info",
+                return_value=WindowInfo(1001, "Vault", "bitwarden.exe"),
+            ),
+            patch("kural.runtime.insert_text_at_caret") as insert,
+        ):
+            self.runtime._process_audio(np.zeros(16000, dtype=np.float32))
+            self.runtime.app_rules.match_rule.assert_called_once_with(
+                exe="bitwarden.exe", title="Vault"
+            )
+            insert.assert_not_called()
+
+    def test_interim_password_manager_does_not_suppress_original_app(self):
+        self.runtime.state = RuntimeState.RECORDING_DICTATION
+        self.runtime.engine.transcribe_audio.return_value = "draft text"
+        self.runtime._origin_hwnd = 1001
+        self.runtime.config_manager.get_clipboard_config.return_value = {"return_to_app": True}
+        restored = False
+
+        def restore(_hwnd):
+            nonlocal restored
+            restored = True
+            return True
+
+        def window_info():
+            if restored:
+                return WindowInfo(1001, "Document", "winword.exe")
+            return WindowInfo(2002, "Vault", "bitwarden.exe")
+
+        with (
+            patch("kural.control.windows.get_foreground_hwnd", side_effect=[2002, 1001]),
+            patch("kural.control.windows.restore_foreground_window", side_effect=restore),
+            patch("kural.control.windows.get_foreground_window_info", side_effect=window_info),
+            patch("kural.runtime.insert_text_at_caret", return_value=True) as insert,
+        ):
+            self.runtime._process_audio(np.zeros(16000, dtype=np.float32))
+            assert restored
+            insert.assert_called_once()
+
+    def test_restored_app_rule_controls_formatting_not_interim_app(self):
+        self.runtime.state = RuntimeState.RECORDING_DICTATION
+        self.runtime.engine.transcribe_audio.return_value = "keep raw"
+        self.runtime._origin_hwnd = 1001
+        self.runtime.config_manager.get_clipboard_config.return_value = {"return_to_app": True}
+        self.runtime.app_rules.match_rule = MagicMock(return_value={"style": "verbatim"})
+
+        with (
+            patch("kural.control.windows.get_foreground_hwnd", side_effect=[2002, 1001]),
+            patch("kural.control.windows.restore_foreground_window", return_value=True),
+            patch(
+                "kural.control.windows.get_foreground_window_info",
+                return_value=WindowInfo(1001, "Terminal", "pwsh.exe"),
+            ),
+            patch("kural.runtime.insert_text_at_caret", return_value=True) as insert,
+        ):
+            self.runtime._process_audio(np.zeros(16000, dtype=np.float32))
+            self.runtime.app_rules.match_rule.assert_called_once_with(
+                exe="pwsh.exe", title="Terminal"
+            )
+            assert insert.call_args.args[0] == "keep raw"
 
     def test_focus_refusal_never_inserts_into_other_app(self):
         self.runtime.state = RuntimeState.RECORDING_DICTATION
@@ -96,6 +172,10 @@ class TestKuralRuntimeStateTransitions:
 
         with (
             patch("kural.control.windows.get_foreground_hwnd", return_value=2002),
+            patch(
+                "kural.control.windows.get_foreground_window_info",
+                return_value=WindowInfo(2002, "Notification", "teams.exe"),
+            ),
             patch("kural.control.windows.restore_foreground_window", return_value=False) as restore,
             patch("kural.runtime.insert_text_at_caret") as insert,
         ):
@@ -114,10 +194,36 @@ class TestKuralRuntimeStateTransitions:
 
         with (
             patch("kural.control.windows.get_foreground_hwnd", return_value=2002),
+            patch(
+                "kural.control.windows.get_foreground_window_info",
+                return_value=WindowInfo(2002, "Notification", "teams.exe"),
+            ),
             patch("kural.control.windows.restore_foreground_window", return_value=True),
             patch("kural.runtime.insert_text_at_caret") as insert,
         ):
             self.runtime._process_audio(np.zeros(16000, dtype=np.float32))
+            insert.assert_not_called()
+            self.runtime.fallback_window.show.assert_called_once()
+
+    def test_focus_loss_after_rule_selection_withholds_insertion(self):
+        self.runtime.state = RuntimeState.RECORDING_DICTATION
+        self.runtime.engine.transcribe_audio.return_value = "private dictation"
+        self.runtime._origin_hwnd = 1001
+        self.runtime.fallback_window = MagicMock()
+        self.runtime.config_manager.get_clipboard_config.return_value = {"return_to_app": True}
+        self.runtime.app_rules.match_rule = MagicMock(return_value={"style": "formal"})
+
+        with (
+            patch("kural.control.windows.get_foreground_hwnd", return_value=2002),
+            patch("kural.control.windows.restore_foreground_window", return_value=True),
+            patch(
+                "kural.control.windows.get_foreground_window_info",
+                return_value=WindowInfo(1001, "Document", "winword.exe"),
+            ),
+            patch("kural.runtime.insert_text_at_caret") as insert,
+        ):
+            self.runtime._process_audio(np.zeros(16000, dtype=np.float32))
+            self.runtime.app_rules.match_rule.assert_called_once()
             insert.assert_not_called()
             self.runtime.fallback_window.show.assert_called_once()
 
