@@ -18,6 +18,11 @@ def main() -> None:
         help="Run environment, hardware, GPU, audio, and configuration diagnostics.",
     )
     parser.add_argument(
+        "--selftest",
+        action="store_true",
+        help="Run live end-to-end operational self-test diagnostics (mic, model, inference, clipboard).",
+    )
+    parser.add_argument(
         "--settings",
         action="store_true",
         help="Open the graphical settings configuration window.",
@@ -110,6 +115,11 @@ def main() -> None:
         from kural.doctor import run_doctor
 
         sys.exit(run_doctor())
+
+    if args.selftest:
+        from kural.selftest import run_selftest
+
+        sys.exit(run_selftest())
 
     if args.config_check:
         from kural.config import ConfigManager
