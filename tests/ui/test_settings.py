@@ -63,6 +63,7 @@ class TestSettingsCollectionAndSave:
         assert data["hotkey"]["stop_phrase"]["enabled"] is False
         assert data["hotkey"]["mouse_button"] == ""
         assert data["clipboard"]["delivery_method"] == "paste"
+        assert data["clipboard"]["restore_clipboard"] is True
         assert data["overlay"]["position"] == "bottom-center"
 
     def test_save_invokes_set_user_setting(self):

@@ -392,13 +392,15 @@ def type_text_at_caret(text: str) -> bool:
 def insert_text_at_caret(
     text: str,
     delivery_method: str = "paste",
+    restore_clipboard: bool = True,
     restore_clipboard_delay: float = 0.05,
 ) -> bool:
     """Insert text at the current cursor position.
 
     Strategies:
-    - 'paste' (default): places text on clipboard and sends Ctrl+V, then restores
-      the user's prior clipboard. Falls back to 'type' if clipboard access fails.
+    - 'paste' (default): places text on clipboard and sends Ctrl+V. If restore_clipboard
+      is True, restores the user's prior clipboard after pasting. If False (Hex-inspired
+      keep_on_clipboard mode), leaves the dictated text on the clipboard for Win+V history.
     - 'type': sends keystrokes directly via SendInput KEYEVENTF_UNICODE without
       touching the clipboard buffer.
     - 'copy': places text on the clipboard only without sending keystrokes to the
@@ -436,10 +438,11 @@ def insert_text_at_caret(
     try:
         import pyperclip
 
-        try:
-            saved_clipboard = pyperclip.paste()
-        except Exception:
-            saved_clipboard = None
+        if restore_clipboard:
+            try:
+                saved_clipboard = pyperclip.paste()
+            except Exception:
+                saved_clipboard = None
 
         pyperclip.copy(text)
         clipboard_succeeded = True
@@ -460,8 +463,8 @@ def insert_text_at_caret(
     user32.keybd_event(VK_V, 0, KEYEVENTF_KEYUP, 0)
     user32.keybd_event(VK_CONTROL, 0, KEYEVENTF_KEYUP, 0)
 
-    # Restore prior clipboard content if pyperclip was available
-    if saved_clipboard is not None:
+    # Restore prior clipboard content if enabled
+    if restore_clipboard and saved_clipboard is not None:
 
         def _restore():
             time.sleep(restore_clipboard_delay)

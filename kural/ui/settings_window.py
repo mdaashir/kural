@@ -74,6 +74,7 @@ class SettingsWindow:
         self.var_recording_mode = None
         self.var_mouse_button = None
         self.var_delivery_method = None
+        self.var_restore_clip = None
         self.var_double_tap = None
         self.var_stop_phrase = None
         self.var_vault = None
@@ -152,6 +153,7 @@ class SettingsWindow:
         self.var_mouse_button = tk.StringVar(value=self.hotkey_cfg.get("mouse_button", ""))
         clip_cfg = self.config_manager.config.get("clipboard") or {}
         self.var_delivery_method = tk.StringVar(value=clip_cfg.get("delivery_method", "paste"))
+        self.var_restore_clip = tk.BooleanVar(value=bool(clip_cfg.get("restore_clipboard", True)))
         self.var_double_tap = tk.BooleanVar(
             value=bool(self.hotkey_cfg.get("double_tap_to_lock", False))
         )
@@ -338,13 +340,22 @@ class SettingsWindow:
             font=("", 8),
         ).grid(row=6, column=1, sticky="w", padx=12, pady=(0, 6))
 
+        c_clip_hist = ttk.Checkbutton(
+            parent,
+            text="Keep Dictations in Windows Clipboard History (Win+V)",
+            variable=self.var_restore_clip,
+            onvalue=False,
+            offvalue=True,
+        )
+        c_clip_hist.grid(row=7, column=0, columnspan=2, sticky="w", pady=4)
+
         ttk.Label(parent, text="Obsidian / Notes Vault Path:").grid(
-            row=7, column=0, sticky="w", pady=6
+            row=8, column=0, sticky="w", pady=6
         )
         e_vault = ttk.Entry(parent, textvariable=self.var_vault, width=22)
-        e_vault.grid(row=7, column=1, sticky="w", padx=12, pady=6)
+        e_vault.grid(row=8, column=1, sticky="w", padx=12, pady=6)
         ttk.Label(parent, text="(Empty = Documents/Kural Notes)", font=("", 8)).grid(
-            row=8, column=1, sticky="w", padx=12, pady=(0, 6)
+            row=9, column=1, sticky="w", padx=12, pady=(0, 6)
         )
 
     def _on_open_folder(self) -> None:
@@ -393,6 +404,9 @@ class SettingsWindow:
                 "delivery_method": self.var_delivery_method.get().strip().lower()
                 if self.var_delivery_method
                 else "paste",
+                "restore_clipboard": bool(self.var_restore_clip.get())
+                if self.var_restore_clip
+                else True,
             },
             "overlay": {
                 "enabled": bool(self.var_overlay_enabled.get())

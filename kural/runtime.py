@@ -583,9 +583,12 @@ class KuralRuntime:
                     else {}
                 )
                 delivery_method = clip_cfg.get("delivery_method", "paste")
+                restore_clip = bool(clip_cfg.get("restore_clipboard", True))
 
                 print(f"✍️  Typed ({style_name}): '{text}'")
-                inserted = insert_text_at_caret(text, delivery_method=delivery_method)
+                inserted = insert_text_at_caret(
+                    text, delivery_method=delivery_method, restore_clipboard=restore_clip
+                )
                 if not inserted and getattr(self, "fallback_window", None):
                     self.fallback_window.show(
                         text,
