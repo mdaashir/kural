@@ -84,6 +84,28 @@ class TestKuralRuntimeStateTransitions:
         assert self.runtime.state == RuntimeState.IDLE
         self.runtime.engine.transcribe_audio.assert_not_called()
 
+    def test_cancel_dictation_aborts_and_discards(self):
+        self.runtime.state = RuntimeState.RECORDING_DICTATION
+        self.runtime.ducker = MagicMock()
+        self.runtime.streaming = MagicMock()
+        self.runtime.overlay = MagicMock()
+        self.runtime.recorder = MagicMock()
+
+        self.runtime.cancel_dictation()
+
+        assert self.runtime.state == RuntimeState.IDLE
+        self.runtime.recorder.stop_recording.assert_called_once()
+        self.runtime.ducker.restore.assert_called_once()
+        self.runtime.streaming.stop.assert_called_once()
+        self.runtime.overlay.hide.assert_called_once()
+        self.runtime.engine.transcribe_audio.assert_not_called()
+
+    def test_cancel_when_idle_is_noop(self):
+        self.runtime.state = RuntimeState.IDLE
+        self.runtime.recorder = MagicMock()
+        self.runtime.cancel_dictation()
+        self.runtime.recorder.stop_recording.assert_not_called()
+
     def test_push_to_talk_release_stops_recording(self):
         self.runtime.recording_mode = "push_to_talk"
         self.runtime.state = RuntimeState.RECORDING_DICTATION

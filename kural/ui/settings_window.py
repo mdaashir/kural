@@ -65,6 +65,7 @@ class SettingsWindow:
         self.var_idle_vram = None
         self.var_dict_hk = None
         self.var_cmd_hk = None
+        self.var_cancel_hk = None
         self.var_overlay_enabled = None
         self.var_overlay_pos = None
         self.var_click_through = None
@@ -143,6 +144,7 @@ class SettingsWindow:
         self.var_cmd_hk = tk.StringVar(
             value=self.hotkey_cfg.get("command_hotkey", "ctrl+shift+space")
         )
+        self.var_cancel_hk = tk.StringVar(value=self.hotkey_cfg.get("cancel_hotkey", "escape"))
         self.var_recording_mode = tk.StringVar(
             value=self.hotkey_cfg.get("recording_mode", "toggle")
         )
@@ -238,7 +240,16 @@ class SettingsWindow:
             parent, text="Voice control (open/close apps, volume, snap windows)", font=("", 8)
         ).grid(row=3, column=1, sticky="w", padx=12, pady=(0, 10))
 
-        ttk.Label(parent, text="Interaction Mode:").grid(row=4, column=0, sticky="w", pady=8)
+        ttk.Label(parent, text="Cancel Recording:").grid(row=4, column=0, sticky="w", pady=8)
+        e_cancel = ttk.Entry(parent, textvariable=self.var_cancel_hk, width=24)
+        e_cancel.grid(row=4, column=1, sticky="w", padx=12, pady=8)
+        ttk.Label(
+            parent,
+            text="Abort recording immediately and discard audio (Hex-inspired)",
+            font=("", 8),
+        ).grid(row=5, column=1, sticky="w", padx=12, pady=(0, 10))
+
+        ttk.Label(parent, text="Interaction Mode:").grid(row=6, column=0, sticky="w", pady=8)
         cb_mode = ttk.Combobox(
             parent,
             textvariable=self.var_recording_mode,
@@ -246,14 +257,14 @@ class SettingsWindow:
             state="readonly",
             width=22,
         )
-        cb_mode.grid(row=4, column=1, sticky="w", padx=12, pady=8)
+        cb_mode.grid(row=6, column=1, sticky="w", padx=12, pady=8)
         ttk.Label(
             parent,
             text="toggle: tap to start/stop • push_to_talk: hold key while speaking",
             font=("", 8),
-        ).grid(row=5, column=1, sticky="w", padx=12, pady=(0, 10))
+        ).grid(row=7, column=1, sticky="w", padx=12, pady=(0, 10))
 
-        ttk.Label(parent, text="Mouse Push-to-Talk:").grid(row=6, column=0, sticky="w", pady=8)
+        ttk.Label(parent, text="Mouse Push-to-Talk:").grid(row=8, column=0, sticky="w", pady=8)
         cb_mouse = ttk.Combobox(
             parent,
             textvariable=self.var_mouse_button,
@@ -261,19 +272,19 @@ class SettingsWindow:
             state="readonly",
             width=22,
         )
-        cb_mouse.grid(row=6, column=1, sticky="w", padx=12, pady=8)
+        cb_mouse.grid(row=8, column=1, sticky="w", padx=12, pady=8)
         ttk.Label(
             parent,
             text="Empty = disabled • x1/x2 = thumb buttons • middle = scroll wheel click",
             font=("", 8),
-        ).grid(row=7, column=1, sticky="w", padx=12, pady=(0, 10))
+        ).grid(row=9, column=1, sticky="w", padx=12, pady=(0, 10))
 
         c_lock = ttk.Checkbutton(
             parent,
             text="Double-Tap to Lock Hands-Free (speak at length)",
             variable=self.var_double_tap,
         )
-        c_lock.grid(row=8, column=0, columnspan=2, sticky="w", pady=6)
+        c_lock.grid(row=10, column=0, columnspan=2, sticky="w", pady=6)
 
     def _build_ui_tab(self, parent, ttk) -> None:
         c1 = ttk.Checkbutton(
@@ -352,6 +363,9 @@ class SettingsWindow:
                 "command_hotkey": self.var_cmd_hk.get().strip().lower()
                 if self.var_cmd_hk
                 else "ctrl+shift+space",
+                "cancel_hotkey": self.var_cancel_hk.get().strip().lower()
+                if self.var_cancel_hk
+                else "escape",
                 "recording_mode": self.var_recording_mode.get()
                 if self.var_recording_mode
                 else "toggle",

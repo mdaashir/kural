@@ -110,7 +110,7 @@ def validate_config(config: dict[str, Any]) -> tuple[dict[str, Any], list[str]]:
         issues.append(f"Invalid hotkey.recording_mode '{mode}'. Falling back to 'toggle'.")
         hotkey["recording_mode"] = "toggle"
 
-    for hk_name in ("recording_hotkey", "command_hotkey"):
+    for hk_name in ("recording_hotkey", "command_hotkey", "cancel_hotkey"):
         hk_val = hotkey.get(hk_name)
         if hk_val is not None:
             if not isinstance(hk_val, str) or not hk_val.strip():

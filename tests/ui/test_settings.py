@@ -59,6 +59,7 @@ class TestSettingsCollectionAndSave:
         assert data["whisper"]["indic_script"] == "native"
         assert data["whisper"]["idle_unload_minutes"] == 5
         assert data["hotkey"]["recording_hotkey"] == "ctrl+space"
+        assert data["hotkey"]["cancel_hotkey"] == "escape"
         assert data["hotkey"]["mouse_button"] == ""
         assert data["clipboard"]["delivery_method"] == "paste"
         assert data["overlay"]["position"] == "bottom-center"
