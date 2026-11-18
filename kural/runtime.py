@@ -157,6 +157,8 @@ class KuralRuntime:
         self.tray = SystemTray(
             on_toggle_dictation=self.toggle_dictation,
             on_toggle_command=self.toggle_command,
+            on_paste_last=self.paste_last,
+            on_retry_last=self.retry_last,
             on_toggle_incognito=self.toggle_incognito,
             is_incognito=lambda: self.incognito,
             on_open_history=self.open_history,
@@ -192,6 +194,40 @@ class KuralRuntime:
 
         if getattr(self, "tray", None) and hasattr(self.tray, "update_menu"):
             self.tray.update_menu()
+
+    def paste_last(self) -> None:
+        """Paste the last dictated text again from the in-memory ledger."""
+        text = self.ledger.last() if getattr(self, "ledger", None) else ""
+        if not text:
+            print("⚠️  Nothing dictated yet to paste")
+            self.overlay.flash_error("Nothing dictated yet")
+            return
+
+        def _run():
+            time.sleep(0.25)  # Allow tray menu to close and focus to return to target app
+            insert_text_at_caret(text)
+            self.overlay.flash_success("Pasted Last")
+
+        threading.Thread(target=_run, daemon=True, name="paste-last-dictation").start()
+
+    def retry_last(self) -> None:
+        """Re-run the last spoken audio take from encrypted retention."""
+        if not getattr(self, "last_take", None):
+            self.overlay.flash_error("No recent recording")
+            return
+
+        audio, _ = self.last_take.load()
+        if audio is None or len(audio) == 0:
+            print("⚠️  No recent recording available to retry")
+            self.overlay.flash_error("No recent recording")
+            return
+
+        def _run():
+            time.sleep(0.25)
+            self.state = RuntimeState.RECORDING_DICTATION
+            self._process_audio(audio)
+
+        threading.Thread(target=_run, daemon=True, name="retry-last-take").start()
 
     def open_settings(self) -> None:
         """Launch the graphical settings window."""

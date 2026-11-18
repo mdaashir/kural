@@ -113,3 +113,27 @@ class TestKuralRuntimeStateTransitions:
             mock_append_history.assert_not_called()
             self.runtime.adaptive.learn_text.assert_not_called()
             self.runtime.last_take.save.assert_not_called()
+
+    def test_paste_last_invokes_insert_with_ledger_text(self):
+        import time
+
+        self.runtime.ledger = MagicMock()
+        self.runtime.ledger.last.return_value = "previously dictated sentence"
+
+        with patch("kural.runtime.insert_text_at_caret") as mock_insert:
+            self.runtime.paste_last()
+            time.sleep(0.35)  # Wait for 0.25s thread delay
+            mock_insert.assert_called_once_with("previously dictated sentence")
+
+    def test_retry_last_reruns_cached_audio(self):
+        import time
+
+        self.runtime.last_take = MagicMock()
+        fake_audio = np.zeros(16000, dtype=np.float32)
+        self.runtime.last_take.load.return_value = (fake_audio, {"task": "transcribe"})
+
+        with patch.object(self.runtime, "_process_audio") as mock_proc:
+            self.runtime.retry_last()
+            time.sleep(0.35)  # Wait for 0.25s thread delay
+            mock_proc.assert_called_once()
+            assert np.array_equal(mock_proc.call_args[0][0], fake_audio)

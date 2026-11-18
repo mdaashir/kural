@@ -21,6 +21,8 @@ class SystemTray:
         self,
         on_toggle_dictation: Callable[[], None] | None = None,
         on_toggle_command: Callable[[], None] | None = None,
+        on_paste_last: Callable[[], None] | None = None,
+        on_retry_last: Callable[[], None] | None = None,
         on_toggle_incognito: Callable[[], None] | None = None,
         is_incognito: Callable[[], bool] | None = None,
         on_open_history: Callable[[], None] | None = None,
@@ -31,6 +33,8 @@ class SystemTray:
     ):
         self.on_toggle_dictation = on_toggle_dictation
         self.on_toggle_command = on_toggle_command
+        self.on_paste_last = on_paste_last
+        self.on_retry_last = on_retry_last
         self.on_toggle_incognito = on_toggle_incognito
         self.is_incognito = is_incognito or (lambda: False)
         self.on_open_history = on_open_history
@@ -112,6 +116,15 @@ class SystemTray:
                 pystray.MenuItem(
                     "Voice Command (Ctrl+Shift+Space)",
                     lambda icon, item: self.on_toggle_command() if self.on_toggle_command else None,
+                ),
+                pystray.Menu.SEPARATOR,
+                pystray.MenuItem(
+                    "Paste last dictation",
+                    lambda icon, item: self.on_paste_last() if self.on_paste_last else None,
+                ),
+                pystray.MenuItem(
+                    "Retry last recording",
+                    lambda icon, item: self.on_retry_last() if self.on_retry_last else None,
                 ),
                 pystray.MenuItem(
                     "Incognito (save nothing)",
