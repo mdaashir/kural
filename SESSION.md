@@ -1,29 +1,28 @@
 # SESSION.md
 
 ## Current milestone
-**Incognito Mode (Zero Retention & Privacy Mode)**
+**Tray Recovery Actions ("Paste Last" & "Retry Last")**
 
 ## Current branch
-`feat/incognito-mode`
+`feat/tray-recovery-actions`
 
 ## PR
 PR to be opened with gh after verification passes.
 
 ## Last completed step
-Implemented Incognito Mode across the runtime and system tray:
+Implemented tray recovery actions for never-lose-a-dictation workflow:
 - `kural/runtime.py`:
-  - `self.incognito`: session privacy state toggle.
-  - `toggle_incognito()`: toggles incognito, immediately clears `self.last_take` when activated, flashes `"Incognito On"` / `"Incognito Off"` on the overlay, and refreshes the tray menu.
-  - Gated data persistence: in Incognito mode, `append_history(...)`, `self.adaptive.learn_text(...)`, and `self.last_take.save(...)` are completely bypassed so zero persistent speech text, vocabulary adjustments, or audio takes are retained on disk.
+  - `paste_last()`: retrieves last inserted text from `self.ledger.last()`; inserts at active caret after 0.25s focus return delay (or displays `"Nothing dictated yet"` on overlay).
+  - `retry_last()`: retrieves DPAPI-encrypted audio take from `self.last_take.load()`; re-processes the recording through the speech pipeline after 0.25s delay (or displays `"No recent recording"` on overlay).
 - `kural/ui/tray.py`:
-  - Added checkable `Incognito (save nothing)` menu item with dynamic checkmark linked to `is_incognito()`.
-  - Added `update_menu()` to reflect state changes immediately.
-- 2 updated/new unit tests in `tests/test_runtime.py` and `tests/ui/test_tray.py` (417 total passing, 0 requiring GPU, mic, or network, ruff clean).
+  - Added `on_paste_last` and `on_retry_last` callbacks to `SystemTray`.
+  - Added `"Paste last dictation"` and `"Retry last recording"` menu items to tray menu.
+- 2 new unit tests in `tests/test_runtime.py` and updated `tests/ui/test_tray.py` (419 total passing, 0 requiring GPU, mic, or network, ruff clean).
 
 ## Next step
-1. Push `feat/incognito-mode` and open PR into `main` with `gh pr create`.
+1. Push `feat/tray-recovery-actions` and open PR into `main` with `gh pr create`.
 2. Wait for user to review and merge.
-3. Test toggling Incognito from the tray icon to verify private dictation without disk logging!
+3. Test right-clicking tray icon to retry a recording or re-paste the last dictation!
 
 ## Open questions
 - None.
@@ -41,5 +40,5 @@ Implemented Incognito Mode across the runtime and system tray:
 - Linter: `ruff` only. Reason: handles pycodestyle + isort + pyupgrade in one tool.
 - Sub-package layout: `engine/`, `control/`, `config/`, `ui/` as top-level siblings under `kural/`.
   Reason: clean separation of concerns; each milestone targets exactly one sub-package.
-- Incognito privacy guarantee: when active, neither history.jsonl, adaptive vocabulary, nor DPAPI-retained audio are saved to disk.
-  Reason: fulfills AGENTS.md architecture decision ("Retained audio only DPAPI-encrypted, one take, short expiry, off in Incognito").
+- Focus restoration delay: 0.25s sleep on a background thread before pasting or retrying from tray.
+  Reason: gives Windows time to dismiss the popup tray menu and return keyboard focus to the target application.
