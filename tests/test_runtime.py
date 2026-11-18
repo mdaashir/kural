@@ -310,13 +310,70 @@ class TestKuralRuntimeStateTransitions:
         self.runtime.cancel_dictation()
         self.runtime.recorder.stop_recording.assert_not_called()
 
+    def test_repeated_stop_partials_schedule_only_one_stop(self):
+        from kural.engine.stop_phrase import StopPhraseMatcher
+
+        self.runtime.state = RuntimeState.RECORDING_DICTATION
+        self.runtime.recording_mode = "toggle"
+        self.runtime.stop_phrase_matcher = StopPhraseMatcher(enabled=True)
+        with patch("kural.runtime.threading.Thread") as worker:
+            self.runtime._on_live_partial("notes stop dictation")
+            self.runtime._on_live_partial("notes stop dictation!")
+            worker.assert_called_once()
+            worker.return_value.start.assert_called_once()
+            assert self.runtime._stop_phrase_detected is True
+
+    def test_stop_phrase_state_cleared_on_empty_or_no_speech(self):
+        self.runtime._stop_phrase_detected = True
+        self.runtime.state = RuntimeState.PROCESSING
+        self.runtime._process_audio(np.array([], dtype=np.float32))
+        assert self.runtime._stop_phrase_detected is False
+
+        self.runtime._stop_phrase_detected = True
+        self.runtime.state = RuntimeState.PROCESSING
+        self.runtime.engine.transcribe_audio.return_value = None
+        self.runtime._process_audio(np.zeros(16000, dtype=np.float32))
+        assert self.runtime._stop_phrase_detected is False
+        self.runtime.toggle_dictation()
+        assert self.runtime._stop_phrase_detected is False
+
+    def test_cancel_clears_stop_phrase_state(self):
+        self.runtime.state = RuntimeState.RECORDING_DICTATION
+        self.runtime._stop_phrase_detected = True
+        self.runtime.cancel_dictation()
+        assert self.runtime._stop_phrase_detected is False
+
+    def test_detected_stop_phrase_is_stripped_from_final_transcript(self):
+        from kural.engine.stop_phrase import StopPhraseMatcher
+
+        self.runtime.state = RuntimeState.RECORDING_DICTATION
+        self.runtime._stop_phrase_detected = True
+        self.runtime.stop_phrase_matcher = StopPhraseMatcher(enabled=True)
+        self.runtime.engine.transcribe_audio.return_value = "I will be there. Stop dictation."
+        with patch("kural.runtime.insert_text_at_caret", return_value=True) as insert:
+            self.runtime._process_audio(np.zeros(16000, dtype=np.float32))
+            assert insert.call_args.args[0] == "I will be there."
+            assert self.runtime._stop_phrase_detected is False
+
+    def test_partial_stop_mismatch_preserves_final_transcript(self):
+        from kural.engine.stop_phrase import StopPhraseMatcher
+
+        self.runtime.state = RuntimeState.RECORDING_DICTATION
+        self.runtime._stop_phrase_detected = True
+        self.runtime.stop_phrase_matcher = StopPhraseMatcher(enabled=True)
+        self.runtime.engine.transcribe_audio.return_value = "I will stop dictation tomorrow"
+        with patch("kural.runtime.insert_text_at_caret", return_value=True) as insert:
+            self.runtime._process_audio(np.zeros(16000, dtype=np.float32))
+            assert insert.call_args.args[0] == "I will stop dictation tomorrow."
+            assert self.runtime._stop_phrase_detected is False
+
     def test_stop_phrase_triggers_auto_stop_and_strips_phrase(self):
         self.runtime.state = RuntimeState.RECORDING_DICTATION
         self.runtime.recording_mode = "toggle"
         from kural.engine.stop_phrase import StopPhraseMatcher
 
         self.runtime.stop_phrase_matcher = StopPhraseMatcher(enabled=True)
-        self.runtime.stop_and_process = MagicMock()
+        self.runtime._stop_capture_if_current = MagicMock()
 
         # Feed partial text ending with "stop dictation"
         self.runtime._on_live_partial("Let's wrap up this work stop dictation")
@@ -326,7 +383,17 @@ class TestKuralRuntimeStateTransitions:
         import time
 
         time.sleep(0.05)
-        self.runtime.stop_and_process.assert_called_once()
+        self.runtime._stop_capture_if_current.assert_called_once_with(0)
+
+    def test_stale_stop_request_does_not_stop_next_capture(self):
+        old_generation = self.runtime._capture_generation
+        self.runtime.state = RuntimeState.RECORDING_DICTATION
+        self.runtime.cancel_dictation()
+        self.runtime.toggle_dictation()
+        with patch.object(self.runtime, "_finish_recording") as finish:
+            self.runtime._stop_capture_if_current(old_generation)
+            assert self.runtime.state == RuntimeState.RECORDING_DICTATION
+            finish.assert_not_called()
 
     def test_push_to_talk_release_stops_recording(self):
         self.runtime.recording_mode = "push_to_talk"

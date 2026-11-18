@@ -1,23 +1,23 @@
 # SESSION.md
 
 ## Current milestone
-**Apply app rules to verified dictation destination**
+**Keep voice stop phrase state within one capture**
 
 ## Current branch
-`fix/app-rules-verified-destination`
+`fix/stop-phrase-capture-state`
 
 ## PR
 PR to be opened with gh after verification passes.
 
 ## Last completed step
-PR #56 merged into main. This follow-up resolves the destination before matching the app rule: with Return to App enabled, Kural restores and verifies the original window before selecting formatting or suppression. It checks focus again before insertion and uses the fallback window if focus has shifted. Copy-only still does not refocus an app; Return to App off retains existing foreground behavior. Mocked tests cover focus shifting to/from password managers, formatting, failed restoration, and copy-only. `ruff check .`, `ruff format --check .` and `pytest -q` passed (514 tests); diff reviewed.
+PR #57 merged into main. This follow-up resets stop-phrase detection on recording start, cancellation, and all transcription exits; repeated matching partials schedule at most one stop per capture. A capture token rejects queued stop workers from an older recording. A mismatched final transcript is left intact. Mocked regressions cover duplicate partials, empty/no-speech exits, cancellation, stale workers, and partial/final mismatch. `ruff check .`, `ruff format --check .`, and `pytest -q` passed (520 tests); diff reviewed.
 
 ## Next step
-1. Push `fix/app-rules-verified-destination` and open its PR into `main` with gh.
+1. Push `fix/stop-phrase-capture-state` and open its PR with gh.
 2. Wait for user review and merge.
 
 ## Open questions
-- HWND verification is a point-in-time check; a separate process can still change focus afterward. A Windows hardware run is still needed to assess real foreground behavior.
+- Live GPU/microphone timing still needs a real-machine check; these tests use mocked partials.
 
 ## Verify items (from AGENTS.md)
 - [x] **Hotkey-driven only?** Confirmed and resolved in M5.
@@ -27,6 +27,6 @@ PR #56 merged into main. This follow-up resolves the destination before matching
 - [x] **Elevated window message implemented** — UIPI token inspection warns user with actionable advice.
 
 ## Decisions recorded (this session)
-- When Return to App is enabled for paste/type, apply app rules only after the original HWND has been confirmed as the foreground window; verify focus once more before sending keystrokes.
-  Reason: formatting or password-manager suppression must describe the actual delivery app, not a temporary notification or other app.
-- Copy-only and Return to App disabled retain their previous behavior; HWND checks are point-in-time and do not eliminate later OS focus races.
+- Stop-phrase state and queued stop workers belong to a single capture, and only one stop request may be queued for that capture.
+  Reason: interim partials can repeat and an old worker or early transcription exit must not affect later dictation.
+- A stop phrase is removed only if it ends the final transcript; provisional words can disagree with final inference.
