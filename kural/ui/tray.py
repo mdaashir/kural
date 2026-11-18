@@ -21,6 +21,8 @@ class SystemTray:
         self,
         on_toggle_dictation: Callable[[], None] | None = None,
         on_toggle_command: Callable[[], None] | None = None,
+        on_toggle_incognito: Callable[[], None] | None = None,
+        is_incognito: Callable[[], bool] | None = None,
         on_open_history: Callable[[], None] | None = None,
         on_open_cheat_sheet: Callable[[], None] | None = None,
         on_open_settings: Callable[[], None] | None = None,
@@ -29,6 +31,8 @@ class SystemTray:
     ):
         self.on_toggle_dictation = on_toggle_dictation
         self.on_toggle_command = on_toggle_command
+        self.on_toggle_incognito = on_toggle_incognito
+        self.is_incognito = is_incognito or (lambda: False)
         self.on_open_history = on_open_history
         self.on_open_cheat_sheet = on_open_cheat_sheet
         self.on_open_settings = on_open_settings
@@ -39,6 +43,12 @@ class SystemTray:
         self._thread = None
         self._running = False
         self._available = self._check_tray_available()
+
+    def update_menu(self) -> None:
+        """Refresh tray menu to update checkmark states."""
+        if self._icon and self._running:
+            with contextlib.suppress(Exception):
+                self._icon.update_menu()
 
     def _check_tray_available(self) -> bool:
         if not self.enabled:
@@ -102,6 +112,13 @@ class SystemTray:
                 pystray.MenuItem(
                     "Voice Command (Ctrl+Shift+Space)",
                     lambda icon, item: self.on_toggle_command() if self.on_toggle_command else None,
+                ),
+                pystray.MenuItem(
+                    "Incognito (save nothing)",
+                    lambda icon, item: (
+                        self.on_toggle_incognito() if self.on_toggle_incognito else None
+                    ),
+                    checked=lambda item: self.is_incognito(),
                 ),
                 pystray.Menu.SEPARATOR,
                 pystray.MenuItem(
