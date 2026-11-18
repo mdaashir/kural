@@ -51,9 +51,12 @@ class TestSettingsCollectionAndSave:
         assert "hotkey" in data
         assert "overlay" in data
         assert "voice_commands" in data
+        assert "clipboard" in data
         assert data["whisper"]["model"] == "large-v3-turbo"
         assert data["whisper"]["idle_unload_minutes"] == 5
         assert data["hotkey"]["recording_hotkey"] == "ctrl+space"
+        assert data["hotkey"]["mouse_button"] == ""
+        assert data["clipboard"]["delivery_method"] == "paste"
         assert data["overlay"]["position"] == "bottom-center"
 
     def test_save_invokes_set_user_setting(self):
