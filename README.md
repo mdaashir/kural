@@ -6,7 +6,7 @@
 [![Platform: Windows 11](https://img.shields.io/badge/platform-Windows%2011-0078D6.svg)](https://www.microsoft.com/windows)
 [![CUDA: RTX 3050](https://img.shields.io/badge/CUDA-RTX%203050%206GB-76B900.svg)](https://developer.nvidia.com/cuda-zone)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
-[![Tests: 478](https://img.shields.io/badge/tests-478%20passing-brightgreen.svg)](tests/)
+[![Tests: 484](https://img.shields.io/badge/tests-484%20passing-brightgreen.svg)](tests/)
 
 Kural merges two MIT-licensed upstream projects into one cohesive desktop voice assistant:
 the **GPU speech engine** from `drajb/whisper-local` with the **deep voice-control engine**
@@ -51,6 +51,7 @@ kural/
 │   ├── whisper_engine.py         faster-whisper CUDA float16 + idle VRAM unload timer
 │   ├── file_transcriber.py       Offline audio file transcription CLI (Hex-inspired)
 │   ├── audio_recorder.py         Ring-buffer continuous WASAPI capture with resampling
+│   ├── audio_ducking.py          Automatic playback volume ducking while dictating (Hex-inspired)
 │   ├── audio_feedback.py         Soft synthesized bell-chime audio cues (no WAV files)
 │   ├── audio_gain.py             Whisper Mode adaptive booster for quiet/whispered speech
 │   ├── cues.py                   Pure-Python sine harmonic WAV synthesis (stdlib only)
@@ -254,6 +255,7 @@ Kural recognizes commands in English, formal Tamil, and colloquial Tanglish:
 - **Custom dictionary:** `kural --dict-add "Aashir"` — hotwords preserved during transcription
 - **Adaptive vocabulary:** corrections and context learned on-disk session by session
 - **Whisper Mode:** adaptive gain boost for quiet or whispered speech (99.9th percentile pop rejection)
+- **Output Audio Ducking:** automatically lowers music/video playback volume while speaking so speakers don't bleed into the mic (Hex-inspired)
 
 ### Offline Audio File Transcription (`--transcribe`)
 

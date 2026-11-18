@@ -1,31 +1,37 @@
 # SESSION.md
 
 ## Current milestone
-**Offline Audio File Transcription CLI (`--transcribe`, inspired by anomalyco/hex)**
+**Automatic Output Audio Ducking (inspired by anomalyco/hex)**
 
 ## Current branch
-`feat/file-transcription-cli`
+`feat/audio-output-ducking`
 
 ## PR
 PR to be opened with gh after verification passes.
 
 ## Last completed step
-Implemented offline audio file transcription CLI inspired by `anomalyco/hex`:
-- `kural/engine/file_transcriber.py` (273 lines):
-  - `load_audio_file(file_path)`: decodes audio into 16 kHz mono float32 (standard library `wave` for WAV files, with `soundfile` / `soxr` fallback for MP3, FLAC, M4A).
-  - `format_timestamp_srt(seconds)`: converts seconds to standard SubRip `HH:MM:SS,mmm` format.
-  - `format_segments(segments, output_format)`: formats segments as plain text (`text`), SubRip subtitles (`srt`), or structured JSON (`json`).
-  - `transcribe_file(file_path, language, model_key, output_format, output_path)`: runs Whisper inference on local GPU (or CPU) and prints to stdout or saves to destination file.
-- `kural/__main__.py`:
-  - Added `--transcribe AUDIO_FILE`, `--format {text,srt,json}`, and `--output OUTPUT_FILE` CLI arguments.
+Implemented output audio ducking inspired by `anomalyco/hex`:
+- `kural/engine/audio_ducking.py` (111 lines):
+  - `AudioDucker`: automatically and smoothly lowers system playback volume (music, videos, podcasts) when recording starts, preventing speaker audio from bleeding into the microphone.
+  - Smooth 4-step ramp down (~100ms) on start, and smooth 5-step ramp up (~200ms) on restore to prevent audible clicks or pops.
+  - User volume protection: if user manually adjusts system volume during dictation, restore is safely skipped to respect manual override.
+- `kural/config/config.defaults.yaml`:
+  - Added `audio.ducking: {enabled: false, factor: 0.25}`.
+- `kural/config/configcheck.py`:
+  - Added schema validation ensuring `0.0 <= factor <= 1.0` with automatic clamping.
+- `kural/runtime.py`:
+  - Initialized `AudioDucker` and wired `start()` into dictation/command start and `restore()` into recording finish/cancellation.
+- `kural/ui/settings_window.py`:
+  - Added `[ ] Audio Ducking (lower music/video volume while dictating)` checkbox to Settings.
 - `README.md`:
-  - Added Offline Audio File Transcription usage section and updated test badge to 478 passing.
+  - Documented Audio Ducking in architecture tree and smart text features; updated test badge to 484 passing.
 - Unit tests:
-  - 8 new unit tests in `tests/engine/test_file_transcriber.py` covering SRT timestamp formatting, text formatting, SRT formatting, JSON formatting, invalid format errors, missing file errors, 16-bit mono WAV loading, and mocked batch file transcription.
-  - 478 total passing tests, 0 requiring GPU or mic, ruff clean.
+  - 5 new unit tests in `tests/engine/test_audio_ducking.py` covering factor clamping, ramp down and restoration, ducked state prevention, and restore no-ops.
+  - Updated tests in `tests/config/test_configcheck.py` and `tests/ui/test_settings.py`.
+  - 484 total passing tests, 0 requiring GPU or mic, ruff clean.
 
 ## Next step
-1. Push `feat/file-transcription-cli` and open PR into `main` with `gh pr create`.
+1. Push `feat/audio-output-ducking` and open PR into `main` with `gh pr create`.
 2. Wait for user to review and merge.
 
 ## Open questions
@@ -39,7 +45,7 @@ Implemented offline audio file transcription CLI inspired by `anomalyco/hex`:
 - [x] **Elevated window message implemented** — UIPI token inspection warns user with actionable advice.
 
 ## Decisions recorded (this session)
-- File transcription CLI: inspired by `anomalyco/hex` (`hex transcribe <file>`).
-  Reason: allows users to transcribe voice notes, meetings, and podcasts offline from the CLI without launching the live background dictation daemon.
-- Standard library WAV support: `wave` module handles PCM WAV without requiring extra external binaries.
-  Reason: guarantees out-of-the-box offline file transcription on all Windows 11 machines.
+- Output audio ducking: inspired by `anomalyco/hex` (`src/audio/output_ducking.rs`).
+  Reason: prevents background music/video playback from being picked up by the microphone and hallucinated by Whisper.
+- Asynchronous ramp: volume ramp runs on daemon threads with 4/5 micro-steps.
+  Reason: completely eliminates audio pops or harsh sudden volume jumps without blocking the recording thread.

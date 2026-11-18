@@ -161,6 +161,22 @@ def validate_config(config: dict[str, Any]) -> tuple[dict[str, Any], list[str]]:
                     )
                     ns["strength"] = 0.75
 
+        duck = audio.get("ducking")
+        if isinstance(duck, dict):
+            factor = duck.get("factor")
+            if factor is not None:
+                try:
+                    f_val = float(factor)
+                    if f_val < 0.0 or f_val > 1.0:
+                        clamped = max(0.0, min(1.0, f_val))
+                        issues.append(
+                            f"audio.ducking.factor '{f_val}' out of range [0.0-1.0]; clamped to {clamped}."
+                        )
+                        duck["factor"] = clamped
+                except (ValueError, TypeError):
+                    issues.append(f"Invalid ducking.factor '{factor}'; reset to 0.25.")
+                    duck["factor"] = 0.25
+
     # 5. Validate 'notes' section
     notes = cfg.setdefault("notes", {})
     if isinstance(notes, dict):

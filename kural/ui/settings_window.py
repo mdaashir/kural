@@ -77,6 +77,7 @@ class SettingsWindow:
         self.var_vault = None
         self.var_whisper_mode = None
         self.var_noise_suppression = None
+        self.var_ducking = None
 
     def show(self) -> None:
         """Construct and display the settings window (blocks until closed)."""
@@ -172,6 +173,8 @@ class SettingsWindow:
         self.var_whisper_mode = tk.BooleanVar(value=bool(wm_cfg.get("enabled", True)))
         ns_cfg = audio_cfg.get("noise_suppression") or {}
         self.var_noise_suppression = tk.BooleanVar(value=bool(ns_cfg.get("enabled", False)))
+        duck_cfg = audio_cfg.get("ducking") or {}
+        self.var_ducking = tk.BooleanVar(value=bool(duck_cfg.get("enabled", False)))
 
     def _build_engine_tab(self, parent, ttk) -> None:
         row = 0
@@ -212,6 +215,13 @@ class SettingsWindow:
             variable=self.var_noise_suppression,
         )
         c_ns.grid(row=row + 1, column=0, columnspan=2, sticky="w", pady=6)
+
+        c_duck = ttk.Checkbutton(
+            parent,
+            text="Audio Ducking (lower music/video volume while dictating)",
+            variable=self.var_ducking,
+        )
+        c_duck.grid(row=row + 2, column=0, columnspan=2, sticky="w", pady=6)
 
     def _build_hotkeys_tab(self, parent, ttk) -> None:
         ttk.Label(parent, text="Dictation Mode:").grid(row=0, column=0, sticky="w", pady=8)
@@ -382,6 +392,10 @@ class SettingsWindow:
                     if self.var_noise_suppression
                     else False,
                     "strength": 0.75,
+                },
+                "ducking": {
+                    "enabled": bool(self.var_ducking.get()) if self.var_ducking else False,
+                    "factor": 0.25,
                 },
             },
         }

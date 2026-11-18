@@ -84,3 +84,10 @@ class TestConfigValidation:
         assert len(issues) == 1
         assert "clamped to 1.0" in issues[0]
         assert clean["audio"]["noise_suppression"]["strength"] == 1.0
+
+    def test_ducking_factor_clamped(self):
+        cfg = {"audio": {"ducking": {"factor": 1.5}}}
+        clean, issues = validate_config(cfg)
+        assert len(issues) == 1
+        assert "clamped to 1.0" in issues[0]
+        assert clean["audio"]["ducking"]["factor"] == 1.0

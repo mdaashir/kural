@@ -113,6 +113,16 @@ class KuralRuntime:
             on_partial=self._on_live_partial,
         )
 
+        # Output audio ducking
+        from kural.engine.audio_ducking import AudioDucker
+
+        audio_cfg = self.config_manager.get_audio_config()
+        duck_cfg = audio_cfg.get("ducking") or {}
+        self.ducker = AudioDucker(
+            enabled=bool(duck_cfg.get("enabled", False)),
+            factor=float(duck_cfg.get("factor", 0.25)),
+        )
+
         # Recovery, adaptive learning, and app rules
         from kural.control.app_rules import AppRules
         from kural.engine.adaptive import AdaptiveLearner
@@ -290,6 +300,8 @@ class KuralRuntime:
                 self.state = RuntimeState.RECORDING_DICTATION
                 self._hands_free_locked = False
                 self.recorder.start_recording()
+                if getattr(self, "ducker", None):
+                    self.ducker.start()
                 if getattr(self, "streaming", None):
                     self.streaming.start()
                 if getattr(self, "terminal_title", None):
@@ -300,6 +312,8 @@ class KuralRuntime:
             elif self.state == RuntimeState.RECORDING_DICTATION:
                 self._hands_free_locked = False
                 self.state = RuntimeState.PROCESSING
+                if getattr(self, "ducker", None):
+                    self.ducker.restore()
                 if getattr(self, "streaming", None):
                     self.streaming.stop()
                 if getattr(self, "terminal_title", None):
@@ -322,6 +336,8 @@ class KuralRuntime:
 
             if self.state == RuntimeState.RECORDING_DICTATION:
                 self.state = RuntimeState.PROCESSING
+                if getattr(self, "ducker", None):
+                    self.ducker.restore()
                 if getattr(self, "streaming", None):
                     self.streaming.stop()
                 if getattr(self, "terminal_title", None):
@@ -338,6 +354,8 @@ class KuralRuntime:
             if self.state == RuntimeState.IDLE:
                 self.state = RuntimeState.RECORDING_COMMAND
                 self.recorder.start_recording()
+                if getattr(self, "ducker", None):
+                    self.ducker.start()
                 if getattr(self, "terminal_title", None):
                     self.terminal_title.update_state("recording")
                 self.overlay.show_recording(is_command=True)
@@ -345,6 +363,8 @@ class KuralRuntime:
                 print("\n⚡ Listening (Command Mode)...")
             elif self.state == RuntimeState.RECORDING_COMMAND:
                 self.state = RuntimeState.PROCESSING
+                if getattr(self, "ducker", None):
+                    self.ducker.restore()
                 if getattr(self, "terminal_title", None):
                     self.terminal_title.update_state("processing")
                 self.overlay.show_processing()
@@ -358,6 +378,8 @@ class KuralRuntime:
         with self._state_lock:
             if self.state in (RuntimeState.RECORDING_DICTATION, RuntimeState.RECORDING_COMMAND):
                 self.state = RuntimeState.PROCESSING
+                if getattr(self, "ducker", None):
+                    self.ducker.restore()
                 if getattr(self, "streaming", None):
                     self.streaming.stop()
                 if getattr(self, "terminal_title", None):
