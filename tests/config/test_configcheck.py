@@ -98,3 +98,10 @@ class TestConfigValidation:
         assert len(issues) == 1
         assert "Falling back to 'paste'" in issues[0]
         assert clean["clipboard"]["delivery_method"] == "paste"
+
+    def test_return_to_app_validation(self):
+        cfg = {"clipboard": {"return_to_app": "not_a_bool"}}
+        clean, issues = validate_config(cfg)
+        assert len(issues) == 1
+        assert "reset to True" in issues[0]
+        assert clean["clipboard"]["return_to_app"] is True

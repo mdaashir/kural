@@ -75,6 +75,7 @@ class SettingsWindow:
         self.var_mouse_button = None
         self.var_delivery_method = None
         self.var_restore_clip = None
+        self.var_return_to_app = None
         self.var_double_tap = None
         self.var_stop_phrase = None
         self.var_vault = None
@@ -154,6 +155,7 @@ class SettingsWindow:
         clip_cfg = self.config_manager.config.get("clipboard") or {}
         self.var_delivery_method = tk.StringVar(value=clip_cfg.get("delivery_method", "paste"))
         self.var_restore_clip = tk.BooleanVar(value=bool(clip_cfg.get("restore_clipboard", True)))
+        self.var_return_to_app = tk.BooleanVar(value=bool(clip_cfg.get("return_to_app", True)))
         self.var_double_tap = tk.BooleanVar(
             value=bool(self.hotkey_cfg.get("double_tap_to_lock", False))
         )
@@ -349,13 +351,20 @@ class SettingsWindow:
         )
         c_clip_hist.grid(row=7, column=0, columnspan=2, sticky="w", pady=4)
 
+        c_return_app = ttk.Checkbutton(
+            parent,
+            text="Return to Original App if Focus Shifted During Dictation",
+            variable=self.var_return_to_app,
+        )
+        c_return_app.grid(row=8, column=0, columnspan=2, sticky="w", pady=4)
+
         ttk.Label(parent, text="Obsidian / Notes Vault Path:").grid(
-            row=8, column=0, sticky="w", pady=6
+            row=9, column=0, sticky="w", pady=6
         )
         e_vault = ttk.Entry(parent, textvariable=self.var_vault, width=22)
-        e_vault.grid(row=8, column=1, sticky="w", padx=12, pady=6)
+        e_vault.grid(row=9, column=1, sticky="w", padx=12, pady=6)
         ttk.Label(parent, text="(Empty = Documents/Kural Notes)", font=("", 8)).grid(
-            row=9, column=1, sticky="w", padx=12, pady=(0, 6)
+            row=10, column=1, sticky="w", padx=12, pady=(0, 6)
         )
 
     def _on_open_folder(self) -> None:
@@ -406,6 +415,9 @@ class SettingsWindow:
                 else "paste",
                 "restore_clipboard": bool(self.var_restore_clip.get())
                 if self.var_restore_clip
+                else True,
+                "return_to_app": bool(self.var_return_to_app.get())
+                if self.var_return_to_app
                 else True,
             },
             "overlay": {
