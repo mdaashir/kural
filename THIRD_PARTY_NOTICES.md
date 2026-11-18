@@ -56,6 +56,7 @@ licence texts are reproduced here in full, as required by the MIT licence terms.
 | `kural/engine/instance_manager.py` | `src/whisper_key/instance_manager.py` + `src/whisper_key/platform/windows/instance_lock.py` |
 | `kural/engine/audio_feedback.py` | `src/whisper_key/audio_feedback.py` |
 | `kural/engine/audio_gain.py` | `src/whisper_key/audio_gain.py` |
+| `kural/engine/bundle_logs.py` | `src/whisper_key/bundle_logs.py` |
 | `kural/engine/cues.py` | `whisp/cues.py` |
 | `kural/engine/log_setup.py` | `src/whisper_key/log_setup.py` |
 | `kural/engine/snippets.py` | `src/whisper_key/snippets.py` |
