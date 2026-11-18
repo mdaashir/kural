@@ -77,3 +77,10 @@ class TestConfigValidation:
         assert len(issues) == 1
         assert "Invalid whisper.indic_script" in issues[0]
         assert clean["whisper"]["indic_script"] == "native"
+
+    def test_noise_suppression_strength_clamped(self):
+        cfg = {"audio": {"noise_suppression": {"strength": 2.5}}}
+        clean, issues = validate_config(cfg)
+        assert len(issues) == 1
+        assert "clamped to 1.0" in issues[0]
+        assert clean["audio"]["noise_suppression"]["strength"] == 1.0

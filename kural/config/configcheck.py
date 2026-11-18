@@ -143,6 +143,24 @@ def validate_config(config: dict[str, Any]) -> tuple[dict[str, Any], list[str]]:
                 issues.append(f"Invalid audio.max_duration '{max_dur}'; reset to 30.")
                 audio["max_duration"] = 30
 
+        ns = audio.get("noise_suppression")
+        if isinstance(ns, dict):
+            strength = ns.get("strength")
+            if strength is not None:
+                try:
+                    s_val = float(strength)
+                    if s_val < 0.0 or s_val > 1.0:
+                        clamped = max(0.0, min(1.0, s_val))
+                        issues.append(
+                            f"audio.noise_suppression.strength '{s_val}' out of range [0.0-1.0]; clamped to {clamped}."
+                        )
+                        ns["strength"] = clamped
+                except (ValueError, TypeError):
+                    issues.append(
+                        f"Invalid noise_suppression.strength '{strength}'; reset to 0.75."
+                    )
+                    ns["strength"] = 0.75
+
     # 5. Validate 'notes' section
     notes = cfg.setdefault("notes", {})
     if isinstance(notes, dict):

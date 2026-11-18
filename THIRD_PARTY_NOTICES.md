@@ -59,6 +59,7 @@ licence texts are reproduced here in full, as required by the MIT licence terms.
 | `kural/engine/bundle_logs.py` | `src/whisper_key/bundle_logs.py` |
 | `kural/engine/cues.py` | `whisp/cues.py` |
 | `kural/engine/log_setup.py` | `src/whisper_key/log_setup.py` |
+| `kural/engine/noise_suppression.py` | `src/whisper_key/noise_suppression.py` |
 | `kural/engine/snippets.py` | `src/whisper_key/snippets.py` |
 | `kural/engine/dictionary.py` | `src/whisper_key/dictionary.py` |
 | `kural/engine/server.py` | `src/whisper_key/local_server.py` |
