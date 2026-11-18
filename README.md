@@ -6,7 +6,7 @@
 [![Platform: Windows 11](https://img.shields.io/badge/platform-Windows%2011-0078D6.svg)](https://www.microsoft.com/windows)
 [![CUDA: RTX 3050](https://img.shields.io/badge/CUDA-RTX%203050%206GB-76B900.svg)](https://developer.nvidia.com/cuda-zone)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
-[![Tests: 484](https://img.shields.io/badge/tests-484%20passing-brightgreen.svg)](tests/)
+[![Tests: 486](https://img.shields.io/badge/tests-486%20passing-brightgreen.svg)](tests/)
 
 Kural merges two MIT-licensed upstream projects into one cohesive desktop voice assistant:
 the **GPU speech engine** from `drajb/whisper-local` with the **deep voice-control engine**
@@ -256,6 +256,7 @@ Kural recognizes commands in English, formal Tamil, and colloquial Tanglish:
 - **Adaptive vocabulary:** corrections and context learned on-disk session by session
 - **Whisper Mode:** adaptive gain boost for quiet or whispered speech (99.9th percentile pop rejection)
 - **Output Audio Ducking:** automatically lowers music/video playback volume while speaking so speakers don't bleed into the mic (Hex-inspired)
+- **Instant Cancel Hotkey (`Escape`):** aborts dictation or voice control immediately and discards audio buffer without typing or logging (Hex-inspired)
 
 ### Offline Audio File Transcription (`--transcribe`)
 
