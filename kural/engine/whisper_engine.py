@@ -36,8 +36,12 @@ _MODEL_SIZE_HINTS = {
 }
 
 
-# Default script primer for Tamil to steer Whisper toward native script instead of Roman transliteration
+# Script primers for Tamil:
+# Native Tamil script primer steers Whisper toward native Tamil characters
 SCRIPT_PRIMER_TAMIL = "வணக்கம், இது தமிழ் எழுத்தில் எழுதப்பட்ட வாக்கியம்."
+
+# Roman script primer steers Whisper toward colloquial Latin transliteration (Tanglish / Roman-script chat)
+ROMAN_PRIMER_TAMIL = "Aamaa, naalai meeting evvalavu manikku? Naan konjam late-aa varuven."
 
 
 def _model_size_hint(model_key: str) -> str:
@@ -64,12 +68,14 @@ class WhisperEngine:
         log_transcriptions: bool = False,
         languages: list = None,
         idle_unload_minutes: int = 5,
+        indic_script: str = "native",
     ):
 
         self.model_key = model_key
         self.device = device
         self.compute_type = compute_type
         self.idle_unload_minutes = idle_unload_minutes
+        self.indic_script = indic_script.lower().strip() if indic_script else "native"
         self._idle_timer = None
         self._idle_lock = threading.Lock()
         self.language = None if language == "auto" else language
@@ -316,7 +322,7 @@ class WhisperEngine:
             }
             prompt = self.initial_prompt
             if not prompt and language == "ta":
-                prompt = SCRIPT_PRIMER_TAMIL
+                prompt = ROMAN_PRIMER_TAMIL if self.indic_script == "roman" else SCRIPT_PRIMER_TAMIL
 
             if prompt:
                 transcribe_kwargs["initial_prompt"] = prompt

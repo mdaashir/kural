@@ -53,6 +53,7 @@ class TestSettingsCollectionAndSave:
         assert "voice_commands" in data
         assert "clipboard" in data
         assert data["whisper"]["model"] == "large-v3-turbo"
+        assert data["whisper"]["indic_script"] == "native"
         assert data["whisper"]["idle_unload_minutes"] == 5
         assert data["hotkey"]["recording_hotkey"] == "ctrl+space"
         assert data["hotkey"]["mouse_button"] == ""

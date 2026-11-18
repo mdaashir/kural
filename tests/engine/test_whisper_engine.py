@@ -34,6 +34,7 @@ def engine():
     e.initial_prompt = None
     e.hotwords = None
     e.task = "transcribe"
+    e.indic_script = "native"
     e.model, _ = _make_fake_whisper_model()
     e.logger = MagicMock()
     e.registry = None
@@ -109,6 +110,21 @@ class TestTranscribeAudio:
         fake_model.transcribe.assert_called_once()
         kwargs = fake_model.transcribe.call_args[1]
         assert kwargs["initial_prompt"] == SCRIPT_PRIMER_TAMIL
+
+    def test_tamil_roman_primer_injected(self, engine):
+        from kural.engine.whisper_engine import ROMAN_PRIMER_TAMIL
+
+        fake_model, _ = _make_fake_whisper_model("Vanakkam")
+        engine.model = fake_model
+        engine.language = "ta"
+        engine.indic_script = "roman"
+        engine.initial_prompt = None
+
+        result = engine.transcribe_audio(np.zeros(16000, dtype=np.float32))
+        assert result == "Vanakkam"
+        fake_model.transcribe.assert_called_once()
+        kwargs = fake_model.transcribe.call_args[1]
+        assert kwargs["initial_prompt"] == ROMAN_PRIMER_TAMIL
 
     def test_custom_prompt_overrides_tamil_primer(self, engine):
         fake_model, _ = _make_fake_whisper_model("வணக்கம்")

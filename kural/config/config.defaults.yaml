@@ -34,6 +34,10 @@ whisper: # Whisper AI Model Settings
     # Options: en (English), ta (Tamil), or auto (auto-detect)
     language: en
 
+    # Indic script output style (for Tamil)
+    # Options: native (Tamil script characters), roman (Latin transliteration / Tanglish)
+    indic_script: native
+
     # Dictation languages restricted list
     # When language is 'auto', detection picks only from this list
     languages:
