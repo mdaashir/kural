@@ -135,3 +135,29 @@ class TestWindowState:
             assert ok is True
             fake_pyperclip.copy.assert_called_once_with("Copy only speech")
             mock_type.assert_not_called()
+
+    def test_insert_text_at_caret_without_restore(self):
+        from unittest.mock import MagicMock
+
+        from kural.control.windows import insert_text_at_caret
+
+        fake_pyperclip = MagicMock()
+        fake_pyperclip.paste.return_value = "Prior clipboard item"
+
+        with (
+            patch.dict("sys.modules", {"pyperclip": fake_pyperclip}),
+            patch("kural.control.windows.check_foreground_elevation", return_value=(False, "")),
+            patch("ctypes.windll.user32.keybd_event") as mock_keybd,
+            patch("threading.Thread") as mock_thread,
+            patch("sys.platform", "win32"),
+        ):
+            ok = insert_text_at_caret(
+                "Dictated text", delivery_method="paste", restore_clipboard=False
+            )
+            assert ok is True
+            # Copied dictated text
+            fake_pyperclip.copy.assert_called_once_with("Dictated text")
+            # Sent Ctrl+V
+            assert mock_keybd.call_count >= 4
+            # Restore thread was NOT spawned
+            mock_thread.assert_not_called()
