@@ -1,29 +1,36 @@
 # SESSION.md
 
 ## Current milestone
-**Direct Unicode Keystroke Injection & Fallback**
+**Synthesized Soft Audio Cues (Wispr Flow Style)**
 
 ## Current branch
-`feat/unicode-keystroke-injection`
+`feat/synthesized-audio-cues`
 
 ## PR
 PR to be opened with gh after verification passes.
 
 ## Last completed step
-Implemented SendInput Unicode keystroke injection and fallback:
-- `kural/control/windows.py`:
-  - `type_text_at_caret(text)`: direct character-by-character typing using Win32 `SendInput` with `KEYEVENTF_UNICODE` (0x0004), completely bypassing the Windows clipboard.
-  - Correctly encodes multi-byte Unicode (including Tamil script glyphs and UTF-16 surrogate pairs) and translates `\n` to `VK_RETURN`.
-  - Paced inter-character timing (15ms) ensures busy target apps keep up without dropping characters.
-  - `insert_text_at_caret(text, delivery_method)`: supports `"paste"` (clipboard + Ctrl+V) and `"type"`, automatically falling back to `type_text_at_caret()` if clipboard access fails (e.g. locked by another app).
-- `kural/config/config.defaults.yaml`: Added `clipboard.delivery_method: paste` (`paste` or `type`).
-- `kural/runtime.py`: Passed `delivery_method` from config to `insert_text_at_caret()`.
-- 2 new unit tests in `tests/control/test_windows.py` (398 total passing, 0 requiring GPU, mic, or network, ruff clean).
+Implemented pure-Python synthesized soft musical chimes:
+- `kural/engine/cues.py` (80 lines):
+  - In-memory sine-tone harmonic synthesis using stdlib `wave`, `struct`, and `math` (zero external audio files required on disk).
+  - Smooth 6ms attack envelope and exponential decay with octave partials, giving a warm bell-like chime body.
+  - Chimes for all dictation states:
+    - `"start"`: rising two-tone chime (E5 -> B5, 659 Hz -> 988 Hz).
+    - `"stop"`: falling two-tone chime (B5 -> E5, 988 Hz -> 659 Hz).
+    - `"done"`: bright confirmation chord (G5 -> C6, 784 Hz -> 1046 Hz).
+    - `"transform"`: harmonic triple chime (C5 -> E5 -> G5, 523 Hz -> 659 Hz -> 784 Hz).
+    - `"error"`: warm low rejection tone (A3 -> F3, 220 Hz -> 175 Hz).
+  - Thread-safe in-memory caching.
+- `kural/engine/audio_feedback.py`:
+  - Updated `AudioFeedback` to play modern synthesized soft chimes by default.
+  - Added `play_transform()` for smart voice edits and rewrites.
+  - Retained fallback to custom WAV files or Windows system aliases.
+- 4 new unit tests in `tests/engine/test_cues.py` (402 total passing, 0 requiring GPU, mic, or network, ruff clean).
 
 ## Next step
-1. Push `feat/unicode-keystroke-injection` and open PR into `main` with `gh pr create`.
+1. Push `feat/synthesized-audio-cues` and open PR into `main` with `gh pr create`.
 2. Wait for user to review and merge.
-3. Test dictating into paste-blocked applications or with `delivery_method: type`!
+3. Test pressing `Ctrl+Space` with headphones on to hear the gentle rising bell chime!
 
 ## Open questions
 - None.
@@ -41,7 +48,5 @@ Implemented SendInput Unicode keystroke injection and fallback:
 - Linter: `ruff` only. Reason: handles pycodestyle + isort + pyupgrade in one tool.
 - Sub-package layout: `engine/`, `control/`, `config/`, `ui/` as top-level siblings under `kural/`.
   Reason: clean separation of concerns; each milestone targets exactly one sub-package.
-- Fallback delivery: if clipboard copy fails due to lock contention, automatically fallback to `type_text_at_caret()`.
-  Reason: guarantees the user's speech is never lost even if the Windows clipboard API is blocked.
-- Unicode keystrokes: uses `KEYEVENTF_UNICODE` with UTF-16 surrogate pairs.
-  Reason: ensures native non-ASCII typing (Tamil glyphs, accents, emojis) works regardless of active Windows keyboard layout.
+- Synthesized cues: pure-Python in-memory WAV generation without bundling audio asset files.
+  Reason: keeps package lightweight, eliminates broken asset path issues, and produces gentle headphone-friendly tones.
