@@ -1,28 +1,30 @@
 # SESSION.md
 
 ## Current milestone
-**Multi-Key Push-to-Talk Chord Tracking**
+**Mouse Push-to-Talk Trigger (Mouse Flow)**
 
 ## Current branch
-`feat/chord-matcher`
+`feat/mouse-push-to-talk`
 
 ## PR
 PR to be opened with gh after verification passes.
 
 ## Last completed step
-Implemented multi-key hold-to-talk chord matcher:
-- `kural/control/chords.py` (90 lines):
-  - `ChordMatcher`: tracks raw key down and key up events to determine multi-key chord satisfaction.
-  - Generates clear state transitions: `"press"` when all keys in the chord are held, `"release"` the instant any single key is released.
-  - Normalizes aliases: `control` -> `ctrl`, `win`/`super`/`cmd` -> `windows`, `option` -> `alt`, `altgr` -> `right alt`.
-  - Handles generic vs. sided modifiers: `ctrl` matches either Left or Right Ctrl, while `right ctrl` matches only the right one.
-  - Resolves Windows driver asymmetry where a sided key is sent on key down and a generic key on key up.
-- 7 new unit tests in `tests/control/test_chords.py` (409 total passing, 0 requiring GPU, mic, or network, ruff clean).
+Implemented Win32 low-level mouse button push-to-talk:
+- `kural/control/mouse.py` (187 lines):
+  - `MouseButtonTrigger`: runs a `WH_MOUSE_LL` hook on a dedicated Win32 message-loop thread.
+  - Intercepts and swallows events (`return 1`) for configured buttons (`middle`, `x1`, `x2`, or `both`) so the button's native action (e.g. browser Back) does not interrupt dictation.
+  - Sub-millisecond non-blocking dispatch to daemon threads prevents mouse cursor stutter.
+  - Safe thread shutdown via `PostThreadMessageW(WM_QUIT)` and `UnhookWindowsHookEx`.
+- `kural/runtime.py`:
+  - Automatically initializes and starts `MouseButtonTrigger` when `hotkey.mouse_button` is configured.
+  - Cleans up hook on runtime shutdown.
+- 7 new unit tests in `tests/control/test_mouse.py` (416 total passing, 0 requiring GPU, mic, or network, ruff clean).
 
 ## Next step
-1. Push `feat/chord-matcher` and open PR into `main` with `gh pr create`.
+1. Push `feat/mouse-push-to-talk` and open PR into `main` with `gh pr create`.
 2. Wait for user to review and merge.
-3. Test using multi-key hold combinations like `ctrl+windows` or `ctrl+alt` for push-to-talk dictation!
+3. Test holding mouse thumb button (X1/X2) to dictate with hands on mouse!
 
 ## Open questions
 - None.
@@ -40,7 +42,7 @@ Implemented multi-key hold-to-talk chord matcher:
 - Linter: `ruff` only. Reason: handles pycodestyle + isort + pyupgrade in one tool.
 - Sub-package layout: `engine/`, `control/`, `config/`, `ui/` as top-level siblings under `kural/`.
   Reason: clean separation of concerns; each milestone targets exactly one sub-package.
-- Instant release transition: breaks the chord immediately when any member key is released.
-  Reason: guarantees crisp push-to-talk stop and minimizes trailing mic silence.
-- Asymmetric driver handling: drops generic modifier keys when sided keys are released.
-  Reason: prevents stuck keys in raw Windows event streams.
+- Event swallowing: returns 1 in `WH_MOUSE_LL` hook for active trigger button.
+  Reason: prevents browser Back or auto-scroll from navigating away during speech.
+- Dedicated hook thread: runs Win32 `GetMessage` loop on its own thread with sub-millisecond callback offloading.
+  Reason: prevents any mouse cursor hitching or Windows auto-unhooking due to timeout.
