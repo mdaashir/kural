@@ -180,11 +180,24 @@ class TestWindowState:
             patch("ctypes.windll.user32.IsIconic", return_value=True),
             patch("ctypes.windll.user32.ShowWindow") as mock_show,
             patch("ctypes.windll.user32.SwitchToThisWindow") as mock_switch,
+            patch("kural.control.windows.get_foreground_hwnd", return_value=12345),
         ):
             ok = restore_foreground_window(12345, delay=0.0)
             assert ok is True
             mock_show.assert_called_once_with(12345, 9)  # SW_RESTORE = 9
             mock_switch.assert_called_once_with(12345, True)
+
+    def test_restore_foreground_window_refused(self):
+        from kural.control.windows import restore_foreground_window
+
+        with (
+            patch("sys.platform", "win32"),
+            patch("ctypes.windll.user32.IsWindow", return_value=True),
+            patch("ctypes.windll.user32.IsIconic", return_value=False),
+            patch("ctypes.windll.user32.SwitchToThisWindow"),
+            patch("kural.control.windows.get_foreground_hwnd", return_value=2002),
+        ):
+            assert restore_foreground_window(12345, delay=0.0) is False
 
     def test_restore_foreground_window_invalid(self):
         from kural.control.windows import restore_foreground_window

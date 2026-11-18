@@ -591,16 +591,26 @@ class KuralRuntime:
                 restore_clip = bool(clip_cfg.get("restore_clipboard", True))
                 return_to_app = bool(clip_cfg.get("return_to_app", True))
 
-                # Return to original application if foreground focus shifted during speech
-                if return_to_app and getattr(self, "_origin_hwnd", None):
+                # Copy-only does not deliver to a window. For paste/type, never send
+                # text to an unverified foreground window when return-to-app is on.
+                if return_to_app and delivery_method != "copy":
                     from kural.control.windows import get_foreground_hwnd, restore_foreground_window
 
-                    curr_hwnd = get_foreground_hwnd()
-                    if curr_hwnd and curr_hwnd != self._origin_hwnd:
-                        logger.info(
-                            f"Foreground window shifted ({curr_hwnd} != {self._origin_hwnd}); returning to app."
+                    origin = getattr(self, "_origin_hwnd", None)
+                    if origin is not None and get_foreground_hwnd() != origin:
+                        restore_foreground_window(origin)
+                    if origin is None or get_foreground_hwnd() != origin:
+                        logger.warning(
+                            "Original dictation window is not foreground; delivery withheld."
                         )
-                        restore_foreground_window(self._origin_hwnd)
+                        if getattr(self, "fallback_window", None):
+                            self.fallback_window.show(
+                                text,
+                                reason="Could not return to the original app. Copy your dictation here.",
+                            )
+                        self.overlay.flash_error("App focus changed")
+                        self.audio_feedback.play_error()
+                        return
 
                 print(f"✍️  Typed ({style_name}): '{text}'")
                 inserted = insert_text_at_caret(

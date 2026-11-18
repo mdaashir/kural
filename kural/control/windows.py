@@ -312,12 +312,7 @@ def get_foreground_hwnd() -> int | None:
 
 
 def restore_foreground_window(hwnd: int, delay: float = 0.05) -> bool:
-    """Bring the target window back to the foreground before delivering text.
-
-    Uses SwitchToThisWindow to reliably bypass Windows foreground lock restrictions.
-    Restores the window if it was minimized (IsIconic). Returns True if the window
-    was successfully activated.
-    """
+    """Request activation and confirm the target HWND is foreground before delivery."""
     if sys.platform != "win32" or not hwnd:
         return False
     try:
@@ -334,7 +329,7 @@ def restore_foreground_window(hwnd: int, delay: float = 0.05) -> bool:
         user32.SwitchToThisWindow(hwnd, True)
         if delay > 0:
             time.sleep(delay)
-        return True
+        return get_foreground_hwnd() == hwnd
     except Exception as e:
         logger.debug(f"Failed to restore foreground window {hwnd}: {e}")
         return False

@@ -260,7 +260,7 @@ Kural recognizes commands in English, formal Tamil, and colloquial Tanglish:
 - **Instant Cancel Hotkey (`Escape`):** aborts dictation or voice control immediately and discards audio buffer without typing or logging (Hex-inspired)
 - **Voice Stop Phrase:** say *"stop dictation"* or *"முடி"* / *"stop பண்ணு"* to automatically finalize hands-free dictation without pressing hotkeys (Hex-inspired)
 - **Windows Clipboard History Retention:** optionally keep dictations in Windows Clipboard History (`Win+V`) instead of restoring prior clipboard (Hex-inspired)
-- **Return to App:** automatically refocuses the original window if focus shifted during dictation (e.g. notifications or toast alerts), preventing speech from landing in the wrong app (Hex-inspired)
+- **Return to App:** attempts to refocus the original window after a focus shift; if Kural cannot confirm it is foreground, paste/type is withheld and the transcript is offered in the fallback window (Hex-inspired).
 
 ### Offline Audio File Transcription (`--transcribe`)
 
