@@ -22,6 +22,8 @@ COMPUTE_TYPES = ["float16", "int8"]
 LANGUAGES = ["en", "ta", "auto"]
 POSITIONS = ["bottom-center", "top-center", "bottom-right", "top-right"]
 RECORDING_MODES = ["toggle", "push_to_talk"]
+MOUSE_BUTTONS = ["", "x1", "x2", "both", "middle"]
+DELIVERY_METHODS = ["paste", "type"]
 
 
 def open_folder(path: str) -> None:
@@ -67,6 +69,8 @@ class SettingsWindow:
         self.var_fuzzy = None
         self.var_autostart = None
         self.var_recording_mode = None
+        self.var_mouse_button = None
+        self.var_delivery_method = None
         self.var_double_tap = None
         self.var_vault = None
         self.var_whisper_mode = None
@@ -137,6 +141,9 @@ class SettingsWindow:
         self.var_recording_mode = tk.StringVar(
             value=self.hotkey_cfg.get("recording_mode", "toggle")
         )
+        self.var_mouse_button = tk.StringVar(value=self.hotkey_cfg.get("mouse_button", ""))
+        clip_cfg = self.config_manager.config.get("clipboard") or {}
+        self.var_delivery_method = tk.StringVar(value=clip_cfg.get("delivery_method", "paste"))
         self.var_double_tap = tk.BooleanVar(
             value=bool(self.hotkey_cfg.get("double_tap_to_lock", False))
         )
@@ -222,12 +229,27 @@ class SettingsWindow:
             font=("", 8),
         ).grid(row=5, column=1, sticky="w", padx=12, pady=(0, 10))
 
+        ttk.Label(parent, text="Mouse Push-to-Talk:").grid(row=6, column=0, sticky="w", pady=8)
+        cb_mouse = ttk.Combobox(
+            parent,
+            textvariable=self.var_mouse_button,
+            values=MOUSE_BUTTONS,
+            state="readonly",
+            width=22,
+        )
+        cb_mouse.grid(row=6, column=1, sticky="w", padx=12, pady=8)
+        ttk.Label(
+            parent,
+            text="Empty = disabled • x1/x2 = thumb buttons • middle = scroll wheel click",
+            font=("", 8),
+        ).grid(row=7, column=1, sticky="w", padx=12, pady=(0, 10))
+
         c_lock = ttk.Checkbutton(
             parent,
             text="Double-Tap to Lock Hands-Free (speak at length)",
             variable=self.var_double_tap,
         )
-        c_lock.grid(row=6, column=0, columnspan=2, sticky="w", pady=6)
+        c_lock.grid(row=8, column=0, columnspan=2, sticky="w", pady=6)
 
     def _build_ui_tab(self, parent, ttk) -> None:
         c1 = ttk.Checkbutton(
@@ -256,13 +278,28 @@ class SettingsWindow:
         )
         c4.grid(row=4, column=0, columnspan=2, sticky="w", pady=6)
 
+        ttk.Label(parent, text="Text Delivery Method:").grid(row=5, column=0, sticky="w", pady=6)
+        cb_del = ttk.Combobox(
+            parent,
+            textvariable=self.var_delivery_method,
+            values=DELIVERY_METHODS,
+            state="readonly",
+            width=20,
+        )
+        cb_del.grid(row=5, column=1, sticky="w", padx=12, pady=6)
+        ttk.Label(
+            parent,
+            text="paste = clipboard (Ctrl+V) • type = SendInput direct keystrokes",
+            font=("", 8),
+        ).grid(row=6, column=1, sticky="w", padx=12, pady=(0, 6))
+
         ttk.Label(parent, text="Obsidian / Notes Vault Path:").grid(
-            row=5, column=0, sticky="w", pady=6
+            row=7, column=0, sticky="w", pady=6
         )
         e_vault = ttk.Entry(parent, textvariable=self.var_vault, width=22)
-        e_vault.grid(row=5, column=1, sticky="w", padx=12, pady=6)
+        e_vault.grid(row=7, column=1, sticky="w", padx=12, pady=6)
         ttk.Label(parent, text="(Empty = Documents/Kural Notes)", font=("", 8)).grid(
-            row=6, column=1, sticky="w", padx=12, pady=(0, 6)
+            row=8, column=1, sticky="w", padx=12, pady=(0, 6)
         )
 
     def _on_open_folder(self) -> None:
@@ -291,9 +328,17 @@ class SettingsWindow:
                 "recording_mode": self.var_recording_mode.get()
                 if self.var_recording_mode
                 else "toggle",
+                "mouse_button": self.var_mouse_button.get().strip().lower()
+                if self.var_mouse_button
+                else "",
                 "double_tap_to_lock": bool(self.var_double_tap.get())
                 if self.var_double_tap
                 else False,
+            },
+            "clipboard": {
+                "delivery_method": self.var_delivery_method.get().strip().lower()
+                if self.var_delivery_method
+                else "paste",
             },
             "overlay": {
                 "enabled": bool(self.var_overlay_enabled.get())
