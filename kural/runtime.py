@@ -169,9 +169,11 @@ class KuralRuntime:
             enabled=bool(tray_cfg.get("enabled", True)),
         )
 
+        from kural.ui.fallback_window import FallbackWindow
         from kural.ui.terminal_title import TerminalTitle
 
         self.terminal_title = TerminalTitle()
+        self.fallback_window = FallbackWindow()
 
     def open_history(self) -> None:
         """Launch the graphical speech & command history window."""
@@ -480,7 +482,12 @@ class KuralRuntime:
                 delivery_method = clip_cfg.get("delivery_method", "paste")
 
                 print(f"✍️  Typed ({style_name}): '{text}'")
-                insert_text_at_caret(text, delivery_method=delivery_method)
+                inserted = insert_text_at_caret(text, delivery_method=delivery_method)
+                if not inserted and getattr(self, "fallback_window", None):
+                    self.fallback_window.show(
+                        text,
+                        reason="No active text field was focused — your dictation is safe here.",
+                    )
 
                 # 6. Record to ledger, adaptive learner, and history.jsonl
                 if getattr(self, "ledger", None):
