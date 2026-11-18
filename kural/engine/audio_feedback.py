@@ -55,37 +55,76 @@ class AudioFeedback:
 
     def play_start(self) -> None:
         """Audible signal when recording starts (hotkey pressed)."""
-        self._play_async(lambda: self._play_sound(self.start_sound, "SystemAsterisk", 0x00000040))
+        self._play_async(
+            lambda: self._play_cue_or_sound("start", self.start_sound, "SystemAsterisk", 0x00000040)
+        )
 
     def play_stop(self) -> None:
         """Audible signal when recording stops (hotkey released, transcription started)."""
-        self._play_async(lambda: self._play_sound(self.stop_sound, "SystemDefault", 0x00000000))
+        self._play_async(
+            lambda: self._play_cue_or_sound("stop", self.stop_sound, "SystemDefault", 0x00000000)
+        )
 
     def play_complete(self) -> None:
         """Audible signal when transcription or command completes successfully."""
         self._play_async(
-            lambda: self._play_sound(self.complete_sound, "SystemNotification", 0x00000000)
+            lambda: self._play_cue_or_sound(
+                "done", self.complete_sound, "SystemNotification", 0x00000000
+            )
+        )
+
+    def play_transform(self) -> None:
+        """Audible signal when a smart text rewrite or edit transform succeeds."""
+        self._play_async(
+            lambda: self._play_cue_or_sound(
+                "transform", self.complete_sound, "SystemNotification", 0x00000000
+            )
         )
 
     def play_error(self) -> None:
         """Audible signal when a command is blocked or transcription fails."""
-        self._play_async(lambda: self._play_sound(self.error_sound, "SystemHand", 0x00000010))
+        self._play_async(
+            lambda: self._play_cue_or_sound("error", self.error_sound, "SystemHand", 0x00000010)
+        )
 
-    def _play_sound(self, custom_path: str, alias_name: str, fallback_icon: int) -> None:
+    def _play_sound(
+        self,
+        custom_path: str = "",
+        alias_name: str = "",
+        fallback_icon: int = 0,
+        cue_name: str = "done",
+    ) -> None:
+        """Backwards-compatible sound playback delegating to _play_cue_or_sound."""
+        self._play_cue_or_sound(cue_name, custom_path, alias_name, fallback_icon)
+
+    def _play_cue_or_sound(
+        self, cue_name: str, custom_path: str, alias_name: str, fallback_icon: int
+    ) -> None:
         if sys.platform != "win32":
             return
 
         import winsound
 
-        # 1. Custom WAV file if specified and exists
+        # 1. Custom WAV file if specified by user and exists
         if custom_path and os.path.isfile(custom_path):
             winsound.PlaySound(custom_path, winsound.SND_FILENAME | winsound.SND_NODEFAULT)
             return
 
-        # 2. Windows system sound event by alias
+        # 2. Modern synthesized soft chime (Wispr Flow style)
+        if cue_name:
+            try:
+                from kural.engine.cues import get_cue_wav_bytes
+
+                wav_data = get_cue_wav_bytes(cue_name)
+                winsound.PlaySound(wav_data, winsound.SND_MEMORY | winsound.SND_NODEFAULT)
+                return
+            except Exception:
+                pass
+
+        # 3. Windows system sound event by alias
         try:
             winsound.PlaySound(alias_name, winsound.SND_ALIAS | winsound.SND_NODEFAULT)
         except Exception:
-            # 3. Fallback to native Windows MessageBeep
+            # 4. Fallback to native Windows MessageBeep
             with contextlib.suppress(Exception):
                 winsound.MessageBeep(fallback_icon)

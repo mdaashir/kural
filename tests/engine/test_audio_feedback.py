@@ -85,7 +85,8 @@ class TestWinsoundIntegration:
             patch.object(sys, "platform", "win32"),
             patch.dict("sys.modules", {"winsound": fake_winsound}),
         ):
-            af._play_sound("", "SystemAsterisk", 0x40)
+            # cue_name="" tests fallback to alias
+            af._play_sound("", "SystemAsterisk", 0x40, cue_name="")
             fake_winsound.PlaySound.assert_called_once_with(
                 "SystemAsterisk", fake_winsound.SND_ALIAS | fake_winsound.SND_NODEFAULT
             )
