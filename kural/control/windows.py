@@ -401,9 +401,21 @@ def insert_text_at_caret(
       the user's prior clipboard. Falls back to 'type' if clipboard access fails.
     - 'type': sends keystrokes directly via SendInput KEYEVENTF_UNICODE without
       touching the clipboard buffer.
+    - 'copy': places text on the clipboard only without sending keystrokes to the
+      focused app (Hex-inspired copy_only mode).
     """
     if not text:
         return False
+
+    if delivery_method == "copy":
+        try:
+            import pyperclip
+
+            pyperclip.copy(text)
+            return True
+        except Exception as e:
+            logger.warning(f"Could not copy text to clipboard: {e}")
+            return False
 
     if delivery_method == "type":
         return type_text_at_caret(text)

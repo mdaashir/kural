@@ -6,7 +6,7 @@
 [![Platform: Windows 11](https://img.shields.io/badge/platform-Windows%2011-0078D6.svg)](https://www.microsoft.com/windows)
 [![CUDA: RTX 3050](https://img.shields.io/badge/CUDA-RTX%203050%206GB-76B900.svg)](https://developer.nvidia.com/cuda-zone)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
-[![Tests: 486](https://img.shields.io/badge/tests-486%20passing-brightgreen.svg)](tests/)
+[![Tests: 489](https://img.shields.io/badge/tests-489%20passing-brightgreen.svg)](tests/)
 
 Kural merges two MIT-licensed upstream projects into one cohesive desktop voice assistant:
 the **GPU speech engine** from `drajb/whisper-local` with the **deep voice-control engine**
@@ -38,7 +38,7 @@ and Windows-native privacy features.
   - DPAPI-encrypted audio retention for one-click retry and paste-last recovery.
   - Transcript text is never logged at INFO level.
 - **Never-Lose-A-Dictation:** Paste last dictation and retry last recording directly from the system tray.
-- **Text Delivery Choice:** Clipboard paste (Ctrl+V) or direct SendInput Unicode keystroke injection for paste-blocked apps (virtual machines, games, remote desktops).
+- **Text Delivery Choice:** Clipboard paste (`paste` / Ctrl+V), direct SendInput Unicode keystrokes (`type`) for paste-blocked apps, or Copy Only (`copy`) to clipboard without disturbing foreground focus (Hex-inspired).
 - **100% Local:** Air-gapped text pipeline. The only network call is the one-time model download.
 
 ---

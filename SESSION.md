@@ -1,34 +1,35 @@
 # SESSION.md
 
 ## Current milestone
-**Instant Dictation Cancel / Discard Hotkey (inspired by anomalyco/hex)**
+**Copy Only Delivery Method (`delivery_method: copy`, inspired by anomalyco/hex)**
 
 ## Current branch
-`feat/dictation-cancel-hotkey`
+`feat/copy-only-delivery`
 
 ## PR
 PR to be opened with gh after verification passes.
 
 ## Last completed step
-Implemented dictation cancel and discard hotkey inspired by `anomalyco/hex`:
+Implemented Copy Only text delivery method inspired by `anomalyco/hex` (`copy_only`):
+- `kural/control/windows.py`:
+  - Extended `insert_text_at_caret(text, delivery_method)` to support `delivery_method == "copy"`.
+  - Places transcribed text on the system clipboard via `pyperclip.copy()` without simulating `Ctrl+V` or injecting keystrokes into the active window.
 - `kural/runtime.py`:
-  - `cancel_dictation()`: immediately aborts active recording (dictation or voice control), discards audio without transcribing or typing, stops recorder, halts live streaming preview, restores audio ducking, resets overlay to idle, updates terminal title, and plays stop cue.
-  - Global hotkey listener binds `hotkey.cancel_hotkey` (default: `escape`).
-- `kural/config/config.defaults.yaml`:
-  - Added `hotkey.cancel_hotkey: "escape"`.
+  - When `delivery_method == "copy"`, overlay flashes **"Copied"** (instead of "Typed").
 - `kural/config/configcheck.py`:
-  - Added validation for `cancel_hotkey` ensuring valid characters.
+  - Added `VALID_DELIVERY_METHODS = {"paste", "type", "copy"}` and validation rule falling back to `"paste"` if unrecognized.
 - `kural/ui/settings_window.py`:
-  - Added "Cancel Recording:" configuration row in Hotkeys tab.
+  - Added `"copy"` to `DELIVERY_METHODS` list with updated descriptive helper text.
 - `README.md`:
-  - Documented Instant Cancel Hotkey in smart text highlights; updated test badge to 486 passing.
+  - Documented `"copy"` delivery method in key highlights and updated test badge to 489 passing.
 - Unit tests:
-  - 2 new unit tests in `tests/test_runtime.py` covering abort & discard, and idle no-op.
-  - Updated `tests/ui/test_settings.py` for `cancel_hotkey`.
-  - 486 total passing tests, 0 requiring GPU or mic, ruff clean.
+  - Added unit test in `tests/control/test_windows.py` testing copy only delivery without keystroke injection.
+  - Added unit test in `tests/test_runtime.py` testing overlay "Copied" feedback.
+  - Added unit test in `tests/config/test_configcheck.py` testing delivery method validation.
+  - 489 total passing tests, 0 requiring GPU or mic, ruff clean.
 
 ## Next step
-1. Push `feat/dictation-cancel-hotkey` and open PR into `main` with `gh pr create`.
+1. Push `feat/copy-only-delivery` and open PR into `main` with `gh pr create`.
 2. Wait for user to review and merge.
 
 ## Open questions
@@ -42,5 +43,5 @@ Implemented dictation cancel and discard hotkey inspired by `anomalyco/hex`:
 - [x] **Elevated window message implemented** — UIPI token inspection warns user with actionable advice.
 
 ## Decisions recorded (this session)
-- Cancel hotkey: inspired by `anomalyco/hex` (`dictation cancel` / `cancel_hotkey: escape`).
-  Reason: gives users an instant escape hatch to abort recording if cough, phone call, or accidental trigger happens, without running GPU inference or inserting unwanted text.
+- Copy Only delivery: inspired by `anomalyco/hex` (`labs.copy_only`).
+  Reason: allows users to dictate notes or speech directly to their clipboard without overwriting selections or typing into focused windows.

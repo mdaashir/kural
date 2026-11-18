@@ -32,6 +32,7 @@ VALID_OVERLAY_POSITIONS = {
 }
 VALID_BACKENDS = {"faster_whisper", "whisper_cpp"}
 VALID_INDIC_SCRIPTS = {"native", "roman"}
+VALID_DELIVERY_METHODS = {"paste", "type", "copy"}
 
 
 def validate_config(config: dict[str, Any]) -> tuple[dict[str, Any], list[str]]:
@@ -177,7 +178,15 @@ def validate_config(config: dict[str, Any]) -> tuple[dict[str, Any], list[str]]:
                     issues.append(f"Invalid ducking.factor '{factor}'; reset to 0.25.")
                     duck["factor"] = 0.25
 
-    # 5. Validate 'notes' section
+    # 5. Validate 'clipboard' section
+    clip = cfg.setdefault("clipboard", {})
+    if isinstance(clip, dict):
+        dm = clip.get("delivery_method")
+        if dm is not None and dm not in VALID_DELIVERY_METHODS:
+            issues.append(f"Invalid clipboard.delivery_method '{dm}'. Falling back to 'paste'.")
+            clip["delivery_method"] = "paste"
+
+    # 6. Validate 'notes' section
     notes = cfg.setdefault("notes", {})
     if isinstance(notes, dict):
         v_path = notes.get("vault_path")

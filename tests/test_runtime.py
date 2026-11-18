@@ -51,6 +51,19 @@ class TestKuralRuntimeStateTransitions:
             assert mock_insert.call_args[0][0] == "Hello world."
             assert self.runtime.state == RuntimeState.IDLE
 
+    def test_process_audio_copy_only_flashes_copied(self):
+        self.runtime.state = RuntimeState.RECORDING_DICTATION
+        self.runtime.engine.transcribe_audio.return_value = "copy test"
+        self.runtime.config_manager.get_clipboard_config = MagicMock(
+            return_value={"delivery_method": "copy"}
+        )
+        self.runtime.overlay = MagicMock()
+
+        with patch("kural.runtime.insert_text_at_caret", return_value=True):
+            fake_audio = np.zeros(16000, dtype=np.float32)
+            self.runtime._process_audio(fake_audio)
+            self.runtime.overlay.flash_success.assert_called_once_with("Copied")
+
     def test_failed_insertion_triggers_fallback_window(self):
         self.runtime.state = RuntimeState.RECORDING_DICTATION
         self.runtime.engine.transcribe_audio.return_value = "unplaced speech"
