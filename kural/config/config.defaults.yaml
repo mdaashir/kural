@@ -102,6 +102,9 @@ audio: # Audio input configuration
     noise_suppression: # Spectral subtraction noise gating (removes fan/HVAC hum)
         enabled: false
         strength: 0.75 # 0.0 to 1.0 (proportion of noise reduction)
+    ducking: # Automatic playback volume ducking while dictating
+        enabled: false
+        factor: 0.25 # Lower volume to 25% of current level while speaking
 
 hotkey: # Hotkey trigger configuration
     recording_hotkey: "ctrl+space"
