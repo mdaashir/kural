@@ -1,30 +1,37 @@
 # SESSION.md
 
 ## Current milestone
-**Redacted Diagnostic Log Bundling (`--bundle-logs`)**
+**Optional Spectral Noise Suppression**
 
 ## Current branch
-`feat/bundle-logs`
+`feat/noise-suppression`
 
 ## PR
 PR to be opened with gh after verification passes.
 
 ## Last completed step
-Implemented diagnostic log bundler with PII & secret redaction:
-- `kural/engine/bundle_logs.py` (175 lines):
-  - `redact_text(text)`: scrubs Windows/POSIX usernames in file paths (`C:\Users\<USER>`, `/Users/<USER>`, `/home/<USER>`), email addresses (`<EMAIL>`), embedded URL credentials (`scheme://<REDACTED>@host`), and query parameter secrets.
-  - `redact_yaml(text)`: masks user dictionary hotwords (`hotwords: [<REDACTED>]`) and prompt instructions in YAML configuration.
-  - `bundle_logs(output_path)`: packages `about.txt`, live `doctor.txt`, `kural.log` (last 500 lines) + rotated logs, and `user_settings.yaml` into a sanitized zip archive ready for GitHub issue reporting.
-- `kural/__main__.py`:
-  - Added `--bundle-logs [ZIP_PATH]` argument to `argparse` and wired into `bundle_logs()`.
+Implemented optional background noise suppression:
+- `kural/engine/noise_suppression.py` (51 lines):
+  - `apply_noise_reduction(audio, sample_rate, strength)`: spectral gating noise reduction wrapping `noisereduce` (spectral subtraction).
+  - Removes stationary fan, air conditioner, and computer hum from the recorded audio array before Whisper inference.
+  - Safe passthrough: falls back silently to original audio if `noisereduce` is not installed or on any processing error (never raises exceptions).
+- `kural/config/config.defaults.yaml`:
+  - Added `audio.noise_suppression: {enabled: false, strength: 0.75}`.
+- `kural/config/configcheck.py`:
+  - Added schema validation ensuring `0.0 <= strength <= 1.0` with automatic clamping.
+- `kural/runtime.py`:
+  - Applied noise reduction in `_process_audio()` when `audio.noise_suppression.enabled` is active.
+- `kural/ui/settings_window.py`:
+  - Added `[ ] Noise Suppression (reduce fan/room hum)` checkbox to Settings.
 - `THIRD_PARTY_NOTICES.md`:
-  - Recorded provenance for `bundle_logs.py` (ported from `src/whisper_key/bundle_logs.py`).
+  - Recorded provenance for `noise_suppression.py` (ported from `src/whisper_key/noise_suppression.py`).
 - Unit tests:
-  - 9 new unit tests in `tests/engine/test_bundle_logs.py` covering Windows path redaction, forward-slash path redaction, POSIX path redaction, email redaction, URL credential redaction, query param redaction, YAML hotwords masking, YAML prompt masking, and zip archive creation.
-  - 452 total passing tests, 0 requiring GPU or mic, ruff clean.
+  - 5 new unit tests in `tests/engine/test_noise_suppression.py` covering passthrough without library, mock reduction, array shape/dtype preservation, strength clamping, and exception handling.
+  - Updated tests in `tests/config/test_configcheck.py` and `tests/ui/test_settings.py`.
+  - 458 total passing tests, 0 requiring GPU or mic, ruff clean.
 
 ## Next step
-1. Push `feat/bundle-logs` and open PR into `main` with `gh pr create`.
+1. Push `feat/noise-suppression` and open PR into `main` with `gh pr create`.
 2. Wait for user to review and merge.
 
 ## Open questions
@@ -38,5 +45,7 @@ Implemented diagnostic log bundler with PII & secret redaction:
 - [x] **Elevated window message implemented** — UIPI token inspection warns user with actionable advice.
 
 ## Decisions recorded (this session)
-- Diagnostic bundle sanitization: comprehensive regex scrubbing across all text files before writing to the zip archive.
-  Reason: guarantees users never accidentally leak their Windows username, emails, dictionary hotwords, or endpoint tokens when reporting issues.
+- Noise suppression: opt-in spectral gating via `noisereduce`, off by default.
+  Reason: complies with AGENTS.md base feature set ("noise suppression"); allows users in noisy environments to filter fan/HVAC hum.
+- Safe passthrough: missing library never crashes dictation.
+  Reason: keeps core package lightweight without forcing heavy dependencies.
