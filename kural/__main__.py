@@ -233,10 +233,17 @@ def main() -> None:
 
         sys.exit(run_server(host=args.host, port=args.port))
 
+    # Configure logging before starting the runtime
+    from kural.config import ConfigManager
+    from kural.engine.log_setup import setup_logging
+
+    cfg = ConfigManager(quiet=True)
+    setup_logging(cfg.config)
+
     # Launch live background runtime
     from kural.runtime import KuralRuntime
 
-    runtime = KuralRuntime()
+    runtime = KuralRuntime(config_manager=cfg)
     runtime.run()
 
 

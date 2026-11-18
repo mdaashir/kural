@@ -1,24 +1,29 @@
 # SESSION.md
 
 ## Current milestone
-**README Refresh**
+**Rotating File Logging & Diagnostics**
 
 ## Current branch
-`docs/readme-refresh`
+`feat/rotating-log`
 
 ## PR
 PR to be opened with gh after verification passes.
 
 ## Last completed step
-Updated README.md to reflect all 39 merged PRs:
-- Architecture tree: added all new modules (cues.py, chords.py, mouse.py, audio_gain.py, streaming.py, recovery.py, notes.py, server.py, flow_formatting.py, adaptive.py, history.py, snippets.py, cheat_sheet.py, history_window.py, settings_window.py, elevation.py, autostart.py, app_rules.py, planner.py, tamil_parser.py).
-- Feature highlights: Wispr Flow-style pill, synthesized cues, Mouse Flow PTT, chord PTT, Incognito Mode, Paste Last / Retry Last recovery, text delivery method.
-- Configuration table: documents all key hotkey, clipboard, overlay, and audio settings.
-- Privacy & Safety table: formalizes guarantees.
-- Test count: 248 → 419.
+Implemented rotating file logging and doctor integration:
+- `kural/engine/log_setup.py`:
+  - `setup_logging(config)`: configures root logger with console StreamHandler + `RotatingFileHandler` writing to `%APPDATA%\kural\kural.log` (1 MB max, 3 backups kept).
+  - Respects `logging.level` (default `INFO`) and `logging.file.enabled`.
+  - Transcripts are never logged at INFO (air-gapped text pipeline).
+- `kural/__main__.py`:
+  - Calls `setup_logging(cfg.config)` early in `main()` before runtime starts.
+- `kural/doctor.py`:
+  - Added `_section_logging()` diagnostic check: displays log level, log file path, rotation policy (1 MB, 3 backups), and transcript privacy guarantee.
+- `tests/engine/test_log_setup.py`:
+  - 3 unit tests verifying handler installation, rotation file writing, and disabled state (422 total tests passing, 0 requiring GPU or mic, ruff clean).
 
 ## Next step
-1. Push `docs/readme-refresh` and open PR into `main` with `gh pr create`.
+1. Push `feat/rotating-log` and open PR into `main` with `gh pr create`.
 2. Wait for user to review and merge.
 
 ## Open questions
@@ -32,6 +37,7 @@ Updated README.md to reflect all 39 merged PRs:
 - [x] **Elevated window message implemented** — UIPI token inspection warns user with actionable advice.
 
 ## Decisions recorded (this session)
-- README reflects all features as of PR #39 merged.
-- Test count badge updated: 248 → 419.
-- Architecture tree expanded with all current modules.
+- Logging setup: `RotatingFileHandler` at `%APPDATA%\kural\kural.log`, 1 MB x 3 backups, UTF-8.
+  Reason: complies with Code standards in AGENTS.md ("Errors reach the user as a plain sentence in the UI and a full traceback in kural.log (rotating, 1 MB x 3)").
+- Privacy gate: transcript text is never written to `kural.log` at INFO level.
+  Reason: guarantees air-gapped dictation privacy.

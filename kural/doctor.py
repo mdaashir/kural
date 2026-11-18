@@ -81,6 +81,7 @@ def run_doctor() -> int:
     failures += _section_gpu()
     failures += _section_dependencies()
     failures += _section_config()
+    failures += _section_logging()
     failures += _section_audio()
     failures += _section_model()
 
@@ -235,6 +236,45 @@ def _section_config() -> int:
     except Exception as e:
         Check("ConfigManager").fail(str(e)).print()
         failures += 1
+
+    print()
+    return failures
+
+
+def _section_logging() -> int:
+    print(f"{BOLD}Logging{RESET}")
+    failures = 0
+
+    try:
+        from kural.config import ConfigManager
+        from kural.engine.utils import get_user_app_data_path
+
+        cfg = ConfigManager(quiet=True)
+        log_cfg = cfg.config.get("logging") or {}
+        file_cfg = log_cfg.get("file") or {}
+
+        level_name = str(log_cfg.get("level", "INFO")).upper()
+        Check("Log level").info(level_name).print()
+
+        log_dir = Path(get_user_app_data_path())
+        log_path = log_dir / str(file_cfg.get("filename", "kural.log"))
+
+        if file_cfg.get("enabled", True):
+            Check("Log file").ok(str(log_path)).print()
+            max_mb = int(file_cfg.get("max_bytes", 1_048_576)) // 1024 // 1024
+            backups = int(file_cfg.get("backup_count", 3))
+            Check("Log rotation").info(f"{max_mb} MB max, {backups} backups kept").print()
+        else:
+            Check("Log file").info("file logging disabled (console only)").print()
+
+        log_transcriptions = bool(log_cfg.get("log_transcriptions", False))
+        if not log_transcriptions:
+            Check("Transcript privacy").ok("dictation text NOT logged (air-gapped)").print()
+        else:
+            Check("Transcript privacy").warn("dictation text IS logged (development mode)").print()
+
+    except Exception as e:
+        Check("Logging configuration").warn(str(e)).print()
 
     print()
     return failures
