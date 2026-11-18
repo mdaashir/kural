@@ -30,6 +30,25 @@ def main() -> None:
         help="Create a redacted diagnostic zip archive for bug reports.",
     )
     parser.add_argument(
+        "--transcribe",
+        type=str,
+        metavar="AUDIO_FILE",
+        help="Transcribe an audio file offline (WAV, MP3, M4A, FLAC) and print or save the transcript.",
+    )
+    parser.add_argument(
+        "--format",
+        choices=["text", "srt", "json"],
+        default="text",
+        help="Output format for file transcription (default: text).",
+    )
+    parser.add_argument(
+        "--output",
+        "-o",
+        type=str,
+        metavar="OUTPUT_FILE",
+        help="Destination path to write transcript instead of printing to stdout.",
+    )
+    parser.add_argument(
         "--settings",
         action="store_true",
         help="Open the graphical settings configuration window.",
@@ -133,6 +152,20 @@ def main() -> None:
 
         out = args.bundle_logs if args.bundle_logs.strip() else None
         sys.exit(bundle_logs(out))
+
+    if args.transcribe:
+        from kural.engine.file_transcriber import transcribe_file
+
+        try:
+            transcribe_file(
+                file_path=args.transcribe,
+                output_format=args.format,
+                output_path=args.output,
+            )
+            return
+        except Exception as e:
+            print(f"Error transcribing file: {e}", file=sys.stderr)
+            sys.exit(1)
 
     if args.config_check:
         from kural.config import ConfigManager

@@ -6,7 +6,7 @@
 [![Platform: Windows 11](https://img.shields.io/badge/platform-Windows%2011-0078D6.svg)](https://www.microsoft.com/windows)
 [![CUDA: RTX 3050](https://img.shields.io/badge/CUDA-RTX%203050%206GB-76B900.svg)](https://developer.nvidia.com/cuda-zone)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
-[![Tests: 419](https://img.shields.io/badge/tests-419%20passing-brightgreen.svg)](tests/)
+[![Tests: 478](https://img.shields.io/badge/tests-478%20passing-brightgreen.svg)](tests/)
 
 Kural merges two MIT-licensed upstream projects into one cohesive desktop voice assistant:
 the **GPU speech engine** from `drajb/whisper-local` with the **deep voice-control engine**
@@ -49,6 +49,7 @@ and Windows-native privacy features.
 kural/
 ├── engine/                     # Audio capture, faster-whisper inference, VRAM lifecycle
 │   ├── whisper_engine.py         faster-whisper CUDA float16 + idle VRAM unload timer
+│   ├── file_transcriber.py       Offline audio file transcription CLI (Hex-inspired)
 │   ├── audio_recorder.py         Ring-buffer continuous WASAPI capture with resampling
 │   ├── audio_feedback.py         Soft synthesized bell-chime audio cues (no WAV files)
 │   ├── audio_gain.py             Whisper Mode adaptive booster for quiet/whispered speech
@@ -253,6 +254,21 @@ Kural recognizes commands in English, formal Tamil, and colloquial Tanglish:
 - **Custom dictionary:** `kural --dict-add "Aashir"` — hotwords preserved during transcription
 - **Adaptive vocabulary:** corrections and context learned on-disk session by session
 - **Whisper Mode:** adaptive gain boost for quiet or whispered speech (99.9th percentile pop rejection)
+
+### Offline Audio File Transcription (`--transcribe`)
+
+Inspired by [`anomalyco/hex`](https://github.com/anomalyco/hex), Kural can transcribe recorded audio files directly from the command line on your local GPU without running the background live dictation daemon:
+
+```powershell
+# Plain text transcription to stdout
+python -m kural --transcribe meeting.wav
+
+# Transcribe Tamil voice note and save SubRip (.srt) subtitles
+python -m kural --transcribe recording.wav --format srt --output subtitles.srt
+
+# Structured JSON export with timestamps and segments
+python -m kural --transcribe audio.wav --format json --output transcript.json
+```
 
 ### Benchmarks
 
