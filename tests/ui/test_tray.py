@@ -30,6 +30,7 @@ class TestSystemTrayCallbacks:
     def test_callbacks_are_stored(self):
         on_dict = MagicMock()
         on_cmd = MagicMock()
+        on_incog = MagicMock()
         on_hist = MagicMock()
         on_cheat = MagicMock()
         on_settings = MagicMock()
@@ -37,6 +38,8 @@ class TestSystemTrayCallbacks:
         tray = SystemTray(
             on_toggle_dictation=on_dict,
             on_toggle_command=on_cmd,
+            on_toggle_incognito=on_incog,
+            is_incognito=lambda: True,
             on_open_history=on_hist,
             on_open_cheat_sheet=on_cheat,
             on_open_settings=on_settings,
@@ -44,6 +47,8 @@ class TestSystemTrayCallbacks:
         )
         assert tray.on_toggle_dictation is on_dict
         assert tray.on_toggle_command is on_cmd
+        assert tray.on_toggle_incognito is on_incog
+        assert tray.is_incognito() is True
         assert tray.on_open_history is on_hist
         assert tray.on_open_cheat_sheet is on_cheat
         assert tray.on_open_settings is on_settings

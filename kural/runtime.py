@@ -124,6 +124,7 @@ class KuralRuntime:
         self.ledger = Ledger()
         self.app_rules = AppRules()
         self.adaptive = AdaptiveLearner()
+        self.incognito = False
 
         # Command execution brain with ledger
         self.executor = CommandExecutor(ledger=self.ledger)
@@ -156,6 +157,8 @@ class KuralRuntime:
         self.tray = SystemTray(
             on_toggle_dictation=self.toggle_dictation,
             on_toggle_command=self.toggle_command,
+            on_toggle_incognito=self.toggle_incognito,
+            is_incognito=lambda: self.incognito,
             on_open_history=self.open_history,
             on_open_cheat_sheet=self.open_cheat_sheet,
             on_open_settings=self.open_settings,
@@ -174,6 +177,21 @@ class KuralRuntime:
         from kural.ui.cheat_sheet import open_cheat_sheet
 
         open_cheat_sheet(config_manager=self.config_manager)
+
+    def toggle_incognito(self) -> None:
+        """Toggle incognito mode: when active, zero history, learning, or audio is saved."""
+        self.incognito = not self.incognito
+        if self.incognito:
+            if getattr(self, "last_take", None):
+                self.last_take.clear()
+            print("🕶️  Incognito Mode ON: nothing is saved or learned")
+            self.overlay.flash_success("Incognito On")
+        else:
+            print("🕶️  Incognito Mode OFF")
+            self.overlay.flash_success("Incognito Off")
+
+        if getattr(self, "tray", None) and hasattr(self.tray, "update_menu"):
+            self.tray.update_menu()
 
     def open_settings(self) -> None:
         """Launch the graphical settings window."""
@@ -303,7 +321,7 @@ class KuralRuntime:
                 print("   ✗ No audio data captured.")
                 return
 
-            if getattr(self, "last_take", None):
+            if getattr(self, "last_take", None) and not self.incognito:
                 self.last_take.save(audio_data)
 
             prior_state = self.state
@@ -321,13 +339,14 @@ class KuralRuntime:
 
                 from kural.engine.history import HistoryEntry, append_history
 
-                append_history(
-                    HistoryEntry(
-                        text=text,
-                        task="command",
-                        audio_s=float(len(audio_data) / 16000.0),
+                if not self.incognito:
+                    append_history(
+                        HistoryEntry(
+                            text=text,
+                            task="command",
+                            audio_s=float(len(audio_data) / 16000.0),
+                        )
                     )
-                )
 
                 if res.action_type == "retry_take" and getattr(self, "last_take", None):
                     cached, _ = self.last_take.load()
@@ -404,17 +423,18 @@ class KuralRuntime:
                 # 6. Record to ledger, adaptive learner, and history.jsonl
                 if getattr(self, "ledger", None):
                     self.ledger.record(text)
-                if getattr(self, "adaptive", None):
+                if getattr(self, "adaptive", None) and not self.incognito:
                     self.adaptive.learn_text(text)
 
-                append_history(
-                    HistoryEntry(
-                        text=text,
-                        task="transcribe",
-                        audio_s=float(len(audio_data) / 16000.0),
-                        app=fg_info.exe if fg_info else "",
+                if not self.incognito:
+                    append_history(
+                        HistoryEntry(
+                            text=text,
+                            task="transcribe",
+                            audio_s=float(len(audio_data) / 16000.0),
+                            app=fg_info.exe if fg_info else "",
+                        )
                     )
-                )
 
                 self.overlay.flash_success("Typed")
                 self.audio_feedback.play_complete()

@@ -91,3 +91,25 @@ class TestKuralRuntimeStateTransitions:
         assert self.runtime._hands_free_locked is True
         # State stays recording
         assert self.runtime.state == RuntimeState.RECORDING_DICTATION
+
+    def test_incognito_mode_prevents_history_and_learning(self):
+        self.runtime.state = RuntimeState.RECORDING_DICTATION
+        self.runtime.engine.transcribe_audio.return_value = "secret dictation"
+        self.runtime.last_take = MagicMock()
+        self.runtime.adaptive = MagicMock()
+        self.runtime.adaptive.apply_corrections.side_effect = lambda t: t
+
+        self.runtime.toggle_incognito()
+        assert self.runtime.incognito is True
+        self.runtime.last_take.clear.assert_called_once()
+
+        with (
+            patch("kural.runtime.insert_text_at_caret"),
+            patch("kural.engine.history.append_history") as mock_append_history,
+        ):
+            fake_audio = np.zeros(16000, dtype=np.float32)
+            self.runtime._process_audio(fake_audio)
+            # In incognito mode, history is NOT saved and adaptive learner is NOT called
+            mock_append_history.assert_not_called()
+            self.runtime.adaptive.learn_text.assert_not_called()
+            self.runtime.last_take.save.assert_not_called()
