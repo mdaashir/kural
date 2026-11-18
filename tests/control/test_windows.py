@@ -161,3 +161,37 @@ class TestWindowState:
             assert mock_keybd.call_count >= 4
             # Restore thread was NOT spawned
             mock_thread.assert_not_called()
+
+    def test_get_foreground_hwnd(self):
+        from kural.control.windows import get_foreground_hwnd
+
+        with (
+            patch("sys.platform", "win32"),
+            patch("ctypes.windll.user32.GetForegroundWindow", return_value=12345),
+        ):
+            assert get_foreground_hwnd() == 12345
+
+    def test_restore_foreground_window(self):
+        from kural.control.windows import restore_foreground_window
+
+        with (
+            patch("sys.platform", "win32"),
+            patch("ctypes.windll.user32.IsWindow", return_value=True),
+            patch("ctypes.windll.user32.IsIconic", return_value=True),
+            patch("ctypes.windll.user32.ShowWindow") as mock_show,
+            patch("ctypes.windll.user32.SwitchToThisWindow") as mock_switch,
+        ):
+            ok = restore_foreground_window(12345, delay=0.0)
+            assert ok is True
+            mock_show.assert_called_once_with(12345, 9)  # SW_RESTORE = 9
+            mock_switch.assert_called_once_with(12345, True)
+
+    def test_restore_foreground_window_invalid(self):
+        from kural.control.windows import restore_foreground_window
+
+        with (
+            patch("sys.platform", "win32"),
+            patch("ctypes.windll.user32.IsWindow", return_value=False),
+        ):
+            ok = restore_foreground_window(99999, delay=0.0)
+            assert ok is False

@@ -201,6 +201,11 @@ def validate_config(config: dict[str, Any]) -> tuple[dict[str, Any], list[str]]:
             issues.append(f"Invalid clipboard.delivery_method '{dm}'. Falling back to 'paste'.")
             clip["delivery_method"] = "paste"
 
+        rta = clip.get("return_to_app")
+        if rta is not None and not isinstance(rta, bool):
+            issues.append(f"Invalid clipboard.return_to_app '{rta}'; reset to True.")
+            clip["return_to_app"] = True
+
     # 6. Validate 'notes' section
     notes = cfg.setdefault("notes", {})
     if isinstance(notes, dict):

@@ -132,6 +132,7 @@ class KuralRuntime:
             phrases=sp_cfg.get("phrases"),
         )
         self._stop_phrase_detected = False
+        self._origin_hwnd: int | None = None
 
         # Recovery, adaptive learning, and app rules
         from kural.control.app_rules import AppRules
@@ -331,6 +332,9 @@ class KuralRuntime:
             if self.state == RuntimeState.IDLE:
                 self.state = RuntimeState.RECORDING_DICTATION
                 self._hands_free_locked = False
+                from kural.control.windows import get_foreground_hwnd
+
+                self._origin_hwnd = get_foreground_hwnd()
                 self.recorder.start_recording()
                 if getattr(self, "ducker", None):
                     self.ducker.start()
@@ -429,6 +433,7 @@ class KuralRuntime:
             logger.info("Cancelling recording and discarding audio buffer.")
             self.state = RuntimeState.IDLE
             self._hands_free_locked = False
+            self._origin_hwnd = None
 
             # Stop recorder and discard audio
             try:
@@ -584,6 +589,18 @@ class KuralRuntime:
                 )
                 delivery_method = clip_cfg.get("delivery_method", "paste")
                 restore_clip = bool(clip_cfg.get("restore_clipboard", True))
+                return_to_app = bool(clip_cfg.get("return_to_app", True))
+
+                # Return to original application if foreground focus shifted during speech
+                if return_to_app and getattr(self, "_origin_hwnd", None):
+                    from kural.control.windows import get_foreground_hwnd, restore_foreground_window
+
+                    curr_hwnd = get_foreground_hwnd()
+                    if curr_hwnd and curr_hwnd != self._origin_hwnd:
+                        logger.info(
+                            f"Foreground window shifted ({curr_hwnd} != {self._origin_hwnd}); returning to app."
+                        )
+                        restore_foreground_window(self._origin_hwnd)
 
                 print(f"✍️  Typed ({style_name}): '{text}'")
                 inserted = insert_text_at_caret(
@@ -616,6 +633,7 @@ class KuralRuntime:
                 self.audio_feedback.play_complete()
 
         finally:
+            self._origin_hwnd = None
             with self._state_lock:
                 self.state = RuntimeState.IDLE
             if getattr(self, "terminal_title", None):

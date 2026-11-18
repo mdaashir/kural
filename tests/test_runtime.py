@@ -64,6 +64,23 @@ class TestKuralRuntimeStateTransitions:
             self.runtime._process_audio(fake_audio)
             self.runtime.overlay.flash_success.assert_called_once_with("Copied")
 
+    def test_process_audio_returns_to_original_app_if_shifted(self):
+        self.runtime.state = RuntimeState.RECORDING_DICTATION
+        self.runtime.engine.transcribe_audio.return_value = "focus test"
+        self.runtime._origin_hwnd = 1001
+        self.runtime.config_manager.get_clipboard_config = MagicMock(
+            return_value={"return_to_app": True}
+        )
+
+        with (
+            patch("kural.control.windows.get_foreground_hwnd", return_value=2002),
+            patch("kural.control.windows.restore_foreground_window") as mock_restore,
+            patch("kural.runtime.insert_text_at_caret", return_value=True),
+        ):
+            fake_audio = np.zeros(16000, dtype=np.float32)
+            self.runtime._process_audio(fake_audio)
+            mock_restore.assert_called_once_with(1001)
+
     def test_failed_insertion_triggers_fallback_window(self):
         self.runtime.state = RuntimeState.RECORDING_DICTATION
         self.runtime.engine.transcribe_audio.return_value = "unplaced speech"

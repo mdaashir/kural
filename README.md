@@ -6,7 +6,7 @@
 [![Platform: Windows 11](https://img.shields.io/badge/platform-Windows%2011-0078D6.svg)](https://www.microsoft.com/windows)
 [![CUDA: RTX 3050](https://img.shields.io/badge/CUDA-RTX%203050%206GB-76B900.svg)](https://developer.nvidia.com/cuda-zone)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
-[![Tests: 500](https://img.shields.io/badge/tests-500%20passing-brightgreen.svg)](tests/)
+[![Tests: 505](https://img.shields.io/badge/tests-505%20passing-brightgreen.svg)](tests/)
 
 Kural merges two MIT-licensed upstream projects into one cohesive desktop voice assistant:
 the **GPU speech engine** from `drajb/whisper-local` with the **deep voice-control engine**
@@ -260,6 +260,7 @@ Kural recognizes commands in English, formal Tamil, and colloquial Tanglish:
 - **Instant Cancel Hotkey (`Escape`):** aborts dictation or voice control immediately and discards audio buffer without typing or logging (Hex-inspired)
 - **Voice Stop Phrase:** say *"stop dictation"* or *"முடி"* / *"stop பண்ணு"* to automatically finalize hands-free dictation without pressing hotkeys (Hex-inspired)
 - **Windows Clipboard History Retention:** optionally keep dictations in Windows Clipboard History (`Win+V`) instead of restoring prior clipboard (Hex-inspired)
+- **Return to App:** automatically refocuses the original window if focus shifted during dictation (e.g. notifications or toast alerts), preventing speech from landing in the wrong app (Hex-inspired)
 
 ### Offline Audio File Transcription (`--transcribe`)
 

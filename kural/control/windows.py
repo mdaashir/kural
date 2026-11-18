@@ -298,6 +298,48 @@ def get_foreground_window_info() -> WindowInfo | None:
     return WindowInfo(hwnd=hwnd, title=title, exe=exe)
 
 
+def get_foreground_hwnd() -> int | None:
+    """Return the HWND handle of the current foreground window."""
+    if sys.platform != "win32":
+        return None
+    try:
+        import ctypes
+
+        hwnd = ctypes.windll.user32.GetForegroundWindow()
+        return int(hwnd) if hwnd else None
+    except Exception:
+        return None
+
+
+def restore_foreground_window(hwnd: int, delay: float = 0.05) -> bool:
+    """Bring the target window back to the foreground before delivering text.
+
+    Uses SwitchToThisWindow to reliably bypass Windows foreground lock restrictions.
+    Restores the window if it was minimized (IsIconic). Returns True if the window
+    was successfully activated.
+    """
+    if sys.platform != "win32" or not hwnd:
+        return False
+    try:
+        import ctypes
+        import time
+
+        user32 = ctypes.windll.user32
+        if not user32.IsWindow(hwnd):
+            return False
+
+        if user32.IsIconic(hwnd):
+            user32.ShowWindow(hwnd, SW_RESTORE)
+
+        user32.SwitchToThisWindow(hwnd, True)
+        if delay > 0:
+            time.sleep(delay)
+        return True
+    except Exception as e:
+        logger.debug(f"Failed to restore foreground window {hwnd}: {e}")
+        return False
+
+
 def check_foreground_elevation() -> tuple[bool, str]:
     """Check if the current foreground window is elevated, returning (is_elevated, warning_message)."""
     if sys.platform != "win32":
