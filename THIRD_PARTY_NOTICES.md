@@ -128,4 +128,5 @@ licence texts are reproduced here in full, as required by the MIT licence terms.
 | `kural/engine/notes.py` | `whisp/obsidian.py` |
 | `kural/engine/streaming.py` | `whisp/streaming.py` |
 | `kural/config/configcheck.py` | `whisp/configcheck.py` |
+| `kural/selftest.py` | `src/whisper_key/selftest.py` |
 | `kural/runtime.py` | `src/whisper_key/state_manager.py` + `whisp/app.py` |

@@ -1,31 +1,32 @@
 # SESSION.md
 
 ## Current milestone
-**Single-Instance Process Mutex & Graceful Takeover**
+**End-to-End Self-Test Diagnostic (`--selftest`)**
 
 ## Current branch
-`feat/single-instance-lock`
+`feat/selftest-cli`
 
 ## PR
 PR to be opened with gh after verification passes.
 
 ## Last completed step
-Implemented single-instance mutex and graceful takeover:
-- `kural/engine/instance_manager.py`:
-  - `acquire_single_instance_lock(app_name, timeout=5.0, allow_takeover=True)`: creates named Win32 mutex (`Local\Kural_SingleInstance`).
-  - Graceful takeover: if another instance is already running, reads `%APPDATA%\kural\kural.pid`, signals old instance with `SIGTERM`, and polls for lock release up to 5s.
-  - `write_pid_file(app_name)` / `cleanup_pid_file(app_name)`: tracks active process ID in `kural.pid`.
-  - `release_single_instance_lock(handle, app_name)`: closes Win32 mutex handle and removes PID file.
+Implemented automated end-to-end self-test diagnostic (`kural --selftest`):
+- `kural/selftest.py` (196 lines):
+  - `_test_audio_capture()`: tests default microphone query, records 0.5s at native sample rate, verifies RMS energy > 1e-6 (surfaces actionable Windows Privacy settings fix if mic is blocked).
+  - `_test_model_loadable()`: verifies configured Whisper model resolves in registry and checks local cache status.
+  - `_test_end_to_end()`: exercises CTranslate2 inference pipeline end-to-end with a 2-second audio slice and reports latency.
+  - `_test_clipboard()`: verifies non-destructive clipboard copy and paste with original content restoration.
+  - `run_selftest() -> int`: executes all 4 stages, returning 0 if all pass or 1 with actionable failure hints.
 - `kural/__main__.py`:
-  - Acquires single-instance lock before starting background runtime; releases lock on shutdown.
+  - Added `--selftest` CLI flag to `argparse` and wired into `run_selftest()`.
 - `THIRD_PARTY_NOTICES.md`:
-  - Recorded provenance for `instance_manager.py` (ported from `src/whisper_key/instance_manager.py` + `src/whisper_key/platform/windows/instance_lock.py`).
+  - Recorded provenance for `selftest.py` (ported from `src/whisper_key/selftest.py`).
 - Unit tests:
-  - 8 new unit tests in `tests/engine/test_instance_manager.py` covering PID file lifecycle, process termination, fresh lock acquisition, blocked without takeover, graceful takeover, and cleanup.
-  - 432 total passing tests, 0 requiring GPU or mic, ruff clean.
+  - 11 new unit tests in `tests/test_selftest.py` covering all 4 stages (success, silence failure, missing device, registry error, CUDA failure, clipboard round-trip and mismatch, and suite aggregation).
+  - 443 total passing tests, 0 requiring GPU or mic, ruff clean.
 
 ## Next step
-1. Push `feat/single-instance-lock` and open PR into `main` with `gh pr create`.
+1. Push `feat/selftest-cli` and open PR into `main` with `gh pr create`.
 2. Wait for user to review and merge.
 
 ## Open questions
@@ -39,7 +40,7 @@ Implemented single-instance mutex and graceful takeover:
 - [x] **Elevated window message implemented** — UIPI token inspection warns user with actionable advice.
 
 ## Decisions recorded (this session)
-- Graceful takeover: launching Kural when already running replaces the previous background instance.
-  Reason: complies with desktop user expectations when double-clicking desktop shortcut or restarting app.
-- Mutex via ctypes: native Windows `CreateMutexW` without external heavy pywin32 dependency.
-  Reason: lightweight and works out-of-the-box in standalone PyInstaller bundles.
+- Self-test diagnostic: dynamic 4-stage operational validation distinct from static environment `--doctor`.
+  Reason: complies with AGENTS.md requirements ("Packaging dirs, tests, self-test, CI-style tooling").
+- Actionable failure hints: every stage returns `(reason, fix_hint)` on failure.
+  Reason: gives users explicit steps to fix permissions, audio device issues, or CUDA drivers.
