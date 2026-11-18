@@ -114,6 +114,7 @@ licence texts are reproduced here in full, as required by the MIT licence terms.
 | `kural/control/media.py` | `whisp/volume.py` |
 | `kural/control/windows.py` | `whisp/commands.py` + `whisp/inject.py` |
 | `kural/control/chords.py` | `whisp/chords.py` |
+| `kural/control/mouse.py` | `src/whisper_key/platform/windows/mouse.py` |
 | `kural/control/parser.py` | `whisp/commands.py` |
 | `kural/control/executor.py` | `whisp/commands.py` |
 | `kural/control/planner.py` | `whisp/planner.py` |
