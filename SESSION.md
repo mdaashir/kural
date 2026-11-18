@@ -1,43 +1,23 @@
 # SESSION.md
 
 ## Current milestone
-**Return to Original App Before Delivery (inspired by anomalyco/hex)**
+**Verify original app focus before dictation delivery**
 
 ## Current branch
-`feat/return-to-app`
+`fix/return-to-app-focus-verification`
 
 ## PR
 PR to be opened with gh after verification passes.
 
 ## Last completed step
-Implemented Return to App focus anchoring inspired by `anomalyco/hex` (`labs.return_to_app`):
-- `kural/control/windows.py`:
-  - `get_foreground_hwnd()`: returns the HWND of the active window.
-  - `restore_foreground_window(hwnd, delay=0.05)`: restores minimized windows via `ShowWindow(hwnd, SW_RESTORE)` and refocuses via `SwitchToThisWindow(hwnd, True)` to bypass Windows foreground-lock restrictions.
-- `kural/runtime.py`:
-  - Captures `self._origin_hwnd` at the moment dictation starts.
-  - Before delivering text via `insert_text_at_caret()`, checks if the foreground window shifted; if so, refocuses `_origin_hwnd` before typing/pasting.
-  - Resets `_origin_hwnd` cleanly on completion or cancellation.
-- `kural/config/config.defaults.yaml` & `configcheck.py`:
-  - Added `clipboard.return_to_app: true` with boolean validation and fallback.
-- `kural/ui/settings_window.py`:
-  - Added `[x] Return to Original App if Focus Shifted During Dictation` checkbox in the UI Settings tab.
-  - Serializes `clipboard.return_to_app` upon save.
-- `README.md`:
-  - Documented Return to App in Smart Text Highlights and updated test badge to 505 passing.
-- Unit tests:
-  - Added unit tests in `tests/control/test_windows.py` testing HWND retrieval and window restoration.
-  - Added unit test in `tests/test_runtime.py` testing automatic return-to-app when focus shifts.
-  - Added unit test in `tests/config/test_configcheck.py` testing `return_to_app` validation.
-  - Updated `tests/ui/test_settings.py` for `return_to_app` serialization.
-  - 505 total passing tests, 0 requiring GPU or mic, ruff clean.
+PR #55 merged into main. Follow-up safety fix: `restore_foreground_window` now checks the actual foreground HWND after activation. When Return to App is on, paste/type is withheld unless the recorded window is confirmed foreground; the fallback window offers the transcript instead. Copy-only never refocuses an app. Focused tests cover successful activation, refusal, unconfirmed activation, missing origin, and copy-only behavior. `ruff check .`, `ruff format --check .`, and `pytest -q` passed (510 tests); diff reviewed.
 
 ## Next step
-1. Push `feat/return-to-app` and open PR into `main` with `gh pr create`.
+1. Push `fix/return-to-app-focus-verification` and open PR into `main` with `gh`.
 2. Wait for user to review and merge.
 
 ## Open questions
-- None.
+- HWND verification is a point-in-time check; a separate process can still change focus afterward. A Windows hardware run is still needed to assess real foreground behavior.
 
 ## Verify items (from AGENTS.md)
 - [x] **Hotkey-driven only?** Confirmed and resolved in M5.
@@ -47,7 +27,6 @@ Implemented Return to App focus anchoring inspired by `anomalyco/hex` (`labs.ret
 - [x] **Elevated window message implemented** — UIPI token inspection warns user with actionable advice.
 
 ## Decisions recorded (this session)
-- Return to app: inspired by `anomalyco/hex` (`labs.return_to_app`).
-  Reason: prevents speech from landing in the wrong application or notification alert if a toast popup or stray click shifts focus during a long dictation.
-- Win32 SwitchToThisWindow: uses Windows internal API specifically designed to overcome foreground-lock restrictions.
-  Reason: guarantees focus restoration without failing silently due to OS focus stealing prevention.
+- Foreground activation is a request, not proof: only a matching foreground HWND permits paste/type delivery when Return to App is enabled.
+  Reason: Windows may refuse activation or the original window may have closed; do not inject private text into the wrong app.
+- Copy-only delivery skips focus restoration because it sends no keystrokes; fallback UI retains the transcript if focus confirmation fails.

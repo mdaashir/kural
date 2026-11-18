@@ -26,6 +26,10 @@ class TestKuralRuntimeStateTransitions:
             ),
         ):
             self.runtime = KuralRuntime()
+        # Most tests exercise dictation formatting, not a captured foreground HWND.
+        self.runtime.config_manager.get_clipboard_config = MagicMock(
+            return_value={"return_to_app": False}
+        )
 
     def test_initial_state_idle(self):
         assert self.runtime.state == RuntimeState.IDLE
@@ -73,13 +77,77 @@ class TestKuralRuntimeStateTransitions:
         )
 
         with (
-            patch("kural.control.windows.get_foreground_hwnd", return_value=2002),
-            patch("kural.control.windows.restore_foreground_window") as mock_restore,
-            patch("kural.runtime.insert_text_at_caret", return_value=True),
+            patch("kural.control.windows.get_foreground_hwnd", side_effect=[2002, 1001]),
+            patch(
+                "kural.control.windows.restore_foreground_window", return_value=True
+            ) as mock_restore,
+            patch("kural.runtime.insert_text_at_caret", return_value=True) as mock_insert,
         ):
-            fake_audio = np.zeros(16000, dtype=np.float32)
-            self.runtime._process_audio(fake_audio)
+            self.runtime._process_audio(np.zeros(16000, dtype=np.float32))
             mock_restore.assert_called_once_with(1001)
+            mock_insert.assert_called_once()
+
+    def test_focus_refusal_never_inserts_into_other_app(self):
+        self.runtime.state = RuntimeState.RECORDING_DICTATION
+        self.runtime.engine.transcribe_audio.return_value = "private dictation"
+        self.runtime._origin_hwnd = 1001
+        self.runtime.fallback_window = MagicMock()
+        self.runtime.config_manager.get_clipboard_config.return_value = {"return_to_app": True}
+
+        with (
+            patch("kural.control.windows.get_foreground_hwnd", return_value=2002),
+            patch("kural.control.windows.restore_foreground_window", return_value=False) as restore,
+            patch("kural.runtime.insert_text_at_caret") as insert,
+        ):
+            self.runtime._process_audio(np.zeros(16000, dtype=np.float32))
+            restore.assert_called_once_with(1001)
+            insert.assert_not_called()
+            self.runtime.fallback_window.show.assert_called_once()
+            assert self.runtime.state == RuntimeState.IDLE
+
+    def test_claimed_restoration_without_focus_never_inserts(self):
+        self.runtime.state = RuntimeState.RECORDING_DICTATION
+        self.runtime.engine.transcribe_audio.return_value = "private dictation"
+        self.runtime._origin_hwnd = 1001
+        self.runtime.fallback_window = MagicMock()
+        self.runtime.config_manager.get_clipboard_config.return_value = {"return_to_app": True}
+
+        with (
+            patch("kural.control.windows.get_foreground_hwnd", return_value=2002),
+            patch("kural.control.windows.restore_foreground_window", return_value=True),
+            patch("kural.runtime.insert_text_at_caret") as insert,
+        ):
+            self.runtime._process_audio(np.zeros(16000, dtype=np.float32))
+            insert.assert_not_called()
+            self.runtime.fallback_window.show.assert_called_once()
+
+    def test_missing_original_window_never_inserts(self):
+        self.runtime.state = RuntimeState.RECORDING_DICTATION
+        self.runtime.engine.transcribe_audio.return_value = "private dictation"
+        self.runtime._origin_hwnd = None
+        self.runtime.fallback_window = MagicMock()
+        self.runtime.config_manager.get_clipboard_config.return_value = {"return_to_app": True}
+
+        with patch("kural.runtime.insert_text_at_caret") as insert:
+            self.runtime._process_audio(np.zeros(16000, dtype=np.float32))
+            insert.assert_not_called()
+            self.runtime.fallback_window.show.assert_called_once()
+
+    def test_copy_only_does_not_refocus_window(self):
+        self.runtime.state = RuntimeState.RECORDING_DICTATION
+        self.runtime.engine.transcribe_audio.return_value = "copy test"
+        self.runtime._origin_hwnd = 1001
+        self.runtime.config_manager.get_clipboard_config.return_value = {
+            "delivery_method": "copy",
+            "return_to_app": True,
+        }
+        with (
+            patch("kural.control.windows.restore_foreground_window") as restore,
+            patch("kural.runtime.insert_text_at_caret", return_value=True) as insert,
+        ):
+            self.runtime._process_audio(np.zeros(16000, dtype=np.float32))
+            restore.assert_not_called()
+            insert.assert_called_once()
 
     def test_failed_insertion_triggers_fallback_window(self):
         self.runtime.state = RuntimeState.RECORDING_DICTATION
