@@ -1,37 +1,35 @@
 # SESSION.md
 
 ## Current milestone
-**Optional Spectral Noise Suppression**
+**Terminal Tab Title Live State Indicator**
 
 ## Current branch
-`feat/noise-suppression`
+`feat/terminal-title`
 
 ## PR
 PR to be opened with gh after verification passes.
 
 ## Last completed step
-Implemented optional background noise suppression:
-- `kural/engine/noise_suppression.py` (51 lines):
-  - `apply_noise_reduction(audio, sample_rate, strength)`: spectral gating noise reduction wrapping `noisereduce` (spectral subtraction).
-  - Removes stationary fan, air conditioner, and computer hum from the recorded audio array before Whisper inference.
-  - Safe passthrough: falls back silently to original audio if `noisereduce` is not installed or on any processing error (never raises exceptions).
-- `kural/config/config.defaults.yaml`:
-  - Added `audio.noise_suppression: {enabled: false, strength: 0.75}`.
-- `kural/config/configcheck.py`:
-  - Added schema validation ensuring `0.0 <= strength <= 1.0` with automatic clamping.
+Implemented dynamic terminal tab/window title state updates:
+- `kural/ui/terminal_title.py` (152 lines):
+  - `TerminalTitle`: manages ANSI `OSC 0` escape sequence emission (`\033]0;<title>\007`) to set console tab headers in Windows Terminal, PowerShell, CMD, or VS Code terminal.
+  - Live state transitions:
+    - `"idle"`: `"Kural"`
+    - `"recording"`: pulsing animation `🔴 Kural` <-> `⚪ Kural`
+    - `"processing"`: `⏳ Kural`
+  - Wakes immediately on state transitions via `threading.Event`.
+  - Safe TTY suppression: automatically disabled when `sys.stdout` is not a TTY (`pythonw.exe`, windowless mode, redirected output), preventing ANSI escape sequences from corrupting log files.
 - `kural/runtime.py`:
-  - Applied noise reduction in `_process_audio()` when `audio.noise_suppression.enabled` is active.
-- `kural/ui/settings_window.py`:
-  - Added `[ ] Noise Suppression (reduce fan/room hum)` checkbox to Settings.
+  - Initialized `TerminalTitle` and wired state transitions in `toggle_dictation`, `on_dictation_release`, `toggle_command`, `stop_and_process`, and `_process_audio`.
+  - Started loop in `run()` and cleaned up in `shutdown()`.
 - `THIRD_PARTY_NOTICES.md`:
-  - Recorded provenance for `noise_suppression.py` (ported from `src/whisper_key/noise_suppression.py`).
+  - Recorded provenance for `terminal_title.py` (ported from `src/whisper_key/terminal_title.py`).
 - Unit tests:
-  - 5 new unit tests in `tests/engine/test_noise_suppression.py` covering passthrough without library, mock reduction, array shape/dtype preservation, strength clamping, and exception handling.
-  - Updated tests in `tests/config/test_configcheck.py` and `tests/ui/test_settings.py`.
-  - 458 total passing tests, 0 requiring GPU or mic, ruff clean.
+  - 6 new unit tests in `tests/ui/test_terminal_title.py` covering title composition, frame parsing, non-TTY suppression, TTY animation, and stream error handling.
+  - 464 total passing tests, 0 requiring GPU or mic, ruff clean.
 
 ## Next step
-1. Push `feat/noise-suppression` and open PR into `main` with `gh pr create`.
+1. Push `feat/terminal-title` and open PR into `main` with `gh pr create`.
 2. Wait for user to review and merge.
 
 ## Open questions
@@ -45,7 +43,7 @@ Implemented optional background noise suppression:
 - [x] **Elevated window message implemented** — UIPI token inspection warns user with actionable advice.
 
 ## Decisions recorded (this session)
-- Noise suppression: opt-in spectral gating via `noisereduce`, off by default.
-  Reason: complies with AGENTS.md base feature set ("noise suppression"); allows users in noisy environments to filter fan/HVAC hum.
-- Safe passthrough: missing library never crashes dictation.
-  Reason: keeps core package lightweight without forcing heavy dependencies.
+- ANSI OSC 0 terminal title: provides an immediate secondary status surface for console users without requiring GUI windows.
+  Reason: complies with base project features in `whisper-local`; allows users running in visible terminal to view recording state in tab headers.
+- Non-TTY suppression: writes skipped when stdout is not a TTY.
+  Reason: prevents escape codes from polluting redirected log files or windowless pythonw instances.
