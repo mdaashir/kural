@@ -52,7 +52,7 @@ def load_audio_file(file_path: str | Path, target_sr: int = 16000) -> np.ndarray
     if not path.is_file():
         raise FileNotFoundError(f"Audio file not found: {file_path}")
 
-    # 1. Try standard library wave module for WAV files
+    wav_decode_error: Exception | None = None
     if path.suffix.lower() == ".wav":
         try:
             with wave.open(str(path), "rb") as wf:
@@ -102,9 +102,10 @@ def load_audio_file(file_path: str | Path, target_sr: int = 16000) -> np.ndarray
 
             return samples.astype(np.float32)
         except Exception as e:
+            wav_decode_error = e
             logger.debug(f"Standard wave reader failed for {path.name}: {e}")
 
-    # 2. Try soundfile for non-WAV formats (MP3, FLAC, OGG)
+    # Try soundfile for unsupported WAV encodings and non-WAV formats (MP3, FLAC, OGG).
     try:
         import soundfile as sf
 
@@ -126,13 +127,23 @@ def load_audio_file(file_path: str | Path, target_sr: int = 16000) -> np.ndarray
 
         return data.astype(np.float32)
     except ImportError:
-        pass
+        if wav_decode_error is not None:
+            raise ValueError(
+                f"Could not decode WAV file '{file_path}' with the standard wave reader "
+                f"({wav_decode_error}). Install 'soundfile' to decode this WAV encoding."
+            ) from wav_decode_error
     except Exception as e:
         logger.debug(f"soundfile read failed for {path.name}: {e}")
+        if wav_decode_error is not None:
+            raise ValueError(
+                f"Could not decode WAV file '{file_path}' with the standard wave reader "
+                f"({wav_decode_error}) or soundfile ({e})."
+            ) from e
+        raise ValueError(f"Could not decode audio file '{file_path}' with soundfile: {e}") from e
 
     raise ValueError(
         f"Could not decode audio file '{file_path}'. For non-WAV formats (MP3, M4A, FLAC), "
-        "ensure 'soundfile' or 'soxr' is installed."
+        "ensure 'soundfile' is installed."
     )
 
 

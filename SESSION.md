@@ -10,14 +10,14 @@
 PR to be opened with gh after verification passes.
 
 ## Last completed step
-PR #67 merged into main. Reproduced a 24-bit PCM WAV loading bug: the decoder treated 3-byte samples as int16 and returned corrupt samples or fell through to an optional dependency. This branch decodes signed little-endian 24-bit PCM with explicit sign extension and normalizes to float32 in [-1, 1]. Unsupported sample widths now raise an explicit error rather than silently misdecoding. A regression test checks known negative, zero, and positive sample values and preserves one output per input frame. `ruff check .`, `ruff format --check .`, and `pytest -q` passed (546 tests); diff reviewed.
+PR #68 merged into main with signed 24-bit PCM WAV decoding. This follow-up confirms Python's standard `wave` reader rejects IEEE-float WAV files, then gives a precise fallback message when `soundfile` is unavailable. The test builds a minimal float WAV (format tag 3), masks `soundfile`, and verifies the error explains the unsupported encoding and dependency. WAV reader and `soundfile` errors are retained in actionable `ValueError` messages rather than replaced by a generic non-WAV message. `ruff check .`, `ruff format --check .`, and `pytest -q` passed (547 tests); diff reviewed.
 
 ## Next step
-1. Push `fix/24-bit-wav-decoding` and open a PR with gh.
+1. Push `fix/wav-decode-diagnostics` and open a PR with gh.
 2. Wait for user review and merge.
 
 ## Open questions
-- Other WAV encodings (such as IEEE float or compressed/extensible WAV) are outside this fix; confirm required formats separately if needed.
+- This changes diagnostics only; IEEE-float WAV decoding still requires the optional `soundfile` dependency.
 
 ## Verify items (from AGENTS.md)
 - [x] **Hotkey-driven only?** Confirmed and resolved in M5.

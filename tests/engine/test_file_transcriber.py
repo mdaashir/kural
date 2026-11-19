@@ -1,6 +1,7 @@
 """Tests for kural.engine.file_transcriber — offline audio file transcription CLI."""
 
 import json
+import sys
 import wave
 from unittest.mock import MagicMock
 
@@ -109,6 +110,26 @@ class TestAudioFileLoading:
         assert len(loaded) == len(source_values)
         expected = np.asarray(source_values, dtype=np.float32) / 8388608.0
         np.testing.assert_allclose(loaded, expected, atol=1e-6)
+
+    def test_float_wav_reports_soundfile_requirement_when_unavailable(self, tmp_path):
+        """Python wave rejects IEEE-float WAV; loader should explain fallback need."""
+        wav_path = tmp_path / "float_audio.wav"
+        # Minimal mono IEEE-float WAV: format tag 3, 32-bit samples.
+        samples = np.asarray([0.25, -0.5], dtype="<f4")
+        import struct
+
+        fmt = struct.pack("<HHIIHH", 3, 1, 16000, 64000, 4, 32)
+        data = samples.tobytes()
+        chunks = b"fmt " + struct.pack("<I", len(fmt)) + fmt
+        chunks += b"data" + struct.pack("<I", len(data)) + data
+        wav_path.write_bytes(b"RIFF" + struct.pack("<I", len(chunks) + 4) + b"WAVE" + chunks)
+
+        with (
+            pytest.MonkeyPatch.context() as mp,
+            pytest.raises(ValueError, match="unknown format: 3.*soundfile"),
+        ):
+            mp.setitem(sys.modules, "soundfile", None)
+            load_audio_file(wav_path)
 
     def test_load_wav_file_mono_32bit(self, tmp_path):
         wav_path = tmp_path / "test_mono_32bit.wav"
