@@ -268,6 +268,40 @@ class TestKuralRuntimeStateTransitions:
             call_text = self.runtime.fallback_window.show.call_args[0][0]
             assert "Unplaced speech" in call_text
 
+    def test_command_hotkey_stop_executes_instead_of_typing(self):
+        self.runtime.state = RuntimeState.RECORDING_COMMAND
+        self.runtime.recorder.stop_recording.return_value = np.zeros(16000, dtype=np.float32)
+        self.runtime.engine.transcribe_audio.return_value = "volume up"
+        result = MagicMock(success=True, feedback="Done", action_type="media")
+        self.runtime.executor = MagicMock()
+        self.runtime.executor.execute.return_value = result
+        with (
+            patch("kural.runtime.threading.Thread") as worker,
+            patch("kural.runtime.insert_text_at_caret") as insert,
+        ):
+            self.runtime.toggle_command()
+            assert self.runtime.state == RuntimeState.PROCESSING
+            worker.call_args.kwargs["target"](*worker.call_args.kwargs.get("args", ()))
+            self.runtime.executor.execute.assert_called_once_with("volume up")
+            insert.assert_not_called()
+
+    def test_stop_and_process_preserves_command_mode(self):
+        self.runtime.state = RuntimeState.RECORDING_COMMAND
+        self.runtime.recorder.stop_recording.return_value = np.zeros(16000, dtype=np.float32)
+        self.runtime.engine.transcribe_audio.return_value = "volume up"
+        self.runtime.executor = MagicMock()
+        self.runtime.executor.execute.return_value = MagicMock(
+            success=True, feedback="Done", action_type="media"
+        )
+        with (
+            patch("kural.runtime.threading.Thread") as worker,
+            patch("kural.runtime.insert_text_at_caret") as insert,
+        ):
+            self.runtime.stop_and_process()
+            worker.call_args.kwargs["target"](*worker.call_args.kwargs["args"])
+            self.runtime.executor.execute.assert_called_once_with("volume up")
+            insert.assert_not_called()
+
     def test_process_audio_command_routes_to_executor(self):
         self.runtime.state = RuntimeState.RECORDING_COMMAND
         self.runtime.engine.transcribe_audio.return_value = "volume up"
