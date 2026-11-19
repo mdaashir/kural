@@ -6,12 +6,14 @@ import threading
 import urllib.request
 import wave
 from http.server import ThreadingHTTPServer
+from unittest.mock import MagicMock, patch
 
 import numpy as np
 
 from kural.engine.server import (
     _decode_wav_fallback,
     _parse_multipart,
+    build_server_engine,
     make_handler,
 )
 
@@ -27,6 +29,57 @@ def _generate_test_wav(duration_s: float = 0.1, sample_rate: int = 16000) -> byt
         wf.setframerate(sample_rate)
         wf.writeframes(samples.tobytes())
     return buf.getvalue()
+
+
+class TestServerEngineBuild:
+    def test_passes_model_registry_for_configured_alias(self):
+        whisper_cfg = {
+            "model": "distil-large-v3.5",
+            "models": {
+                "distil-large-v3.5": {
+                    "source": "Systran/faster-distil-whisper-large-v3",
+                    "group": "official",
+                }
+            },
+        }
+        mock_config = MagicMock()
+        mock_config.get_whisper_config.return_value = whisper_cfg
+        mock_registry = MagicMock()
+        mock_engine = MagicMock()
+
+        with (
+            patch("kural.config.ConfigManager", return_value=mock_config),
+            patch("kural.engine.model_registry.ModelRegistry", return_value=mock_registry),
+            patch(
+                "kural.engine.whisper_engine.WhisperEngine", return_value=mock_engine
+            ) as engine_cls,
+        ):
+            result = build_server_engine()
+
+        assert result is mock_engine
+        assert engine_cls.call_args.kwargs["model_key"] == "distil-large-v3.5"
+        assert engine_cls.call_args.kwargs["model_registry"] is mock_registry
+
+    def test_registered_model_source_resolves_alias(self):
+        registry_config = {
+            "distil-large-v3.5": {
+                "source": "Systran/faster-distil-whisper-large-v3",
+                "group": "official",
+            }
+        }
+        mock_config = MagicMock()
+        mock_config.get_whisper_config.return_value = {
+            "model": "distil-large-v3.5",
+            "models": registry_config,
+        }
+        with (
+            patch("kural.config.ConfigManager", return_value=mock_config),
+            patch("kural.engine.whisper_engine.WhisperEngine") as mock_engine,
+        ):
+            build_server_engine()
+
+        registry = mock_engine.call_args.kwargs["model_registry"]
+        assert registry.get_source("distil-large-v3.5") == "Systran/faster-distil-whisper-large-v3"
 
 
 class TestAudioDecoding:

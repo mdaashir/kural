@@ -29,10 +29,12 @@ MAX_UPLOAD_BYTES = 500 * 1024 * 1024  # 500 MB hard cap
 def build_server_engine():
     """Build and warm up the Whisper engine from user configuration."""
     from kural.config import ConfigManager
+    from kural.engine.model_registry import ModelRegistry
     from kural.engine.whisper_engine import WhisperEngine
 
     cm = ConfigManager(quiet=True)
     w_cfg = cm.get_whisper_config()
+    model_registry = ModelRegistry(whisper_models_config=w_cfg.get("models", {}))
     return WhisperEngine(
         model_key=w_cfg.get("model", "large-v3-turbo"),
         device=w_cfg.get("device", "cuda"),
@@ -41,6 +43,7 @@ def build_server_engine():
         beam_size=int(w_cfg.get("beam_size", 5)),
         initial_prompt=w_cfg.get("initial_prompt", ""),
         idle_unload_minutes=int(w_cfg.get("idle_unload_minutes", 0)),
+        model_registry=model_registry,
     )
 
 
