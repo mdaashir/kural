@@ -6,7 +6,7 @@
 [![Platform: Windows 11](https://img.shields.io/badge/platform-Windows%2011-0078D6.svg)](https://www.microsoft.com/windows)
 [![CUDA: RTX 3050](https://img.shields.io/badge/CUDA-RTX%203050%206GB-76B900.svg)](https://developer.nvidia.com/cuda-zone)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
-[![Tests: 532](https://img.shields.io/badge/tests-532%20passing-brightgreen.svg)](tests/)
+[![Tests: 535](https://img.shields.io/badge/tests-535%20passing-brightgreen.svg)](tests/)
 
 Kural merges two MIT-licensed upstream projects into one cohesive desktop voice assistant:
 the **GPU speech engine** from `drajb/whisper-local` with the **deep voice-control engine**

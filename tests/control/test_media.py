@@ -17,6 +17,59 @@ from kural.control.media import (
 
 
 class TestVolumeControl:
+    def test_release_calls_vmethod_index_2(self):
+        from unittest.mock import MagicMock
+
+        from kural.control.media import _release
+
+        fake_ptr = MagicMock()
+        with patch("kural.control.media._vmethod") as mock_vmethod:
+            mock_rel = MagicMock()
+            mock_vmethod.return_value = mock_rel
+            _release(fake_ptr)
+            mock_vmethod.assert_called_once()
+            # Index 2 is IUnknown::Release
+            assert mock_vmethod.call_args[0][1] == 2
+            mock_rel.assert_called_once_with(fake_ptr)
+
+    def test_get_volume_cleans_up_com_resources(self):
+        from unittest.mock import MagicMock
+
+        from kural.control.media import get_volume
+
+        fake_pv = MagicMock()
+        with (
+            patch("kural.control.media._endpoint_volume", return_value=fake_pv),
+            patch("kural.control.media._vmethod") as mock_vmethod,
+            patch("kural.control.media._release") as mock_release,
+            patch("kural.control.media._uninitialize_com") as mock_uninit,
+        ):
+            # Mock get_scalar (index 9) returning 0 (S_OK)
+            mock_get_scalar = MagicMock(return_value=0)
+            mock_vmethod.return_value = mock_get_scalar
+            _ = get_volume()
+            mock_release.assert_called_once_with(fake_pv)
+            mock_uninit.assert_called_once()
+
+    def test_set_volume_cleans_up_com_resources(self):
+        from unittest.mock import MagicMock
+
+        from kural.control.media import set_volume
+
+        fake_pv = MagicMock()
+        with (
+            patch("kural.control.media._endpoint_volume", return_value=fake_pv),
+            patch("kural.control.media._vmethod") as mock_vmethod,
+            patch("kural.control.media._release") as mock_release,
+            patch("kural.control.media._uninitialize_com") as mock_uninit,
+        ):
+            # Mock set_scalar (index 7) returning 0 (S_OK)
+            mock_set_scalar = MagicMock(return_value=0)
+            mock_vmethod.return_value = mock_set_scalar
+            _ = set_volume(75)
+            mock_release.assert_called_once_with(fake_pv)
+            mock_uninit.assert_called_once()
+
     def test_set_volume_clamps_range(self):
         with patch("kural.control.media._endpoint_volume", return_value=None):
             # Test clamping logic without crashing when COM endpoint is None
