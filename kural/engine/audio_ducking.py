@@ -52,6 +52,16 @@ class AudioDucker:
                 self._is_ducked = False
                 self._stop_event.set()
 
+    def close(self, timeout: float = 2.0) -> None:
+        """Restore playback and wait briefly before the process exits."""
+        self.restore()
+        with self._lock:
+            worker = self._worker_thread
+        if worker is not None and worker is not threading.current_thread():
+            worker.join(timeout=timeout)
+            if worker.is_alive():
+                logger.warning("Audio restoration did not finish before shutdown")
+
     def _run(self, factor: float, stop_event: threading.Event) -> None:
         from kural.control.media import get_volume, set_volume
 

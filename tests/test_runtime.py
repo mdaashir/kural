@@ -32,6 +32,11 @@ class TestKuralRuntimeStateTransitions:
             return_value={"return_to_app": False}
         )
 
+    def test_shutdown_requests_audio_restoration(self):
+        self.runtime.ducker = MagicMock()
+        self.runtime.shutdown()
+        self.runtime.ducker.close.assert_called_once()
+
     def test_initial_state_idle(self):
         assert self.runtime.state == RuntimeState.IDLE
 

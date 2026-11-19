@@ -109,6 +109,29 @@ class TestAudioDuckingLifecycle:
             assert not ducker._worker_thread.is_alive()
             assert levels[0] == 80
 
+    def test_close_waits_for_restored_volume(self):
+        levels = [80]
+        ducker = AudioDucker(enabled=True, factor=0.25)
+
+        def set_volume(level):
+            levels[0] = level
+
+        with (
+            patch("kural.control.media.get_volume", side_effect=lambda: levels[0]),
+            patch("kural.control.media.set_volume", side_effect=set_volume),
+        ):
+            ducker.start()
+            worker = ducker._worker_thread
+            # Wait until the ramp has completed without using an arbitrary sleep.
+            for _ in range(100):
+                if levels[0] == 20:
+                    break
+                time.sleep(0.005)
+            assert levels[0] == 20
+            ducker.close(timeout=2)
+            assert not worker.is_alive()
+            assert levels[0] == 80
+
     def test_start_while_already_ducked_is_noop(self):
         ducker = AudioDucker(enabled=True, factor=0.25)
         ducker._is_ducked = True
