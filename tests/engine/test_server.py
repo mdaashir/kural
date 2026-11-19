@@ -88,6 +88,26 @@ class TestServerEngineBuild:
 
 
 class TestAudioDecoding:
+    def test_decode_wav_fallback_24bit_signed_samples(self):
+        source_values = [-8388608, -4194304, 0, 4194304, 8388607]
+        raw_bytes = b"".join(
+            (value & 0xFFFFFF).to_bytes(3, byteorder="little", signed=False)
+            for value in source_values
+        )
+        buf = io.BytesIO()
+        with wave.open(buf, "wb") as wf:
+            wf.setnchannels(1)
+            wf.setsampwidth(3)
+            wf.setframerate(16000)
+            wf.writeframes(raw_bytes)
+
+        audio = _decode_wav_fallback(buf.getvalue())
+
+        expected = np.asarray(source_values, dtype=np.float32) / 8388608.0
+        assert audio.dtype == np.float32
+        assert len(audio) == len(source_values)
+        np.testing.assert_allclose(audio, expected, atol=1e-6)
+
     def test_decode_wav_fallback_resamples_when_soxr_missing(self, monkeypatch):
         samples = np.asarray([0, 1000, 2000, 3000], dtype=np.int16)
         wav_bytes = _generate_test_wav(sample_rate=8000, samples=samples)
