@@ -1,5 +1,6 @@
 """Tests for kural.engine.audio_ducking — automatic volume ducking while dictating."""
 
+import threading
 import time
 from unittest.mock import patch
 
@@ -53,6 +54,60 @@ class TestAudioDuckingLifecycle:
             # Volume restored back to ~80
             assert vol_levels[0] == 80
             assert ducker._is_ducked is False
+
+    def test_restore_before_initial_volume_read_cannot_leave_audio_ducked(self):
+        entered = threading.Event()
+        release = threading.Event()
+        levels = [80]
+        ducker = AudioDucker(enabled=True, factor=0.25)
+
+        def get_volume():
+            entered.set()
+            assert release.wait(2)
+            return levels[0]
+
+        def set_volume(level):
+            levels[0] = level
+
+        with (
+            patch("kural.control.media.get_volume", side_effect=get_volume),
+            patch("kural.control.media.set_volume", side_effect=set_volume),
+        ):
+            ducker.start()
+            try:
+                assert entered.wait(2)
+                ducker.restore()
+            finally:
+                release.set()
+            ducker._worker_thread.join(timeout=2)
+            assert not ducker._worker_thread.is_alive()
+            assert levels[0] == 80
+
+    def test_stop_during_ramp_restores_original(self):
+        first_write = threading.Event()
+        resume = threading.Event()
+        levels = [80]
+        ducker = AudioDucker(enabled=True, factor=0.25)
+
+        def set_volume(level):
+            levels[0] = level
+            if not first_write.is_set():
+                first_write.set()
+                assert resume.wait(2)
+
+        with (
+            patch("kural.control.media.get_volume", side_effect=lambda: levels[0]),
+            patch("kural.control.media.set_volume", side_effect=set_volume),
+        ):
+            ducker.start()
+            try:
+                assert first_write.wait(2)
+                ducker.restore()
+            finally:
+                resume.set()
+            ducker._worker_thread.join(timeout=2)
+            assert not ducker._worker_thread.is_alive()
+            assert levels[0] == 80
 
     def test_start_while_already_ducked_is_noop(self):
         ducker = AudioDucker(enabled=True, factor=0.25)

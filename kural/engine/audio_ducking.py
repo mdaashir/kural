@@ -2,110 +2,93 @@
 # Inspired by anomalyco/hex (src/audio/output_ducking.rs)
 """Automatic output audio ducking during speech recording.
 
-Gracefully lowers the system playback volume (e.g. music, videos, podcasts)
-while dictating so speaker audio does not bleed into the microphone, and
-smoothly restores volume when recording finishes or cancels.
+A single worker owns both lowering and restoration so stopping a short recording
+cannot leave playback lowered after the capture ends.
 """
 
 import logging
 import threading
-import time
 
 logger = logging.getLogger(__name__)
 
 
 class AudioDucker:
-    """Manages automatic system audio volume ducking and smooth restoration."""
+    """Lower system playback volume while recording and restore it on stop."""
 
     def __init__(self, enabled: bool = False, factor: float = 0.25):
         self.enabled = bool(enabled)
         self.factor = max(0.0, min(1.0, float(factor)))
-        self._original_volume: int | None = None
-        self._target_volume: int | None = None
         self._is_ducked = False
         self._lock = threading.Lock()
+        self._stop_event = threading.Event()
         self._worker_thread: threading.Thread | None = None
 
     def start(self, factor: float | None = None) -> None:
-        """Lower system playback volume asynchronously on a daemon thread."""
+        """Lower playback volume on a background thread, if not already active."""
         if not self.enabled:
             return
-
+        duck_factor = self.factor if factor is None else max(0.0, min(1.0, float(factor)))
         with self._lock:
-            if self._is_ducked:
+            # Do not overlap a new ramp with a worker still restoring volume.
+            if self._is_ducked or (self._worker_thread and self._worker_thread.is_alive()):
                 return
             self._is_ducked = True
-
-        duck_factor = self.factor if factor is None else max(0.0, min(1.0, float(factor)))
-
-        def _duck_worker():
-            try:
-                from kural.control.media import get_volume, set_volume
-
-                current = get_volume()
-                if current is None or current <= 0:
-                    return
-
-                with self._lock:
-                    self._original_volume = current
-                    # Reduce volume proportionally to factor
-                    target = max(0, min(100, int(round(current * duck_factor))))
-                    self._target_volume = target
-
-                # Smoothly ramp down over ~100ms in 4 steps to avoid abrupt pop/click
-                steps = 4
-                step_sleep = 0.025
-                for i in range(1, steps + 1):
-                    vol = int(current + (target - current) * (i / steps))
-                    set_volume(vol)
-                    time.sleep(step_sleep)
-
-            except Exception as e:
-                logger.debug(f"Audio ducking failed: {e}")
-
-        self._worker_thread = threading.Thread(
-            target=_duck_worker, daemon=True, name="audio-ducking-lower"
-        )
-        self._worker_thread.start()
+            self._stop_event = threading.Event()
+            stop_event = self._stop_event
+            self._worker_thread = threading.Thread(
+                target=self._run,
+                args=(duck_factor, stop_event),
+                daemon=True,
+                name="audio-ducking",
+            )
+            self._worker_thread.start()
 
     def restore(self) -> None:
-        """Smoothly restore system volume to pre-ducked level asynchronously."""
+        """Request restoration; the ducking worker completes it asynchronously."""
         if not self.enabled:
             return
-
         with self._lock:
-            if not self._is_ducked:
+            if self._is_ducked:
+                self._is_ducked = False
+                self._stop_event.set()
+
+    def _run(self, factor: float, stop_event: threading.Event) -> None:
+        from kural.control.media import get_volume, set_volume
+
+        original: int | None = None
+        target: int | None = None
+        lowered = False
+        try:
+            original = get_volume()
+            if original is None or original <= 0 or stop_event.is_set():
                 return
-            self._is_ducked = False
-            original = self._original_volume
-            target = self._target_volume
-            self._original_volume = None
-            self._target_volume = None
+            target = max(0, min(100, int(round(original * factor))))
+            for step in range(1, 5):
+                if stop_event.is_set():
+                    break
+                set_volume(int(original + (target - original) * step / 4))
+                if stop_event.wait(0.025):
+                    break
+            else:
+                lowered = True
+            if lowered:
+                stop_event.wait()
 
-        if original is None:
-            return
-
-        def _restore_worker():
-            try:
-                from kural.control.media import get_volume, set_volume
-
-                current = get_volume()
-                # If user manually changed volume during dictation, respect user choice
-                if current is not None and target is not None and abs(current - target) > 5:
-                    logger.debug("User manually adjusted volume during dictation; skipping restore")
-                    return
-
-                start_vol = current if current is not None else (target or 0)
-
-                # Smoothly ramp back up over ~200ms in 5 steps so audio doesn't jump
-                steps = 5
-                step_sleep = 0.04
-                for i in range(1, steps + 1):
-                    vol = int(start_vol + (original - start_vol) * (i / steps))
-                    set_volume(vol)
-                    time.sleep(step_sleep)
-
-            except Exception as e:
-                logger.debug(f"Audio restoration failed: {e}")
-
-        threading.Thread(target=_restore_worker, daemon=True, name="audio-ducking-restore").start()
+            current = get_volume()
+            if current is None:
+                logger.warning("Cannot read playback volume to restore it; using last ramp target.")
+                current = target if lowered else original
+            # Once the ramp has settled, a manual change belongs to the user.
+            if lowered and abs(current - target) > 5:
+                logger.debug("User manually adjusted volume during dictation; skipping restore")
+                return
+            for step in range(1, 6):
+                set_volume(int(current + (original - current) * step / 5))
+                if step < 5:
+                    stop_event.wait(0.04)
+        except Exception:
+            logger.exception("Audio ducking or restoration failed")
+        finally:
+            with self._lock:
+                # An unavailable endpoint or a failed read also ends this capture.
+                self._is_ducked = False
