@@ -1,24 +1,25 @@
 # SESSION.md
 
 ## Current milestone
-**Fix Core Audio COM interface cleanup and CoInitialize balancing**
+**Fix standalone executable asset resolution, PyInstaller spec, and relaunch command**
 
 ## Current branch
-`fix/media-coreaudio-com-resource-cleanup`
+`fix/packaging-asset-resolution-and-relaunch`
 
 ## PR
 PR to be opened with gh after verification passes.
 
 ## Last completed step
-PR #63 merged into main. This branch fixes the Windows Core Audio COM resource leak identified in our inventory:
-1. `_release(ptr)`: calls `IUnknown::Release` (vtable method index 2) on active COM pointers, decrementing reference counts to zero when Windows audio endpoints are no longer needed.
-2. Intermediate pointers: `p_enum` and `p_device` are released immediately once `p_volume` is acquired, and released in exception handlers on failed acquisitions.
-3. Thread COM balancing: balanced every `CoInitialize(None)` with `_uninitialize_com()` (`CoUninitialize`) in `finally` blocks in `get_volume()`, `set_volume()`, and failed `_endpoint_volume()` paths, preventing COM thread state and audio device leaks over extended dictation sessions.
-Unit tests in `tests/control/test_media.py` verify that `_release` invokes `IUnknown::Release` (index 2) and that `get_volume()` and `set_volume()` release `p_volume` and call `_uninitialize_com()`. `ruff check .`, `ruff format --check .`, and `pytest -q` passed (535 tests); diff reviewed.
+PR #64 merged into main. This branch fixes standalone PyInstaller packaging, asset resolution, and process relaunch defects:
+1. `build_relaunch_command()`: changed from `[runner, "-m", "kural.main"]` (which raised `No module named kural.main`) to `[runner, "-m", "kural"]`, correctly invoking `kural/__main__.py`.
+2. `resolve_asset_path()`: added support for `sys.frozen` and `sys._MEIPASS`, resolving default YAML files inside frozen PyInstaller bundles.
+3. `get_version()`: added fallback reading `pyproject.toml` from `sys._MEIPASS` when frozen.
+4. `packaging/kural.spec`: added `app_rules.defaults.yaml` and `pyproject.toml` to `datas`, and included `kural.ui`, `kural.selftest`, and `pyperclip` in `hiddenimports`.
+Unit tests in `tests/engine/test_utils.py` verify that `build_relaunch_command()` produces `["python.exe", "-m", "kural"]`, `resolve_asset_path()` resolves inside frozen `sys._MEIPASS`, and `get_version()` reads version properly. `ruff check .`, `ruff format --check .`, and `pytest -q` passed (545 tests); diff reviewed.
 
 ## Next step
-1. Push `fix/media-coreaudio-com-resource-cleanup` and open PR with gh.
-2. Wait for user review and merge before the next fix.
+1. Push `fix/packaging-asset-resolution-and-relaunch` and open PR with gh.
+2. Wait for user review and merge.
 
 ## Open questions / bug inventory (not fixed in this PR)
 - Live audio hardware behavior remains unverified; tests use mocks.
@@ -31,5 +32,7 @@ Unit tests in `tests/control/test_media.py` verify that `_release` invokes `IUnk
 - [x] **Elevated window message implemented** — UIPI token inspection warns user with actionable advice.
 
 ## Decisions recorded (this session)
-- Release intermediate `p_enum` and `p_device` COM pointers as soon as `p_volume` is obtained, and ensure `p_volume` is released in a `finally` block with `CoUninitialize()`.
-  Reason: prevents unreleased audio endpoint objects and thread COM initialization counts from leaking over thousands of volume checks and ducking steps.
+- Fix relaunch command module target to `kural`: invoking `-m kural` runs `kural/__main__.py`, whereas `kural.main` does not exist.
+  Reason: guarantees restart actions in UI and tray successfully relaunch the application.
+- Support `sys.frozen` and `sys._MEIPASS` in `resolve_asset_path` and bundle all default YAML files in `packaging/kural.spec`.
+  Reason: guarantees standalone Windows executable has access to shipped config defaults, command definitions, and app rules.
