@@ -3,7 +3,7 @@
 import json
 import sys
 import wave
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
 import numpy as np
 import pytest
@@ -130,6 +130,28 @@ class TestAudioFileLoading:
         ):
             mp.setitem(sys.modules, "soundfile", None)
             load_audio_file(wav_path)
+
+    def test_load_24bit_wav_resampling_preserves_duration_frame_count(self, tmp_path):
+        wav_path = tmp_path / "resample_24bit_8khz.wav"
+        source_values = [-4194304, 4194304]
+        raw_bytes = b"".join(
+            (value & 0xFFFFFF).to_bytes(3, byteorder="little", signed=False)
+            for value in source_values
+        )
+        with wave.open(str(wav_path), "wb") as wf:
+            wf.setnchannels(1)
+            wf.setsampwidth(3)
+            wf.setframerate(11025)
+            wf.writeframes(raw_bytes)
+
+        # 2 frames at 11.025kHz scale to 2.90 frames at 16kHz; round to 3.
+        with patch.dict("sys.modules", {"soxr": None}):
+            loaded = load_audio_file(wav_path, target_sr=16000)
+
+        assert len(loaded) == 3
+        assert loaded.dtype == np.float32
+        assert loaded[0] == pytest.approx(-0.5)
+        assert loaded[-1] == pytest.approx(0.5)
 
     def test_load_wav_file_mono_32bit(self, tmp_path):
         wav_path = tmp_path / "test_mono_32bit.wav"

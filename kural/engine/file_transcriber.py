@@ -88,8 +88,7 @@ def load_audio_file(file_path: str | Path, target_sr: int = 16000) -> np.ndarray
 
             # Resample to target_sr if necessary
             if framerate != target_sr and len(samples) > 0:
-                duration = len(samples) / framerate
-                target_length = int(duration * target_sr)
+                target_length = max(1, round(len(samples) * target_sr / framerate))
                 # High-quality soxr resampling if available, else linear interpolation
                 try:
                     import soxr
@@ -119,8 +118,7 @@ def load_audio_file(file_path: str | Path, target_sr: int = 16000) -> np.ndarray
 
                 data = soxr.resample(data, sr, target_sr)
             except ImportError:
-                duration = len(data) / sr
-                target_len = int(duration * target_sr)
+                target_len = max(1, round(len(data) * target_sr / sr))
                 orig_idx = np.linspace(0, len(data) - 1, num=len(data))
                 target_idx = np.linspace(0, len(data) - 1, num=target_len)
                 data = np.interp(target_idx, orig_idx, data).astype(np.float32)
