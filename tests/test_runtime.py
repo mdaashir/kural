@@ -37,6 +37,27 @@ class TestKuralRuntimeStateTransitions:
         self.runtime.shutdown()
         self.runtime.ducker.close.assert_called_once()
 
+    def test_runtime_wires_model_registry_to_engine(self):
+        fake_engine_cls = MagicMock()
+        fake_rec_cls = MagicMock()
+        fake_vad_cls = MagicMock()
+        fake_exec_cls = MagicMock()
+        with (
+            patch.dict(
+                "sys.modules",
+                {
+                    "kural.engine.voice_activity_detection": MagicMock(VadManager=fake_vad_cls),
+                    "kural.engine.whisper_engine": MagicMock(WhisperEngine=fake_engine_cls),
+                    "kural.engine.audio_recorder": MagicMock(AudioRecorder=fake_rec_cls),
+                    "kural.control.executor": MagicMock(CommandExecutor=fake_exec_cls),
+                },
+            ),
+        ):
+            _ = KuralRuntime()
+            call_kwargs = fake_engine_cls.call_args.kwargs
+            assert "model_registry" in call_kwargs
+            assert call_kwargs["model_registry"] is not None
+
     def test_initial_state_idle(self):
         assert self.runtime.state == RuntimeState.IDLE
 

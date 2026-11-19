@@ -24,6 +24,12 @@ class TestTimestampAndFormatting:
         assert format_timestamp_srt(3661.05) == "01:01:01,050"
         assert format_timestamp_srt(-1.0) == "00:00:00,000"
 
+    def test_format_timestamp_srt_boundary_rollover(self):
+        # 59.9996s must roll over into 1 minute, never 00:00:60,000
+        assert format_timestamp_srt(59.9996) == "00:01:00,000"
+        # 3599.9999s must roll over into 1 hour, never 00:59:60,000 or 00:60:00,000
+        assert format_timestamp_srt(3599.9999) == "01:00:00,000"
+
     def test_format_segments_text(self):
         segments = [
             SegmentInfo(start=0.0, end=2.0, text="First sentence."),
@@ -84,6 +90,27 @@ class TestAudioFileLoading:
         # Peak should be around 0.5
         assert 0.4 < np.max(np.abs(loaded)) < 0.6
 
+    def test_load_wav_file_mono_32bit(self, tmp_path):
+        wav_path = tmp_path / "test_mono_32bit.wav"
+        sr = 16000
+        duration = 0.5
+        # 32-bit signed int samples with peak around 0.5 (2**30)
+        samples = (
+            np.sin(2 * np.pi * 440 * np.linspace(0, duration, int(sr * duration))) * (2**30)
+        ).astype(np.int32)
+
+        with wave.open(str(wav_path), "wb") as wf:
+            wf.setnchannels(1)
+            wf.setsampwidth(4)
+            wf.setframerate(sr)
+            wf.writeframes(samples.tobytes())
+
+        loaded = load_audio_file(wav_path)
+        assert isinstance(loaded, np.ndarray)
+        assert loaded.dtype == np.float32
+        assert len(loaded) == len(samples)
+        assert 0.4 < np.max(np.abs(loaded)) < 0.6
+
 
 class TestTranscribeFileExecution:
     def test_transcribe_file_to_stdout_and_file(self, tmp_path):
@@ -118,3 +145,47 @@ class TestTranscribeFileExecution:
         assert res == "Offline meeting transcription"
         assert out_file.exists()
         assert out_file.read_text(encoding="utf-8") == "Offline meeting transcription"
+
+    def test_transcribe_file_wires_model_registry(self, tmp_path):
+        from unittest.mock import patch
+
+        wav_path = tmp_path / "test.wav"
+        with wave.open(str(wav_path), "wb") as wf:
+            wf.setnchannels(1)
+            wf.setsampwidth(2)
+            wf.setframerate(16000)
+            wf.writeframes(np.zeros(1600, dtype=np.int16).tobytes())
+
+        with (
+            patch("kural.engine.whisper_engine.WhisperEngine") as mock_engine_cls,
+            patch("kural.config.ConfigManager") as mock_cm_cls,
+        ):
+            mock_cm = MagicMock()
+            mock_cm.get_whisper_config.return_value = {
+                "model": "distil-large-v3.5",
+                "models": {
+                    "distil-large-v3.5": {
+                        "source": "Systran/faster-distil-whisper-large-v3",
+                        "group": "official",
+                    }
+                },
+            }
+            mock_cm_cls.return_value = mock_cm
+
+            mock_engine_instance = MagicMock()
+            mock_engine_instance.model = None
+            mock_engine_instance.transcribe_audio.return_value = "transcribed"
+            mock_engine_cls.return_value = mock_engine_instance
+
+            res = transcribe_file(wav_path)
+            assert res == "transcribed"
+
+            # Verify model_registry was passed to WhisperEngine
+            call_kwargs = mock_engine_cls.call_args.kwargs
+            assert "model_registry" in call_kwargs
+            registry = call_kwargs["model_registry"]
+            assert registry is not None
+            # Verify alias resolves to configured source
+            assert (
+                registry.get_source("distil-large-v3.5") == "Systran/faster-distil-whisper-large-v3"
+            )

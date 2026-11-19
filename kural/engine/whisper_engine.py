@@ -85,6 +85,16 @@ class WhisperEngine:
         self.task = task if task in ("transcribe", "translate") else "transcribe"
         self.model = None
         self.logger = logging.getLogger(__name__)
+        if model_registry is None:
+            try:
+                from kural.config import ConfigManager
+                from kural.engine.model_registry import ModelRegistry
+
+                cm = ConfigManager(quiet=True)
+                w_cfg = cm.get_whisper_config()
+                model_registry = ModelRegistry(whisper_models_config=w_cfg.get("models", {}))
+            except Exception:
+                model_registry = None
         self.registry = model_registry
         self.log_transcriptions = log_transcriptions
 

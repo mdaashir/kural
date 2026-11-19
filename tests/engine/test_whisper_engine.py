@@ -146,3 +146,11 @@ class TestTranscribeAudio:
 class TestIsLoading:
     def test_not_loading_initially(self, engine):
         assert engine.is_loading() is False
+
+    def test_get_model_source_uses_registry(self, engine):
+        mock_reg = MagicMock()
+        mock_reg.get_source.return_value = "Systran/faster-distil-whisper-large-v3"
+        engine.registry = mock_reg
+        source = engine._get_model_source("distil-large-v3.5")
+        assert source == "Systran/faster-distil-whisper-large-v3"
+        mock_reg.get_source.assert_called_once_with("distil-large-v3.5")

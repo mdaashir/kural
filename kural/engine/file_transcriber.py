@@ -28,13 +28,13 @@ def format_timestamp_srt(seconds: float) -> str:
     """Format seconds float into standard SRT timestamp HH:MM:SS,mmm."""
     if seconds < 0:
         seconds = 0.0
-    hours = int(seconds // 3600)
-    minutes = int((seconds % 3600) // 60)
-    secs = int(seconds % 60)
-    millis = int(round((seconds - int(seconds)) * 1000.0))
-    if millis >= 1000:
-        secs += 1
-        millis = 0
+    total_millis = int(round(seconds * 1000.0))
+    hours = total_millis // 3_600_000
+    total_millis %= 3_600_000
+    minutes = total_millis // 60_000
+    total_millis %= 60_000
+    secs = total_millis // 1000
+    millis = total_millis % 1000
     return f"{hours:02d}:{minutes:02d}:{secs:02d},{millis:03d}"
 
 
@@ -66,8 +66,8 @@ def load_audio_file(file_path: str | Path, target_sr: int = 16000) -> np.ndarray
                 # 16-bit PCM
                 samples = np.frombuffer(raw_bytes, dtype=np.int16).astype(np.float32) / 32768.0
             elif sample_width == 4:
-                # 32-bit float or int
-                samples = np.frombuffer(raw_bytes, dtype=np.float32)
+                # 32-bit signed int PCM (WAVE_FORMAT_PCM)
+                samples = np.frombuffer(raw_bytes, dtype=np.int32).astype(np.float32) / 2147483648.0
             elif sample_width == 1:
                 # 8-bit unsigned
                 samples = (
@@ -207,10 +207,12 @@ def transcribe_file(
     # Initialize Whisper engine if not provided
     if engine is None:
         from kural.config import ConfigManager
+        from kural.engine.model_registry import ModelRegistry
         from kural.engine.whisper_engine import WhisperEngine
 
         cfg = ConfigManager(quiet=True)
         whisper_cfg = cfg.get_whisper_config()
+        registry = ModelRegistry(whisper_models_config=whisper_cfg.get("models", {}))
 
         chosen_model = model_key or whisper_cfg.get("model", "large-v3-turbo")
         chosen_lang = language or whisper_cfg.get("language", "en")
@@ -225,6 +227,7 @@ def transcribe_file(
             language=chosen_lang,
             indic_script=indic_script,
             idle_unload_minutes=0,
+            model_registry=registry,
         )
 
     # Ensure model is initialized
