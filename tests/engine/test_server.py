@@ -211,6 +211,29 @@ class TestLiveServerEndpoints:
             assert data["object"] == "list"
             assert data["data"][0]["id"] == "whisper-1"
 
+    def test_get_routes_require_exact_path_but_allow_query_string(self):
+        for path in ("/healthz", "/v1/models-extra"):
+            request = urllib.request.Request(f"http://127.0.0.1:{self.port}{path}")
+            try:
+                urllib.request.urlopen(request)
+            except urllib.error.HTTPError as error:
+                assert error.code == 404
+            else:
+                raise AssertionError(f"Expected 404 for unknown path {path}")
+
+        with urllib.request.urlopen(f"http://127.0.0.1:{self.port}/health?check=1") as response:
+            assert response.status == 200
+
+    def test_post_transcription_route_requires_exact_path(self):
+        url = f"http://127.0.0.1:{self.port}/v1/audio/transcriptions-typo"
+        request = urllib.request.Request(url, data=b"", method="POST")
+        try:
+            urllib.request.urlopen(request)
+        except urllib.error.HTTPError as error:
+            assert error.code == 404
+        else:
+            raise AssertionError("Expected 404 for non-matching POST route")
+
     def test_post_transcriptions_json(self):
         url = f"http://127.0.0.1:{self.port}/v1/audio/transcriptions"
         boundary = "---------------------------boundary987"

@@ -18,6 +18,7 @@ import threading
 import wave
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from typing import Any
+from urllib.parse import urlsplit
 
 logger = logging.getLogger(__name__)
 
@@ -179,9 +180,10 @@ def make_handler(engine: Any):
             logger.debug(f"[server] {self.address_string()} {fmt % args}")
 
         def do_GET(self):
-            if self.path.startswith("/health"):
+            route = urlsplit(self.path).path
+            if route == "/health":
                 self._send_json(200, {"status": "ok", "engine": "kural"})
-            elif self.path.startswith("/v1/models"):
+            elif route == "/v1/models":
                 self._send_json(
                     200,
                     {
@@ -193,7 +195,7 @@ def make_handler(engine: Any):
                 self._send_json(404, {"error": {"message": "Not found", "type": "not_found"}})
 
         def do_POST(self):
-            if not self.path.startswith("/v1/audio/transcriptions"):
+            if urlsplit(self.path).path != "/v1/audio/transcriptions":
                 self._send_json(404, {"error": {"message": "Not found", "type": "not_found"}})
                 return
 
