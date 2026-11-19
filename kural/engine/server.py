@@ -53,21 +53,21 @@ def _decode_audio(data: bytes):
 
     try:
         import soundfile as sf
-
-        with io.BytesIO(data) as buf:
-            audio, sr = sf.read(buf, dtype="float32", always_2d=False)
-        if audio.ndim > 1:
-            audio = audio.mean(axis=1)
-        if sr != 16000:
-            try:
-                import soxr
-
-                audio = soxr.resample(audio, sr, 16000).astype(np.float32)
-            except Exception:
-                pass
-        return audio.astype(np.float32)
-    except (ImportError, Exception):
+    except ImportError:
         return _decode_wav_fallback(data)
+
+    with io.BytesIO(data) as buf:
+        audio, sr = sf.read(buf, dtype="float32", always_2d=False)
+    if audio.ndim > 1:
+        audio = audio.mean(axis=1)
+    if sr != 16000 and len(audio) > 0:
+        try:
+            import soxr
+
+            audio = soxr.resample(audio, sr, 16000).astype(np.float32)
+        except ImportError:
+            audio = _linear_resample(audio, sr, 16000)
+    return audio.astype(np.float32)
 
 
 def _decode_wav_fallback(data: bytes):
@@ -90,15 +90,25 @@ def _decode_wav_fallback(data: bytes):
     if n_channels > 1:
         audio = audio.reshape(-1, n_channels).mean(axis=1)
 
-    if sr != 16000:
+    if sr != 16000 and len(audio) > 0:
         try:
             import soxr
 
             audio = soxr.resample(audio, sr, 16000).astype(np.float32)
-        except Exception:
-            pass
+        except ImportError:
+            audio = _linear_resample(audio, sr, 16000)
 
     return audio.astype(np.float32)
+
+
+def _linear_resample(audio, source_rate: int, target_rate: int):
+    """Resample mono audio with NumPy when the optional soxr backend is absent."""
+    import numpy as np
+
+    target_length = max(1, round(len(audio) * target_rate / source_rate))
+    source_indices = np.arange(len(audio), dtype=np.float64)
+    target_indices = np.linspace(0, len(audio) - 1, num=target_length)
+    return np.interp(target_indices, source_indices, audio).astype(np.float32)
 
 
 def _parse_multipart(handler: BaseHTTPRequestHandler) -> dict[str, dict]:
