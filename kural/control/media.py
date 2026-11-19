@@ -6,6 +6,7 @@ Uses the Windows Core Audio API (IAudioEndpointVolume) for accurate master volum
 adjustment, and Windows virtual-key events for media playback (play/pause, next, previous).
 """
 
+import contextlib
 import ctypes
 import logging
 import sys
@@ -72,13 +73,39 @@ def _vmethod(obj, index, restype, *argtypes):
     return func
 
 
+def _release(ptr) -> None:
+    """Call IUnknown::Release (vtable index 2) on a COM interface pointer if valid."""
+    if ptr is None:
+        return
+    try:
+        rel = _vmethod(ptr, 2, c_ulong)
+        rel(ptr)
+    except Exception:
+        pass
+
+
+def _uninitialize_com() -> None:
+    """Safely call CoUninitialize on Windows."""
+    if sys.platform == "win32":
+        with contextlib.suppress(Exception):
+            ctypes.windll.ole32.CoUninitialize()
+
+
 def _endpoint_volume():
     """Acquire IAudioEndpointVolume interface for default playback device."""
     if sys.platform != "win32":
         return None
+    ole32 = getattr(ctypes.windll, "ole32", None)
+    if not ole32:
+        return None
+
+    com_initialized = False
+    p_enum = None
+    p_device = None
     try:
-        ole32 = ctypes.windll.ole32
         ole32.CoInitialize(None)
+        com_initialized = True
+
         ole32.CoCreateInstance.argtypes = [
             POINTER(_GUID),
             c_void_p,
@@ -88,21 +115,26 @@ def _endpoint_volume():
         ]
         ole32.CoCreateInstance.restype = HRESULT
 
-        p_enum = c_void_p()
+        p_enum_val = c_void_p()
         hr = ole32.CoCreateInstance(
             byref(CLSID_MMDEVICE_ENUMERATOR),
             None,
             CLSCTX_ALL,
             byref(IID_DEVICE_ENUMERATOR),
-            byref(p_enum),
+            byref(p_enum_val),
         )
-        if hr < 0 or not p_enum:
+        if hr < 0 or not p_enum_val:
+            _uninitialize_com()
             return None
+        p_enum = p_enum_val
 
-        p_device = c_void_p()
+        p_device_val = c_void_p()
         get_default = _vmethod(p_enum, 4, HRESULT, ctypes.c_int, ctypes.c_int, POINTER(c_void_p))
-        if get_default(p_enum, ERender, EConsole, byref(p_device)) < 0 or not p_device:
+        if get_default(p_enum, ERender, EConsole, byref(p_device_val)) < 0 or not p_device_val:
+            _release(p_enum)
+            _uninitialize_com()
             return None
+        p_device = p_device_val
 
         p_volume = c_void_p()
         activate = _vmethod(
@@ -119,11 +151,24 @@ def _endpoint_volume():
             < 0
             or not p_volume
         ):
+            _release(p_device)
+            _release(p_enum)
+            _uninitialize_com()
             return None
 
+        # Release intermediate enumerator and device COM pointers
+        _release(p_device)
+        _release(p_enum)
         return p_volume
+
     except Exception as e:
         logger.debug(f"CoreAudio volume endpoint unavailable: {e}")
+        if p_device:
+            _release(p_device)
+        if p_enum:
+            _release(p_enum)
+        if com_initialized:
+            _uninitialize_com()
         return None
 
 
@@ -140,6 +185,9 @@ def get_volume() -> int | None:
         return int(round(max(0.0, min(1.0, level.value)) * 100))
     except Exception:
         return None
+    finally:
+        _release(p_volume)
+        _uninitialize_com()
 
 
 def set_volume(level: int) -> int:
@@ -147,11 +195,15 @@ def set_volume(level: int) -> int:
     target = max(0, min(100, int(level)))
     p_volume = _endpoint_volume()
     if p_volume is not None:
-        lvl = target / 100.0
-        set_scalar = _vmethod(p_volume, 7, HRESULT, c_float, c_void_p)
-        hr = set_scalar(p_volume, lvl, None)
-        if hr < 0:
-            logger.warning(f"SetMasterVolumeLevelScalar failed (hr={hr:#x})")
+        try:
+            lvl = target / 100.0
+            set_scalar = _vmethod(p_volume, 7, HRESULT, c_float, c_void_p)
+            hr = set_scalar(p_volume, lvl, None)
+            if hr < 0:
+                logger.warning(f"SetMasterVolumeLevelScalar failed (hr={hr:#x})")
+        finally:
+            _release(p_volume)
+            _uninitialize_com()
     return target
 
 

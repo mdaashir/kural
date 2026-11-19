@@ -1,26 +1,26 @@
 # SESSION.md
 
 ## Current milestone
-**Fix streaming worker isolation and delivery failure feedback**
+**Fix Core Audio COM interface cleanup and CoInitialize balancing**
 
 ## Current branch
-`fix/streaming-isolation-and-delivery-feedback`
+`fix/media-coreaudio-com-resource-cleanup`
 
 ## PR
 PR to be opened with gh after verification passes.
 
 ## Last completed step
-PR #62 merged into main. This branch fixes two concrete bugs identified in our inventory:
-1. `StreamingTranscriber`: assigned worker-isolated stop events and added a cancellation check immediately before emitting `on_partial`. When a slow worker's inference finishes after `stop()` has been called or a new capture has started, the late partial is cleanly discarded and can never leak into a new recording session.
-2. Failed delivery feedback: in `kural/runtime.py`, when `insert_text_at_caret()` returns `False` (unplaced speech rescued to fallback popup), the UI now correctly flashes `flash_error("Delivery failed — saved in popup")` and plays the error cue (`play_error()`) instead of falsely announcing success ("Typed" / "Copied") and playing the completion chime. Unplaced text is still preserved in ledger and history.
-Unit tests cover late partial discard on streaming stop and failed delivery feedback in runtime. `ruff check .`, `ruff format --check .`, and `pytest -q` passed (532 tests); diff reviewed.
+PR #63 merged into main. This branch fixes the Windows Core Audio COM resource leak identified in our inventory:
+1. `_release(ptr)`: calls `IUnknown::Release` (vtable method index 2) on active COM pointers, decrementing reference counts to zero when Windows audio endpoints are no longer needed.
+2. Intermediate pointers: `p_enum` and `p_device` are released immediately once `p_volume` is acquired, and released in exception handlers on failed acquisitions.
+3. Thread COM balancing: balanced every `CoInitialize(None)` with `_uninitialize_com()` (`CoUninitialize`) in `finally` blocks in `get_volume()`, `set_volume()`, and failed `_endpoint_volume()` paths, preventing COM thread state and audio device leaks over extended dictation sessions.
+Unit tests in `tests/control/test_media.py` verify that `_release` invokes `IUnknown::Release` (index 2) and that `get_volume()` and `set_volume()` release `p_volume` and call `_uninitialize_com()`. `ruff check .`, `ruff format --check .`, and `pytest -q` passed (535 tests); diff reviewed.
 
 ## Next step
-1. Push `fix/streaming-isolation-and-delivery-feedback` and open PR with gh.
+1. Push `fix/media-coreaudio-com-resource-cleanup` and open PR with gh.
 2. Wait for user review and merge before the next fix.
 
 ## Open questions / bug inventory (not fixed in this PR)
-- Core Audio volume handles in `media.py` may leak unreleased COM interfaces. Needs focused reproduction and hardware validation.
 - Live audio hardware behavior remains unverified; tests use mocks.
 
 ## Verify items (from AGENTS.md)
@@ -31,7 +31,5 @@ Unit tests cover late partial discard on streaming stop and failed delivery feed
 - [x] **Elevated window message implemented** — UIPI token inspection warns user with actionable advice.
 
 ## Decisions recorded (this session)
-- Isolate streaming worker stop events per thread invocation: a worker's stop event is permanently set on `stop()` so restarting streaming cannot un-cancel an old in-flight worker.
-  Reason: prevents abandoned streaming threads from leaking previous speech into subsequent recordings.
-- Report delivery failure accurately to user: flash error overlay and play error tone when `insert_text_at_caret` fails, while keeping fallback window popup and history preservation intact.
-  Reason: user must know their keystrokes failed to paste and are sitting in the fallback dialog.
+- Release intermediate `p_enum` and `p_device` COM pointers as soon as `p_volume` is obtained, and ensure `p_volume` is released in a `finally` block with `CoUninitialize()`.
+  Reason: prevents unreleased audio endpoint objects and thread COM initialization counts from leaking over thousands of volume checks and ducking steps.
