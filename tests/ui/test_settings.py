@@ -3,6 +3,7 @@
 import sys
 from unittest.mock import MagicMock, patch
 
+from kural.config.config_manager import ConfigManager
 from kural.ui.settings_window import (
     COMPUTE_TYPES,
     DEVICES,
@@ -67,19 +68,32 @@ class TestSettingsCollectionAndSave:
         assert data["clipboard"]["return_to_app"] is True
         assert data["overlay"]["position"] == "bottom-center"
 
-    def test_save_invokes_set_user_setting(self):
+    def test_save_invokes_update_user_setting(self):
         mock_mb = MagicMock()
         mock_callback = MagicMock()
         self.win.on_save = mock_callback
 
         self.win._on_save(messagebox=mock_mb)
 
-        # Check set_user_setting calls were made
-        assert self.mock_cm.set_user_setting.call_count >= 8
-        self.mock_cm.set_user_setting.assert_any_call("whisper.model", "large-v3-turbo")
-        self.mock_cm.set_user_setting.assert_any_call("hotkey.recording_hotkey", "ctrl+space")
+        assert self.mock_cm.update_user_setting.call_count >= 8
+        self.mock_cm.update_user_setting.assert_any_call("whisper", "model", "large-v3-turbo")
+        self.mock_cm.update_user_setting.assert_any_call("hotkey", "recording_hotkey", "ctrl+space")
         mock_mb.showinfo.assert_called_once()
         mock_callback.assert_called_once()
+
+    def test_save_with_real_config_manager_persists_settings(self, tmp_path, monkeypatch):
+        monkeypatch.setenv("APPDATA", str(tmp_path))
+        config_manager = ConfigManager(quiet=True)
+        window = SettingsWindow(config_manager=config_manager)
+        messagebox = MagicMock()
+
+        window._on_save(messagebox=messagebox)
+
+        messagebox.showerror.assert_not_called()
+        messagebox.showinfo.assert_called_once()
+        reloaded = ConfigManager(quiet=True)
+        assert reloaded.get_whisper_config()["model"] == "large-v3-turbo"
+        assert reloaded.get_hotkey_config()["recording_hotkey"] == "ctrl+space"
 
     def test_save_syncs_autostart_toggle(self):
         mock_mb = MagicMock()

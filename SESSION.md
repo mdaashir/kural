@@ -1,23 +1,23 @@
 # SESSION.md
 
 ## Current milestone
-**Decode 24-bit PCM WAV files correctly for offline transcription**
+**Fix graphical Settings save using the ConfigManager API**
 
 ## Current branch
-`fix/24-bit-wav-decoding`
+`fix/settings-save-config-manager-api`
 
 ## PR
 PR to be opened with gh after verification passes.
 
 ## Last completed step
-PR #69 merged into main with WAV decoder diagnostics for unsupported encodings. This follow-up fixes fallback resampling length: the fallback now rounds `len(samples) * target_sr / source_sr` instead of truncating duration-based length. The original formula gave 2 samples for 2 source frames at 11,025 Hz resampled to 16 kHz; the corrected result is 3. Regression uses 24-bit PCM and disables `soxr` to exercise the fallback. `ruff check .`, `ruff format --check .`, and `pytest -q` passed (548 tests); diff reviewed.
+Reproduced Settings save failure with a real temporary `ConfigManager`: `SettingsWindow._on_save()` called nonexistent `set_user_setting`, displayed an AttributeError, and did not save settings. This branch calls the actual `update_user_setting(section, key, value)` API. The regression test exercises `_on_save()` with real ConfigManager, checks success notification, reloads persisted settings, and confirms representative settings survived. `ruff check .`, `ruff format --check .`, and `pytest -q` passed (549 tests); diff reviewed.
 
 ## Next step
-1. Push `fix/wav-resample-frame-count` and open a PR with gh.
+1. Push `fix/settings-save-config-manager-api` and open a PR with gh.
 2. Wait for user review and merge.
 
 ## Open questions
-- This changes diagnostics only; IEEE-float WAV decoding still requires the optional `soundfile` dependency.
+- None for this bug; settings persistence is covered with a temporary user configuration directory.
 
 ## Verify items (from AGENTS.md)
 - [x] **Hotkey-driven only?** Confirmed and resolved in M5.
@@ -27,6 +27,7 @@ PR #69 merged into main with WAV decoder diagnostics for unsupported encodings. 
 - [x] **Elevated window message implemented** — UIPI token inspection warns user with actionable advice.
 
 ## Decisions recorded (this session)
-- Decode `sample_width == 3` as signed little-endian PCM by assembling 24-bit values and sign-extending, then divide by `2**23`.
-  Reason: provides correct normalization and sample count without requiring soundfile for standard PCM WAV files.
-- Reject other unsupported WAV sample widths with a clear `ValueError` instead of interpreting arbitrary bytes as int16.
+- Use the existing `ConfigManager.update_user_setting(section, key, value)` API at the settings UI boundary.
+  Reason: settings values are structured by section/key and the config manager owns persistence and validation.
+- Exercise settings save with a real `ConfigManager` and temporary config directory instead of a generic mock.
+  Reason: this catches interface mismatches while avoiding user configuration changes.
