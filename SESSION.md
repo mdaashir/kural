@@ -10,10 +10,10 @@
 PR to be opened with gh after verification passes.
 
 ## Last completed step
-PR #68 merged into main with signed 24-bit PCM WAV decoding. This follow-up confirms Python's standard `wave` reader rejects IEEE-float WAV files, then gives a precise fallback message when `soundfile` is unavailable. The test builds a minimal float WAV (format tag 3), masks `soundfile`, and verifies the error explains the unsupported encoding and dependency. WAV reader and `soundfile` errors are retained in actionable `ValueError` messages rather than replaced by a generic non-WAV message. `ruff check .`, `ruff format --check .`, and `pytest -q` passed (547 tests); diff reviewed.
+PR #69 merged into main with WAV decoder diagnostics for unsupported encodings. This follow-up fixes fallback resampling length: the fallback now rounds `len(samples) * target_sr / source_sr` instead of truncating duration-based length. The original formula gave 2 samples for 2 source frames at 11,025 Hz resampled to 16 kHz; the corrected result is 3. Regression uses 24-bit PCM and disables `soxr` to exercise the fallback. `ruff check .`, `ruff format --check .`, and `pytest -q` passed (548 tests); diff reviewed.
 
 ## Next step
-1. Push `fix/wav-decode-diagnostics` and open a PR with gh.
+1. Push `fix/wav-resample-frame-count` and open a PR with gh.
 2. Wait for user review and merge.
 
 ## Open questions
