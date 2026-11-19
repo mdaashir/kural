@@ -1,23 +1,23 @@
 # SESSION.md
 
 ## Current milestone
-**Fix graphical Settings save using the ConfigManager API**
+**Pass ModelRegistry into the local transcription server engine**
 
 ## Current branch
-`fix/settings-save-config-manager-api`
+`fix/server-model-registry`
 
 ## PR
 PR to be opened with gh after verification passes.
 
 ## Last completed step
-Reproduced Settings save failure with a real temporary `ConfigManager`: `SettingsWindow._on_save()` called nonexistent `set_user_setting`, displayed an AttributeError, and did not save settings. This branch calls the actual `update_user_setting(section, key, value)` API. The regression test exercises `_on_save()` with real ConfigManager, checks success notification, reloads persisted settings, and confirms representative settings survived. `ruff check .`, `ruff format --check .`, and `pytest -q` passed (549 tests); diff reviewed.
+PR #71 merged into main. Inventory found `build_server_engine()` in `kural/engine/server.py` constructed WhisperEngine without the configured ModelRegistry, unlike the runtime and file transcription paths. The local OpenAI-compatible transcription API could therefore fail with configured model aliases or local model paths. A mock reproducer failed because the `model_registry` argument was absent. This branch constructs ModelRegistry from `whisper_cfg["models"]` and passes it to WhisperEngine; tests assert the server passes the registry and the alias resolves to its configured source. `ruff check .`, `ruff format --check .`, and `pytest -q` passed (551 tests); diff reviewed.
 
 ## Next step
-1. Push `fix/settings-save-config-manager-api` and open a PR with gh.
+1. Push `fix/server-model-registry` and open a PR with gh.
 2. Wait for user review and merge.
 
 ## Open questions
-- None for this bug; settings persistence is covered with a temporary user configuration directory.
+- No live server inference test was run; unit tests mock model loading and inference.
 
 ## Verify items (from AGENTS.md)
 - [x] **Hotkey-driven only?** Confirmed and resolved in M5.
