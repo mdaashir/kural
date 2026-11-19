@@ -1,23 +1,23 @@
 # SESSION.md
 
 ## Current milestone
-**Pass ModelRegistry into the local transcription server engine**
+**Resample local API audio to 16 kHz without optional soxr**
 
 ## Current branch
-`fix/server-model-registry`
+`fix/server-audio-resample-fallback`
 
 ## PR
 PR to be opened with gh after verification passes.
 
 ## Last completed step
-PR #71 merged into main. Inventory found `build_server_engine()` in `kural/engine/server.py` constructed WhisperEngine without the configured ModelRegistry, unlike the runtime and file transcription paths. The local OpenAI-compatible transcription API could therefore fail with configured model aliases or local model paths. A mock reproducer failed because the `model_registry` argument was absent. This branch constructs ModelRegistry from `whisper_cfg["models"]` and passes it to WhisperEngine; tests assert the server passes the registry and the alias resolves to its configured source. `ruff check .`, `ruff format --check .`, and `pytest -q` passed (551 tests); diff reviewed.
+PR #72 merged into main. Reproduced a local API decoding bug: when `soxr` was unavailable and an upload used a sample rate other than 16 kHz, both `_decode_audio()` and `_decode_wav_fallback()` silently returned unresampled audio for 16 kHz inference. This branch adds a NumPy linear interpolation fallback in both paths and tests 8 kHz to 16 kHz conversion with `soxr` disabled. `ruff check .`, `ruff format --check .`, and `pytest -q` passed (553 tests); diff reviewed.
 
 ## Next step
-1. Push `fix/server-model-registry` and open a PR with gh.
+1. Push `fix/server-audio-resample-fallback` and open a PR with gh.
 2. Wait for user review and merge.
 
 ## Open questions
-- No live server inference test was run; unit tests mock model loading and inference.
+- Linear interpolation is a quality fallback; `soxr` remains preferred when installed.
 
 ## Verify items (from AGENTS.md)
 - [x] **Hotkey-driven only?** Confirmed and resolved in M5.
@@ -27,7 +27,5 @@ PR #71 merged into main. Inventory found `build_server_engine()` in `kural/engin
 - [x] **Elevated window message implemented** — UIPI token inspection warns user with actionable advice.
 
 ## Decisions recorded (this session)
-- Use the existing `ConfigManager.update_user_setting(section, key, value)` API at the settings UI boundary.
-  Reason: settings values are structured by section/key and the config manager owns persistence and validation.
-- Exercise settings save with a real `ConfigManager` and temporary config directory instead of a generic mock.
-  Reason: this catches interface mismatches while avoiding user configuration changes.
+- Use linear interpolation in the local API decoder when `soxr` is unavailable; apply it to both soundfile-decoded and stdlib WAV audio.
+  Reason: the API promises 16 kHz mono model input, and silently leaving the original rate changes playback duration and inference interpretation.

@@ -2,6 +2,7 @@
 
 import io
 import json
+import sys
 import threading
 import urllib.request
 import wave
@@ -11,6 +12,7 @@ from unittest.mock import MagicMock, patch
 import numpy as np
 
 from kural.engine.server import (
+    _decode_audio,
     _decode_wav_fallback,
     _parse_multipart,
     build_server_engine,
@@ -18,10 +20,13 @@ from kural.engine.server import (
 )
 
 
-def _generate_test_wav(duration_s: float = 0.1, sample_rate: int = 16000) -> bytes:
+def _generate_test_wav(
+    duration_s: float = 0.1, sample_rate: int = 16000, samples: np.ndarray | None = None
+) -> bytes:
     """Generate in-memory 16-bit PCM mono WAV bytes."""
-    num_samples = int(duration_s * sample_rate)
-    samples = (np.sin(np.linspace(0, 100, num_samples)) * 10000).astype(np.int16)
+    if samples is None:
+        num_samples = int(duration_s * sample_rate)
+        samples = (np.sin(np.linspace(0, 100, num_samples)) * 10000).astype(np.int16)
     buf = io.BytesIO()
     with wave.open(buf, "wb") as wf:
         wf.setnchannels(1)
@@ -83,6 +88,32 @@ class TestServerEngineBuild:
 
 
 class TestAudioDecoding:
+    def test_decode_wav_fallback_resamples_when_soxr_missing(self, monkeypatch):
+        samples = np.asarray([0, 1000, 2000, 3000], dtype=np.int16)
+        wav_bytes = _generate_test_wav(sample_rate=8000, samples=samples)
+        monkeypatch.setitem(sys.modules, "soxr", None)
+
+        audio = _decode_wav_fallback(wav_bytes)
+
+        assert audio.dtype == np.float32
+        assert len(audio) == 8
+
+    def test_decode_soundfile_audio_resamples_when_soxr_missing(self, monkeypatch):
+        import sys
+        from unittest.mock import MagicMock
+
+        fake_soundfile = MagicMock()
+        fake_soundfile.read.return_value = (np.asarray([0, 0.25, 0.5, 1.0], dtype=np.float32), 8000)
+        monkeypatch.setitem(sys.modules, "soundfile", fake_soundfile)
+        monkeypatch.setitem(sys.modules, "soxr", None)
+
+        audio = _decode_audio(b"fake encoded audio")
+
+        assert audio.dtype == np.float32
+        assert len(audio) == 8
+        assert audio[0] == 0.0
+        assert audio[-1] == 1.0
+
     def test_decode_wav_fallback_16bit(self):
         wav_bytes = _generate_test_wav(0.1, 16000)
         audio = _decode_wav_fallback(wav_bytes)
