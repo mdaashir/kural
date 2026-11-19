@@ -770,6 +770,7 @@ class KuralRuntime:
         """Clean up audio streams, timers, and exit."""
         self._running = False
         for c in (
+            getattr(self.ducker, "close", None),
             getattr(self.overlay, "stop", None),
             getattr(self.tray, "stop", None),
             getattr(self.mouse_trigger, "stop", None),
