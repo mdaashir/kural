@@ -458,7 +458,7 @@ class SettingsWindow:
         try:
             for section, values in settings.items():
                 for key, val in values.items():
-                    self.config_manager.set_user_setting(f"{section}.{key}", val)
+                    self.config_manager.update_user_setting(section, key, val)
 
             # Sync Windows autostart registry setting
             if self.var_autostart is not None:
