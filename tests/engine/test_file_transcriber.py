@@ -90,6 +90,26 @@ class TestAudioFileLoading:
         # Peak should be around 0.5
         assert 0.4 < np.max(np.abs(loaded)) < 0.6
 
+    def test_load_wav_file_mono_24bit(self, tmp_path):
+        wav_path = tmp_path / "test_mono_24bit.wav"
+        # Signed 24-bit PCM values spanning negative, zero, and positive amplitudes.
+        source_values = [-8388608, -4194304, 0, 4194304, 8388607]
+        raw_bytes = b"".join(
+            (value & 0xFFFFFF).to_bytes(3, byteorder="little", signed=False)
+            for value in source_values
+        )
+
+        with wave.open(str(wav_path), "wb") as wf:
+            wf.setnchannels(1)
+            wf.setsampwidth(3)
+            wf.setframerate(16000)
+            wf.writeframes(raw_bytes)
+
+        loaded = load_audio_file(wav_path)
+        assert len(loaded) == len(source_values)
+        expected = np.asarray(source_values, dtype=np.float32) / 8388608.0
+        np.testing.assert_allclose(loaded, expected, atol=1e-6)
+
     def test_load_wav_file_mono_32bit(self, tmp_path):
         wav_path = tmp_path / "test_mono_32bit.wav"
         sr = 16000
