@@ -67,6 +67,15 @@ class TestGuardrailsSafetyChecks:
             cmd_arg = mock_run.call_args[0][0]
             assert "shutdown /s /t 60" in cmd_arg
 
+    def test_schedule_shutdown_reports_nonzero_return_code(self):
+        for restart in (False, True):
+            fake_run = MagicMock(returncode=1, stderr=b"Access is denied.")
+            with patch("subprocess.run", return_value=fake_run) as mock_run:
+                ok, msg = self.guard.schedule_shutdown(restart=restart)
+                assert ok is False
+                assert "Access is denied" in msg
+                mock_run.assert_called_once()
+
     def test_cancel_shutdown(self):
         fake_run = MagicMock()
         fake_run.returncode = 0

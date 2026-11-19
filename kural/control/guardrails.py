@@ -111,7 +111,7 @@ class Guardrails:
             cmd = f"shutdown {flag} /t {self.shutdown_delay_sec} /c \"Kural scheduled power action. Say 'cancel shutdown' to abort.\""
 
             try:
-                subprocess.run(
+                result = subprocess.run(
                     cmd,
                     shell=True,
                     capture_output=True,
@@ -120,6 +120,11 @@ class Guardrails:
                 )
             except Exception as e:
                 return False, f"Could not schedule system power command: {e}"
+
+            if result.returncode != 0:
+                stderr = result.stderr.decode(errors="replace").strip() if result.stderr else ""
+                detail = f": {stderr}" if stderr else f" (exit code {result.returncode})"
+                return False, f"System power command failed{detail}"
 
             action_name = "Restart" if restart else "Shutdown"
             return (

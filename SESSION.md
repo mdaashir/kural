@@ -1,23 +1,23 @@
 # SESSION.md
 
 ## Current milestone
-**Require exact local API server endpoint routes**
+**Report command scheduling failures when Windows rejects shutdown/restart**
 
 ## Current branch
-`fix/server-exact-routes`
+`fix/guardrail-shutdown-return-code`
 
 ## PR
 PR to be opened with gh after verification passes.
 
 ## Last completed step
-PR #74 merged into main. Reproduced route prefix bug: `GET /healthz` and `GET /v1/models-extra` matched valid endpoints because the handler used `startswith()`. This branch compares parsed URL paths exactly for GET and POST endpoints while preserving query strings on valid paths. Tests verify unknown prefixed routes return 404 and `/health?check=1` remains valid. `ruff check .`, `ruff format --check .`, and `pytest -q` passed (556 tests); diff reviewed.
+PR #75 merged into main. Reproduced guardrail bug with a mocked `subprocess.run` result: `schedule_shutdown()` returned success for shutdown and restart even when the process exit code was 1 (`Access is denied`). This branch checks the subprocess return code and returns a failure result with stderr or exit code details. Regression covers both shutdown and restart. `ruff check .`, `ruff format --check .`, and `pytest -q` passed (557 tests); diff reviewed.
 
 ## Next step
-1. Push `fix/server-exact-routes` and open a PR with gh.
+1. Push `fix/guardrail-shutdown-return-code` and open a PR with gh.
 2. Wait for user review and merge.
 
 ## Open questions
-- Local API remains loopback-only; tests exercise routes through a local mock HTTP server.
+- Actual Windows shutdown/restart command acceptance was not invoked; behavior is tested with mocked subprocess results.
 
 ## Verify items (from AGENTS.md)
 - [x] **Hotkey-driven only?** Confirmed and resolved in M5.
@@ -27,5 +27,5 @@ PR #74 merged into main. Reproduced route prefix bug: `GET /healthz` and `GET /v
 - [x] **Elevated window message implemented** — UIPI token inspection warns user with actionable advice.
 
 ## Decisions recorded (this session)
-- Match parsed URL paths exactly for local API routes while allowing query strings on those paths.
-  Reason: unknown prefixed paths such as `/healthz` should return 404, while valid routes may still include query parameters.
+- Treat a nonzero Windows shutdown command return code as a failed scheduling attempt and surface captured stderr where available.
+  Reason: avoid telling users a guarded system action was scheduled when Windows rejected it.
