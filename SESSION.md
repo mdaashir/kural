@@ -1,23 +1,23 @@
 # SESSION.md
 
 ## Current milestone
-**Correct Hex license copyright attribution in THIRD_PARTY_NOTICES.md**
+**Decode 24-bit PCM WAV files correctly for offline transcription**
 
 ## Current branch
-`docs/fix-hex-copyright-attribution`
+`fix/24-bit-wav-decoding`
 
 ## PR
 PR to be opened with gh after verification passes.
 
 ## Last completed step
-PR #66 merged into main with Section 3 for `anomalyco/hex`. Verified the upstream `LICENSE` through GitHub API; its copyright line is `Copyright (c) 2026 Christopher Langton`, not `anomalyco`. This branch corrects that exact line in `THIRD_PARTY_NOTICES.md`.
+PR #67 merged into main. Reproduced a 24-bit PCM WAV loading bug: the decoder treated 3-byte samples as int16 and returned corrupt samples or fell through to an optional dependency. This branch decodes signed little-endian 24-bit PCM with explicit sign extension and normalizes to float32 in [-1, 1]. Unsupported sample widths now raise an explicit error rather than silently misdecoding. A regression test checks known negative, zero, and positive sample values and preserves one output per input frame. `ruff check .`, `ruff format --check .`, and `pytest -q` passed (546 tests); diff reviewed.
 
 ## Next step
-1. Run required Ruff and pytest gates, review the documentation diff, then push `docs/fix-hex-copyright-attribution` and open a PR with gh.
+1. Push `fix/24-bit-wav-decoding` and open a PR with gh.
 2. Wait for user review and merge.
 
 ## Open questions
-- None. The upstream license copyright holder was verified from the repository's `LICENSE` file.
+- Other WAV encodings (such as IEEE float or compressed/extensible WAV) are outside this fix; confirm required formats separately if needed.
 
 ## Verify items (from AGENTS.md)
 - [x] **Hotkey-driven only?** Confirmed and resolved in M5.
@@ -27,5 +27,6 @@ PR #66 merged into main with Section 3 for `anomalyco/hex`. Verified the upstrea
 - [x] **Elevated window message implemented** — UIPI token inspection warns user with actionable advice.
 
 ## Decisions recorded (this session)
-- Record `anomalyco/hex` MIT license and component mapping in `THIRD_PARTY_NOTICES.md`.
-  Reason: complies with MIT license attribution requirements and `AGENTS.md` licensing standards.
+- Decode `sample_width == 3` as signed little-endian PCM by assembling 24-bit values and sign-extending, then divide by `2**23`.
+  Reason: provides correct normalization and sample count without requiring soundfile for standard PCM WAV files.
+- Reject other unsupported WAV sample widths with a clear `ValueError` instead of interpreting arbitrary bytes as int16.

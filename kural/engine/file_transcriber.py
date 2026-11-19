@@ -62,19 +62,25 @@ def load_audio_file(file_path: str | Path, target_sr: int = 16000) -> np.ndarray
                 n_frames = wf.getnframes()
                 raw_bytes = wf.readframes(n_frames)
 
-            if sample_width == 2:
-                # 16-bit PCM
-                samples = np.frombuffer(raw_bytes, dtype=np.int16).astype(np.float32) / 32768.0
-            elif sample_width == 4:
-                # 32-bit signed int PCM (WAVE_FORMAT_PCM)
-                samples = np.frombuffer(raw_bytes, dtype=np.int32).astype(np.float32) / 2147483648.0
-            elif sample_width == 1:
-                # 8-bit unsigned
+            if sample_width == 1:
+                # 8-bit unsigned PCM
                 samples = (
                     np.frombuffer(raw_bytes, dtype=np.uint8).astype(np.float32) - 128.0
                 ) / 128.0
-            else:
+            elif sample_width == 2:
+                # 16-bit signed PCM
                 samples = np.frombuffer(raw_bytes, dtype=np.int16).astype(np.float32) / 32768.0
+            elif sample_width == 3:
+                # 24-bit signed little-endian PCM, sign-extended to int32.
+                packed = np.frombuffer(raw_bytes, dtype=np.uint8).reshape(-1, 3).astype(np.int32)
+                values = packed[:, 0] | (packed[:, 1] << 8) | (packed[:, 2] << 16)
+                values = (values ^ 0x800000) - 0x800000
+                samples = values.astype(np.float32) / 8388608.0
+            elif sample_width == 4:
+                # 32-bit signed int PCM (WAVE_FORMAT_PCM)
+                samples = np.frombuffer(raw_bytes, dtype=np.int32).astype(np.float32) / 2147483648.0
+            else:
+                raise ValueError(f"Unsupported WAV sample width: {sample_width} bytes")
 
             # Convert stereo / multichannel to mono by averaging channels
             if channels > 1:
