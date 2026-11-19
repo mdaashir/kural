@@ -59,7 +59,10 @@ class KuralRuntime:
             ),
         )
 
+        from kural.engine.model_registry import ModelRegistry
         from kural.engine.whisper_engine import WhisperEngine
+
+        model_registry = ModelRegistry(whisper_models_config=self.whisper_cfg.get("models", {}))
 
         self.engine = WhisperEngine(
             model_key=self.whisper_cfg.get("model", "large-v3-turbo"),
@@ -72,6 +75,7 @@ class KuralRuntime:
             idle_unload_minutes=int(self.whisper_cfg.get("idle_unload_minutes", 5)),
             languages=self.whisper_cfg.get("languages", ["en", "ta"]),
             indic_script=self.whisper_cfg.get("indic_script", "native"),
+            model_registry=model_registry,
         )
 
         from kural.engine.audio_recorder import AudioRecorder

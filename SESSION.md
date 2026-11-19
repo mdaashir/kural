@@ -1,24 +1,27 @@
 # SESSION.md
 
 ## Current milestone
-**Restore ducked audio during shutdown**
+**Fix file transcriber SRT rollover, 32-bit WAV decoding, and ModelRegistry resolution**
 
 ## Current branch
-`fix/restore-audio-on-shutdown`
+`fix/file-transcriber-and-model-registry`
 
 ## PR
 PR to be opened with gh after verification passes.
 
 ## Last completed step
-PR #60 merged into main. Reproduced missing shutdown cleanup: `shutdown()` did not call the audio ducker. This branch calls `ducker.close()` before stopping audio components; `close()` requests restoration and waits up to two seconds for the worker. Mocked tests cover shutdown invocation and volume returning from 20 to 80 before close returns. `ruff check .`, `ruff format --check .`, and `pytest -q` passed (526 tests); diff reviewed.
+PR #61 merged into main. This branch fixes three concrete bugs identified in our inventory:
+1. `format_timestamp_srt`: rewrote using integer divmod over total milliseconds, eliminating the invalid `00:00:60,000` boundary output.
+2. `load_audio_file`: correctly decodes 32-bit signed int PCM (`sample_width == 4`) as `np.int32` scaled by `2**31` instead of corrupting integer bit patterns as floats.
+3. Model resolution: wired `ModelRegistry` into `transcribe_file()`, `runtime.py`, and added fallback in `WhisperEngine.__init__`, enabling model alias keys (e.g. `distil-large-v3.5`) and custom local paths to resolve accurately. `model_registry.py` safely handles environments without `faster_whisper`.
+Unit tests cover SRT boundary rollover, 32-bit WAV decoding, and model registry resolution. `ruff check .`, `ruff format --check .`, and `pytest -q` passed (531 tests); diff reviewed.
 
 ## Next step
-1. Push `fix/restore-audio-on-shutdown` and open PR with gh.
+1. Push `fix/file-transcriber-and-model-registry` and open PR with gh.
 2. Wait for user review and merge before the next bug.
 
 ## Open questions / bug inventory (not fixed in this PR)
 - Core Audio volume handles may leak. Needs focused reproduction and hardware validation.
-- File transcription may misdecode 32-bit PCM WAV, fail to resolve configured model aliases, and emit invalid SRT rounding at minute boundaries. Needs focused reproducers.
 - Streaming preview may emit an old partial into a new recording; failed text delivery is still announced as success. Needs focused reproduction.
 - Live audio hardware behavior remains unverified; this PR uses mocked volume endpoints.
 
