@@ -1,23 +1,23 @@
 # SESSION.md
 
 ## Current milestone
-**Resample local API audio to 16 kHz without optional soxr**
+**Decode 24-bit PCM in the local API server fallback**
 
 ## Current branch
-`fix/server-audio-resample-fallback`
+`fix/server-24bit-wav-decode`
 
 ## PR
 PR to be opened with gh after verification passes.
 
 ## Last completed step
-PR #72 merged into main. Reproduced a local API decoding bug: when `soxr` was unavailable and an upload used a sample rate other than 16 kHz, both `_decode_audio()` and `_decode_wav_fallback()` silently returned unresampled audio for 16 kHz inference. This branch adds a NumPy linear interpolation fallback in both paths and tests 8 kHz to 16 kHz conversion with `soxr` disabled. `ruff check .`, `ruff format --check .`, and `pytest -q` passed (553 tests); diff reviewed.
+PR #73 merged into main with resampling fallback. Reproduced API decoder rejection of valid 24-bit PCM WAV uploads when the optional soundfile decoder is unavailable: `_decode_wav_fallback()` raised `Unsupported WAV sample width: 3`. This branch adds signed little-endian 24-bit decoding and normalization by `2**23`, with a regression covering negative, zero, and positive values and exact sample count. `ruff check .`, `ruff format --check .`, and `pytest -q` passed (554 tests); diff reviewed.
 
 ## Next step
-1. Push `fix/server-audio-resample-fallback` and open a PR with gh.
+1. Push `fix/server-24bit-wav-decode` and open a PR with gh.
 2. Wait for user review and merge.
 
 ## Open questions
-- Linear interpolation is a quality fallback; `soxr` remains preferred when installed.
+- Live HTTP/model inference remains untested; decoder unit tests exercise fallback directly.
 
 ## Verify items (from AGENTS.md)
 - [x] **Hotkey-driven only?** Confirmed and resolved in M5.

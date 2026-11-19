@@ -71,7 +71,7 @@ def _decode_audio(data: bytes):
 
 
 def _decode_wav_fallback(data: bytes):
-    """Decode 16-bit or 32-bit PCM WAV using stdlib wave."""
+    """Decode 16-, 24-, or 32-bit signed PCM WAV using stdlib wave."""
     import numpy as np
 
     with io.BytesIO(data) as buf, wave.open(buf, "rb") as wf:
@@ -82,6 +82,11 @@ def _decode_wav_fallback(data: bytes):
 
     if sample_width == 2:
         audio = np.frombuffer(frames, dtype=np.int16).astype(np.float32) / 32768.0
+    elif sample_width == 3:
+        packed = np.frombuffer(frames, dtype=np.uint8).reshape(-1, 3).astype(np.int32)
+        values = packed[:, 0] | (packed[:, 1] << 8) | (packed[:, 2] << 16)
+        values = (values ^ 0x800000) - 0x800000
+        audio = values.astype(np.float32) / 8388608.0
     elif sample_width == 4:
         audio = np.frombuffer(frames, dtype=np.int32).astype(np.float32) / 2147483648.0
     else:
