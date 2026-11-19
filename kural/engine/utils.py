@@ -99,6 +99,17 @@ def resolve_asset_path(relative_path: str) -> str:
     if not relative_path or os.path.isabs(relative_path):
         return relative_path
 
+    # Frozen standalone executable (PyInstaller)
+    if getattr(sys, "frozen", False) and hasattr(sys, "_MEIPASS"):
+        base_dir = Path(sys._MEIPASS)
+        for candidate in (
+            base_dir / "kural" / "config" / relative_path,
+            base_dir / "kural" / relative_path,
+            base_dir / relative_path,
+        ):
+            if candidate.exists():
+                return str(candidate)
+
     if is_installed_package():
         for pkg in ("kural.config", "kural.engine", "kural"):
             try:
@@ -247,7 +258,7 @@ def build_relaunch_command(windowless: bool = False) -> list:
         return [exe]
 
     runner = _windowless_python(exe) if (windowless and sys.platform == "win32") else exe
-    return [runner, "-m", "kural.main"]
+    return [runner, "-m", "kural"]
 
 
 def restart_or_exit(message_restart, message_exit):
@@ -260,13 +271,26 @@ def restart_or_exit(message_restart, message_exit):
     sys.exit(0)
 
 
-def get_version():
+def get_version() -> str:
     if is_installed_package():
         import importlib.metadata
 
-        return importlib.metadata.version("kural")
+        with contextlib.suppress(Exception):
+            return importlib.metadata.version("kural")
+
+    # Frozen standalone executable (PyInstaller)
+    if getattr(sys, "frozen", False) and hasattr(sys, "_MEIPASS"):
+        meipass_pyproj = Path(sys._MEIPASS) / "pyproject.toml"
+        if meipass_pyproj.exists():
+            with open(meipass_pyproj, "rb") as f:
+                data = tomllib.load(f)
+                return str(data.get("project", {}).get("version", "0.1.0"))
+        return "0.1.0"
 
     pyproject_path = Path(__file__).parent.parent.parent / "pyproject.toml"
-    with open(pyproject_path, "rb") as f:
-        data = tomllib.load(f)
-        return f"{data['project']['version']}-dev"
+    if pyproject_path.exists():
+        with open(pyproject_path, "rb") as f:
+            data = tomllib.load(f)
+            return f"{data['project']['version']}-dev"
+
+    return "0.1.0-dev"

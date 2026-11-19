@@ -13,6 +13,8 @@ KURAL = os.path.join(ROOT, "kural")
 datas = [
     (os.path.join(KURAL, "config", "config.defaults.yaml"), "kural/config"),
     (os.path.join(KURAL, "config", "commands.defaults.yaml"), "kural/config"),
+    (os.path.join(KURAL, "config", "app_rules.defaults.yaml"), "kural/config"),
+    (os.path.join(ROOT, "pyproject.toml"), "."),
 ]
 
 hiddenimports = [
@@ -20,8 +22,11 @@ hiddenimports = [
     "kural.config",
     "kural.control",
     "kural.engine",
+    "kural.ui",
     "kural.doctor",
+    "kural.selftest",
     "ruamel.yaml",
+    "pyperclip",
 ]
 
 # Optional dynamic libraries and packages if present in build environment
