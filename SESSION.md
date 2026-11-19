@@ -1,31 +1,23 @@
 # SESSION.md
 
 ## Current milestone
-**Update THIRD_PARTY_NOTICES.md with anomalyco/hex attribution**
+**Correct Hex license copyright attribution in THIRD_PARTY_NOTICES.md**
 
 ## Current branch
-`docs/third-party-notices-anomalyco-hex`
+`docs/fix-hex-copyright-attribution`
 
 ## PR
 PR to be opened with gh after verification passes.
 
 ## Last completed step
-PR #65 merged into main. Added Section 3 to `THIRD_PARTY_NOTICES.md` documenting upstream MIT license attribution and component mapping for `anomalyco/hex`:
-1. `kural/engine/audio_ducking.py`: Automatic audio output ducking (`src/audio/output_ducking.rs`)
-2. `kural/engine/file_transcriber.py`: Offline audio file transcription CLI (`src/control/transcript_cli.rs`)
-3. `kural/engine/stop_phrase.py`: Hands-free voice stop phrase detection (`docs/features/labs.md: Stop phrase`)
-4. `kural/control/windows.py` (`return_to_app`): Refocusing origin window before delivery (`docs/features/labs.md: Return to app`)
-5. `kural/runtime.py` (`cancel_hotkey`): Instant dictation discard hotkey (`docs/features/dictation.md: dictation cancel`)
-6. `kural/control/windows.py` (`delivery_method: copy`): Copy-only delivery to clipboard (`docs/features/labs.md: Copy dictation only`)
-7. `kural/control/windows.py` (`restore_clipboard`): Retaining dictations in Windows Clipboard History (`docs/features/labs.md: Keep dictation on clipboard`)
-`ruff check .`, `ruff format --check .`, and `pytest -q` passed (545 tests); diff reviewed.
+PR #66 merged into main with Section 3 for `anomalyco/hex`. Verified the upstream `LICENSE` through GitHub API; its copyright line is `Copyright (c) 2026 Christopher Langton`, not `anomalyco`. This branch corrects that exact line in `THIRD_PARTY_NOTICES.md`.
 
 ## Next step
-1. Push `docs/third-party-notices-anomalyco-hex` and open PR with gh.
+1. Run required Ruff and pytest gates, review the documentation diff, then push `docs/fix-hex-copyright-attribution` and open a PR with gh.
 2. Wait for user review and merge.
 
-## Open questions / bug inventory (not fixed in this PR)
-- Live audio hardware behavior remains unverified; tests use mocks.
+## Open questions
+- None. The upstream license copyright holder was verified from the repository's `LICENSE` file.
 
 ## Verify items (from AGENTS.md)
 - [x] **Hotkey-driven only?** Confirmed and resolved in M5.

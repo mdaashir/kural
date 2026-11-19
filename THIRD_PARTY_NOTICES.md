@@ -145,7 +145,7 @@ licence texts are reproduced here in full, as required by the MIT licence terms.
 
 > MIT License
 >
-> Copyright (c) 2026 anomalyco
+> Copyright (c) 2026 Christopher Langton
 >
 > Permission is hereby granted, free of charge, to any person obtaining a copy
 > of this software and associated documentation files (the "Software"), to deal
