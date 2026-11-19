@@ -80,3 +80,36 @@ class TestStreamingTranscriber:
 
         transcriber.stop()
         assert transcriber._thread is None
+
+    def test_late_partial_discarded_after_stop(self):
+        import threading
+
+        in_transcribe = threading.Event()
+        release_transcribe = threading.Event()
+        partials = []
+
+        class SlowEngine:
+            def transcribe_audio(self, _audio):
+                in_transcribe.set()
+                release_transcribe.wait(timeout=2.0)
+                return "Late partial that should be discarded"
+
+        transcriber = StreamingTranscriber(
+            audio_source=DummySource(),
+            engine=SlowEngine(),
+            on_partial=lambda t: partials.append(t),
+            interval=0.01,
+            min_seconds=0.1,
+        )
+
+        transcriber.start()
+        # Wait until worker enters transcribe_audio
+        assert in_transcribe.wait(timeout=2.0)
+        # Stop transcriber while inference is in flight
+        transcriber.stop(timeout=0.01)
+        # Release the slow inference
+        release_transcribe.set()
+        time.sleep(0.1)
+
+        # The late partial must be discarded because stop was called
+        assert partials == []

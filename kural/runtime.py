@@ -673,11 +673,27 @@ class KuralRuntime:
                 inserted = insert_text_at_caret(
                     text, delivery_method=delivery_method, restore_clipboard=restore_clip
                 )
-                if not inserted and getattr(self, "fallback_window", None):
-                    self.fallback_window.show(
-                        text,
-                        reason="No active text field was focused — your dictation is safe here.",
-                    )
+                if not inserted:
+                    if getattr(self, "fallback_window", None):
+                        self.fallback_window.show(
+                            text,
+                            reason="No active text field was focused — your dictation is safe here.",
+                        )
+                    # Record to ledger and history so unplaced speech is preserved for Paste Last / search
+                    if getattr(self, "ledger", None):
+                        self.ledger.record(text)
+                    if not self.incognito:
+                        append_history(
+                            HistoryEntry(
+                                text=text,
+                                task="transcribe",
+                                audio_s=float(len(audio_data) / 16000.0),
+                                app=fg_info.exe if fg_info else "",
+                            )
+                        )
+                    self.overlay.flash_error("Delivery failed — saved in popup")
+                    self.audio_feedback.play_error()
+                    return
 
                 # 6. Record to ledger, adaptive learner, and history.jsonl
                 if getattr(self, "ledger", None):

@@ -285,6 +285,8 @@ class TestKuralRuntimeStateTransitions:
         self.runtime.state = RuntimeState.RECORDING_DICTATION
         self.runtime.engine.transcribe_audio.return_value = "unplaced speech"
         self.runtime.fallback_window = MagicMock()
+        self.runtime.overlay = MagicMock()
+        self.runtime.audio_feedback = MagicMock()
 
         # Simulate failed insertion (e.g. no focused window / dropped keystrokes)
         with patch("kural.runtime.insert_text_at_caret", return_value=False):
@@ -293,6 +295,12 @@ class TestKuralRuntimeStateTransitions:
             self.runtime.fallback_window.show.assert_called_once()
             call_text = self.runtime.fallback_window.show.call_args[0][0]
             assert "Unplaced speech" in call_text
+            self.runtime.overlay.flash_error.assert_called_once_with(
+                "Delivery failed — saved in popup"
+            )
+            self.runtime.audio_feedback.play_error.assert_called_once()
+            self.runtime.overlay.flash_success.assert_not_called()
+            self.runtime.audio_feedback.play_complete.assert_not_called()
 
     def test_command_hotkey_stop_executes_instead_of_typing(self):
         self.runtime.state = RuntimeState.RECORDING_COMMAND
