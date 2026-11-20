@@ -216,7 +216,21 @@ def make_handler(engine: Any):
                 )
                 return
 
-            response_format = (fields.get("response_format", {}).get("value") or "json").lower()
+            response_format = (
+                (fields.get("response_format", {}).get("value") or "json").strip().lower()
+            )
+            if response_format not in {"json", "text"}:
+                self._send_json(
+                    400,
+                    {
+                        "error": {
+                            "message": "Unsupported response_format. Supported values are 'json' and 'text'.",
+                            "type": "invalid_request_error",
+                        }
+                    },
+                )
+                return
+
             language = fields.get("language", {}).get("value")
             prompt = fields.get("prompt", {}).get("value") or ""
 

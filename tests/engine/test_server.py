@@ -313,6 +313,37 @@ class TestLiveServerEndpoints:
             server.shutdown()
             server.server_close()
 
+    def test_unsupported_response_format_returns_400(self):
+        url = f"http://127.0.0.1:{self.port}/v1/audio/transcriptions"
+        boundary = "unsupported-format-boundary"
+        wav_bytes = _generate_test_wav(0.1, 16000)
+        body = (
+            f"--{boundary}\r\n".encode()
+            + b'Content-Disposition: form-data; name="file"; filename="audio.wav"\r\n\r\n'
+            + wav_bytes
+            + b"\r\n"
+            + f"--{boundary}\r\n".encode()
+            + b'Content-Disposition: form-data; name="response_format"\r\n\r\n'
+            + b"srt\r\n"
+            + f"--{boundary}--\r\n".encode()
+        )
+        request = urllib.request.Request(
+            url,
+            data=body,
+            headers={"Content-Type": f"multipart/form-data; boundary={boundary}"},
+            method="POST",
+        )
+
+        try:
+            urllib.request.urlopen(request)
+        except urllib.error.HTTPError as error:
+            assert error.code == 400
+            payload = json.loads(error.read().decode("utf-8"))
+            assert payload["error"]["type"] == "invalid_request_error"
+            assert "response_format" in payload["error"]["message"]
+        else:
+            raise AssertionError("Expected 400 for unsupported response format")
+
     def test_post_transcriptions_plain_text(self):
         url = f"http://127.0.0.1:{self.port}/v1/audio/transcriptions"
         boundary = "---------------------------boundary555"
