@@ -137,6 +137,9 @@ def _parse_multipart(handler: BaseHTTPRequestHandler) -> dict[str, dict]:
         raise ValueError(f"Invalid/oversized payload: {length} bytes")
 
     raw = handler.rfile.read(length)
+    if len(raw) != length:
+        raise ValueError(f"Incomplete request body: expected {length} bytes, received {len(raw)}")
+
     sep = b"--" + boundary.encode("latin-1")
     fields = {}
 

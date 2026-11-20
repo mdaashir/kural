@@ -169,6 +169,28 @@ class TestMultipartParsing:
         assert "file" in fields
         assert fields["file"]["data"] == b"dummy_audio_bytes"
 
+    def test_parse_rejects_truncated_request_body(self):
+        boundary = "truncated-boundary"
+        body = (
+            f"--{boundary}\r\n"
+            'Content-Disposition: form-data; name="file"; filename="audio.wav"\r\n\r\n'
+            "partial audio"
+        ).encode()
+
+        class DummyHandler:
+            headers = {
+                "Content-Type": f"multipart/form-data; boundary={boundary}",
+                "Content-Length": str(len(body) + 32),
+            }
+            rfile = io.BytesIO(body)
+
+        try:
+            _parse_multipart(DummyHandler())
+        except ValueError as error:
+            assert "Incomplete request body" in str(error)
+        else:
+            raise AssertionError("Expected truncated multipart body to be rejected")
+
 
 class MockEngine:
     def __init__(self):
