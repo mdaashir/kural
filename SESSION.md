@@ -1,23 +1,23 @@
 # SESSION.md
 
 ## Current milestone
-**Handle malformed or corrupted LastTake recovery data safely**
+**Document current delivery, Incognito, and local API behavior**
 
 ## Current branch
-`fix/recovery-corrupt-last-take`
+`docs/current-delivery-incognito-api-behavior`
 
 ## PR
-PR for `fix/recovery-corrupt-last-take` to be opened with gh after verification passes.
+PR to be opened with gh after verification passes.
 
 ## Last completed step
-PR #88 merged into main, refreshing README, SESSION.md, and memory.md. On the current recovery fix branch, reproduced a recovery-data issue: after decryption succeeds, malformed header lengths or JSON metadata can raise from `LastTake.load()` and leave the bad take on disk, breaking Retry Last. This branch validates payload header/metadata bounds and types and PCM alignment; corrupt takes are logged, cleared, and returned as unavailable. Regression stubs decryption with malformed plaintext and verifies safe return plus file removal. `ruff check .`, `ruff format --check .`, and `pytest -q` passed (571 tests); diff reviewed.
+PR #89 merged into main. This docs iteration follows up on three audit findings in README/config comments: the usage table omitted the Escape cancel action and Ctrl+Alt+V Paste Last binding, and the delivery-method docs omitted Copy Only. The API documentation is also being expanded to include structured inference failure responses and multipart error handling. `memory.md` is refreshed to the current branch/test status; `AGENTS.md` and `THIRD_PARTY_NOTICES.md` remain unchanged.
 
 ## Next step
-1. Push `fix/recovery-corrupt-last-take` and open its PR with gh.
+1. Finish documentation review, run required checks, then push `docs/current-delivery-incognito-api-behavior` and open a PR with gh.
 2. Wait for user review and merge.
 
 ## Open questions
-- The corruption test stubs the decrypt layer; live DPAPI corruption behavior is not exercised on hardware.
+- None for the documented behaviors; confirm claims against current runtime/config/server implementation before merge.
 
 ## Verify items (from AGENTS.md)
 - [x] **Hotkey-driven only?** Confirmed and resolved in M5.
@@ -27,5 +27,5 @@ PR #88 merged into main, refreshing README, SESSION.md, and memory.md. On the cu
 - [x] **Elevated window message implemented** — UIPI token inspection warns user with actionable advice.
 
 ## Decisions recorded (this session)
-- Treat malformed decrypted recovery payloads as unusable: validate magic/header bounds, JSON metadata schema, and PCM alignment; log, clear the take, and return `(None, None)`.
-  Reason: corrupted recovery data should not crash Retry Last or remain as a repeatedly failing take.
+- Document the actual supported delivery modes, Incognito recovery guarantees, and API request/error behavior without implying unimplemented response formats.
+  Reason: keep user-facing docs aligned with current code and verified tests.
