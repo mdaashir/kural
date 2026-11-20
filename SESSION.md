@@ -1,40 +1,32 @@
 # SESSION.md
 
 ## Current milestone
-**Prepare PyPI distribution `cmd-kural` 0.1.1 with OIDC trusted publishing**
+**Recover release pipeline after v0.1.1 artifact-name validation failure**
 
 ## Current branch
-`feat/cmd-kural-pypi-0.1.1`
+`docs/update-release-recovery-handoff`
 
-## PR
-PR to be opened after local verification passes.
-
-## Last completed step
-GitHub Release v0.1.0 is published at https://github.com/mdaashir/kural/releases/tag/v0.1.0; all four distributed wheel/sdist/Windows assets were independently checksum-verified. PyPI's existing `kural` name belongs to another project. User selected `cmd-kural` for the next Python distribution at version `0.1.1`; existing v0.1.0 assets remain unchanged. PyPI guide and dedicated OIDC workflow are being prepared but publishing remains disabled.
+## PR / release status
+- PR #97 merged: distribution renamed to `cmd-kural` version `0.1.1`; PyPI workflow is separate, manual, and OIDC-only.
+- PR #98 merged: release checker accepts PEP 427 normalized filenames (`cmd_kural-0.1.1-...`). Post-merge CI run `44837440949` passed.
+- Tag `v0.1.1` points to the PR #97 merge commit. Release run `44832574129` failed before GitHub Release creation, at artifact-set validation. It did not reach or publish to PyPI.
+- `PUBLISH_PYPI` is unset. GitHub `pypi` environment exists but has no protection rules. No PyPI publication has occurred.
 
 ## Next step
-1. Complete package rename, release validation, gated `publish-pypi.yml`, tests, and docs on this branch.
-2. Run `uv lock --check`, `uv sync --dry-run --locked`, `uv build`, Twine metadata checks, fresh `uv tool install` smoke tests, Ruff and pytest.
-3. Commit, push, inspect CI and open PR.
-4. After PR merge, user claims `cmd-kural` on PyPI, configures trusted publishing and GitHub environment `pypi`, confirms setup, then enables `PUBLISH_PYPI=true` and manually dispatches `gh workflow run publish-pypi.yml -f tag=v0.1.1`.
+1. Keep the existing `v0.1.1` tag unchanged. It points to the PR #97 commit before PR #98's fix; the release validator requires the tagged commit to be on current `main`, so that tag cannot be safely retried.
+2. Prepare a version-bump PR for `cmd-kural` `0.1.2` (pyproject, uv.lock, changelog and README), then verify CI and merge.
+3. After merge, create/push new annotated tag `v0.1.2`; verify GitHub Release assets and checksums.
+4. Ask the user to confirm `cmd-kural` is claimed/created in their PyPI account. A pending publisher does not reserve the name.
+5. Configure/verify PyPI trusted publisher fields: project `cmd-kural`, owner `mdaashir`, repo `kural`, workflow `publish-pypi.yml`, environment `pypi`; add protection to the GitHub `pypi` environment.
+6. Only after explicit user confirmation and publisher activation, set `PUBLISH_PYPI=true` and manually dispatch `gh workflow run publish-pypi.yml -f tag=v0.1.2`.
 
-## Open questions / limitations
-- Exact PyPI trusted publisher values: project `cmd-kural`; owner `mdaashir`; repository `kural`; workflow `publish-pypi.yml`; environment `pypi`.
-- `cmd-kural` returned 404 during a PyPI availability check, but this is not a reservation. The account owner must claim it before enabling publication; pending publishers do not reserve names.
-- No PyPI package is published by this PR; publication stays gated until user setup and confirmation.
-- GitHub Release v0.1.0 remains distribution `kural`. Next package distribution is `cmd-kural` 0.1.1; import package and CLI remain `kural`.
-- The `uv tool` command after publication will be `uv tool install --python 3.12 --from "cmd-kural[runtime,tray]" kural`.
-- Ruff and formatting passed; pytest passed 581 tests before the current package-name updates. Local GPU inference, mic capture, and live UI/hotkeys remain untested.
+## Verification state
+- Local main test suite: 582 passed; Ruff lint/format passed.
+- Hosted PR #98 CI run `44835854722`: passed; post-merge main CI run not yet inspected.
+- `cmd-kural` 0.1.1 wheel/sdist build, `twine check --strict`, isolated `uv tool` installs, CLI and module metadata checks passed.
+- Release run `44832574129` failed at artifact filename validation before GitHub Release creation or PyPI publish. PR #98 fixed the artifact normalization, but its tag was the pre-merge PR #97 commit.
+- No v0.1.1 GitHub Release or PyPI distribution exists.
 
-## Verify items (from AGENTS.md)
-- [x] **Hotkey-driven only?** Confirmed and resolved in M5.
-- [x] **Feature overlap between base and donor** — Confirmed and resolved across M0-M5.
-- [x] **Tamil voice commands supported** — SVO, SOV, and Tanglish supported.
-- [x] **Idle VRAM unload implemented** — Configurable timer unloads model from VRAM after inactivity.
-- [x] **Elevated window message implemented** — UIPI token inspection warns user with actionable advice.
-
-## Decisions recorded (this session)
-- Create and push the v0.1.0 tag after user authorization; verify resulting release assets and checksums.
-  Reason: the user explicitly authorized release execution after PR #95 merged.
-- Improve repo discoverability using factual metadata only; do not claim unverified capabilities.
-  Reason: SEO must reflect supported product behavior accurately.
+## Open limitations
+- Local GPU inference, microphone capture, and live Windows UI/hotkey behavior are not covered by packaging checks.
+- PyPI ownership, trusted-publisher activation, and GitHub `pypi` environment protection remain user/account-side setup steps.

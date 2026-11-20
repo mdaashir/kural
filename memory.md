@@ -1,6 +1,6 @@
 # Memory — Kural Full Roadmap Implementation (M0 - M5)
 
-Last updated: 2026-11-21 02:02 IST
+Last updated: 2026-11-21 05:08 IST
 
 ## What was built
 
@@ -39,31 +39,34 @@ Implemented the complete Kural architecture across 9 merged Pull Requests:
 - Published assets (Windows setup installer, portable ZIP, Python wheel, source archive, `SHA256SUMS`) were downloaded and independently checksum-verified.
 - PyPI publishing remains disabled; no package published. Existing PyPI project `kural` belongs to another owner.
 
-## cmd-kural PyPI preparation — 2026-11-21
+## cmd-kural PyPI release recovery — 2026-11-21
 
-- User selected `cmd-kural` as the next Python distribution name; current proposed version is `0.1.1` so v0.1.0 assets stay unchanged.
-- PyPI check returned 404 for `cmd-kural`, but this does not reserve the name. User must claim it before enabling publishing.
-- Agreed trusted publisher values: project `cmd-kural`, owner `mdaashir`, repository `kural`, workflow `publish-pypi.yml`, GitHub environment `pypi`; OIDC only, no API token.
-- Current work is on `feat/cmd-kural-pypi-0.1.1`; package rename, version 0.1.1, lockfile, release checker, OIDC workflow, and documentation are in progress; no package has been published.
-- User-side PyPI setup required: claim/create `cmd-kural`, configure Trusted Publisher owner `mdaashir`, repo `kural`, workflow `publish-pypi.yml`, environment `pypi`; create protected GitHub environment; only then confirm before setting `PUBLISH_PYPI=true`. Pending publisher configuration does not reserve the project name.
+- PR #97 prepared distribution `cmd-kural` version 0.1.1; Python import and CLI remain `kural`.
+- PR #98 corrected PEP 427 underscore normalization for wheel/sdist names; CI run `44835854722` passed all test/package/desktop jobs.
+- Existing tag `v0.1.1` points to pre-PR #98 commit `f82ac4d`. Release run `44832574129` failed artifact validation before GitHub Release creation or PyPI publication. Do not move or force-update this tag.
+- Safe recovery requires a new version/tag (proposed 0.1.2): PR bumps `pyproject.toml`, uv.lock, changelog/docs; after merge create a new annotated tag from main.
+- PyPI `cmd-kural` returned 404 at last check, but is not reserved. Pending publisher screenshot shows owner/repo/workflow/environment configured; GitHub `pypi` environment exists but has no protection rules. `PUBLISH_PYPI` remains unset and no PyPI upload has occurred.
+- Trusted publisher values: project `cmd-kural`, owner `mdaashir`, repository `kural`, workflow `publish-pypi.yml`, environment `pypi`; OIDC only, no API token.
 
 ## Current state
 
-- The historical M0–M5 roadmap is complete; post-M5 features, desktop builds, and CI/CD pipelines are merged and verified on `main`.
-- Current release: v0.1.0. Future package distribution name/version being prepared: `cmd-kural` 0.1.1; runtime import and CLI remain `kural`.
-- `.github/workflows/ci.yml` and `build.yml` validate code, package wheel/sdist, smoke-test `uv tool` installs, and build/smoke-test the Windows portable bundle and installer.
-- `.github/workflows/release.yml` creates GitHub Releases and checksums. Dedicated `.github/workflows/publish-pypi.yml` will be manually dispatched after PyPI trusted publisher and GitHub environment setup; it stays disabled until the repository variable is enabled.
-- `.github/workflows/container.yml` and `.github/workflows/pages.yml` remain future separate work after PyPI preparation, each via its own PR.
-- All current offline tests passed before the package-name changes; rerun after implementation. Local GPU inference and live microphone/UI behavior remain unverified.
+- The historical M0–M5 roadmap is complete; post-M5 features, desktop builds, and CI/CD pipelines are merged on `main`.
+- Current `main` at handoff: `f52e5b5`; current GitHub Release is v0.1.0. Next intended distribution is `cmd-kural` 0.1.2 after a version-bump PR.
+- `.github/workflows/ci.yml` and `build.yml` validate code, package wheel/sdist, smoke-test `uv tool`, and build/smoke-test Windows portable bundle and installer.
+- `.github/workflows/release.yml` publishes desktop/GitHub assets; separate manual `.github/workflows/publish-pypi.yml` is gated by `PUBLISH_PYPI == 'true'`.
+- Last local verification after PR #98: 582 tests pass. Do not retry v0.1.1 release as its tag commit is not current-main ancestry after the artifact fix.
+- No v0.1.2 release, PyPI upload, GHCR image, or Pages deployment has occurred.
 
 ## Next session starts with
 
-- Finish `cmd-kural` metadata/artifact/publish workflow changes on `feat/cmd-kural-pypi-0.1.1`, test locked builds and `uv tool install`, then open a PR.
-- After that PR is reviewed and merged and user has claimed/configured PyPI trusted publishing, validate first publication before enabling the workflow gate.
-- Then do separate GHCR headless API container and Next.js static GitHub Pages marketing/documentation PRs.
+- Confirm PR #98 post-merge CI on main; prepare one version-bump PR to `cmd-kural` 0.1.2 and update lock/changelog/docs.
+- After review/merge, tag v0.1.2 from main and verify GitHub Release artifacts/checksums.
+- Only after the user verifies package ownership/trusted publisher and adds protection to GitHub `pypi` environment, with explicit confirmation, set `PUBLISH_PYPI=true` and manually dispatch `publish-pypi.yml`.
+- Then handle separate GHCR API image and Next.js GitHub Pages site PRs.
 
 ## Open questions
 
-- PyPI package ownership for `cmd-kural`, pending publisher activation, and GitHub `pypi` environment/protection setup remain user actions.
+- Confirm account ownership of PyPI `cmd-kural`; 404/pending publisher does not reserve it.
+- Confirm GitHub `pypi` environment protection rules before enabling publishing.
 - The local transcription API supports only `json` and `text`; SRT response output is not implemented.
 - Live model inference, full microphone/UI workflow, and real client-disconnect timing require hardware/manual verification.
