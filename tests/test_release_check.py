@@ -53,10 +53,10 @@ def test_artifact_set_and_checksums(tmp_path):
         (Path(__file__).parents[1] / "pyproject.toml").read_text(encoding="utf-8")
     )["project"]
     version = project["version"]
-    distribution = project["name"]
+    wheel_distribution = release.re.sub(r"[-_.]+", "_", project["name"]).lower()
     names = [
-        f"{distribution}-{version}-py3-none-any.whl",
-        f"{distribution}-{version}.tar.gz",
+        f"{wheel_distribution}-{version}-py3-none-any.whl",
+        f"{wheel_distribution}-{version}.tar.gz",
         "kural-windows-x64.zip",
         "kural-windows-x64-setup.exe",
     ]
@@ -70,6 +70,25 @@ def test_artifact_set_and_checksums(tmp_path):
     (tmp_path / names[0]).write_bytes(b"")
     with pytest.raises(ValueError, match="Empty"):
         release.checksums(tmp_path, version)
+
+
+def test_artifact_check_accepts_normalized_wheel_and_sdist_names(tmp_path):
+    names = [
+        "cmd_kural-0.1.1-py3-none-any.whl",
+        "cmd_kural-0.1.1.tar.gz",
+        "kural-windows-x64.zip",
+        "kural-windows-x64-setup.exe",
+    ]
+    for name in names:
+        (tmp_path / name).write_bytes(b"verified artifact")
+
+    release.checksums(tmp_path, "0.1.1")
+    assert len((tmp_path / "SHA256SUMS").read_text().splitlines()) == 4
+
+    (tmp_path / "SHA256SUMS").unlink()
+    (tmp_path / names[0]).rename(tmp_path / "cmd-kural-0.1.1-py3-none-any.whl")
+    with pytest.raises(ValueError, match="artifact set"):
+        release.checksums(tmp_path, "0.1.1")
 
 
 def test_artifact_check_rejects_version_mismatch(tmp_path):
