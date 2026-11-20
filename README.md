@@ -1,6 +1,11 @@
+<meta name="description" content="Kural is a local-first Windows speech-to-text and voice typing app with GPU-accelerated Whisper, voice commands, and support for English, Tamil, and Tanglish. No cloud transcription.">
+<meta name="keywords" content="offline speech to text, Windows voice typing, local Whisper, Tamil speech recognition, Tanglish voice commands, GPU transcription, privacy-first dictation">
+
 # Kural (குரல்)
 
-> Local-first voice typing + voice control for Windows. English and Tamil. GPU-accelerated Whisper, no cloud.
+> Offline speech-to-text, voice typing, and voice commands for Windows. Powered by local GPU-accelerated Whisper; supports English, Tamil, and Tanglish without cloud transcription.
+
+**Latest release: [Kural v0.1.0](https://github.com/mdaashir/kural/releases/tag/v0.1.0)** — download the [Windows installer](https://github.com/mdaashir/kural/releases/download/v0.1.0/kural-windows-x64-setup.exe), [portable Windows bundle](https://github.com/mdaashir/kural/releases/download/v0.1.0/kural-windows-x64.zip), or [Python wheel](https://github.com/mdaashir/kural/releases/download/v0.1.0/kural-0.1.0-py3-none-any.whl). Verify downloads with the release [SHA256SUMS](https://github.com/mdaashir/kural/releases/download/v0.1.0/SHA256SUMS).
 
 [![Python 3.12+](https://img.shields.io/badge/python-3.12%2B-blue.svg)](https://www.python.org/)
 [![Platform: Windows 11](https://img.shields.io/badge/platform-Windows%2011-0078D6.svg)](https://www.microsoft.com/windows)
@@ -187,7 +192,7 @@ python -m kural
 
 ```
 =======================================================
-   Kural 0.1.0-dev — Ready
+   Kural 0.1.0 — Ready
 =======================================================
    [Ctrl+Space]         Dictation Mode (speech → active cursor)
    [Ctrl+Shift+Space]   Command Mode (voice control)
@@ -216,7 +221,7 @@ Kural — Doctor Diagnostics
 Runtime
   [OK]   Python version    3.12.x (target 3.12+)
   [i]    Platform          Windows 11 (AMD64)
-  [OK]   Kural version     0.1.0-dev
+  [OK]   Kural version     0.1.0
 
 Hardware & GPU (Target: NVIDIA RTX 3050)
   [OK]   Detected GPU      NVIDIA GeForce RTX 3050 (nvidia)
