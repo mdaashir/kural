@@ -252,8 +252,8 @@ def make_handler(engine: Any):
                 old_lang = getattr(engine, "language", "en")
                 old_prompt = getattr(engine, "initial_prompt", "")
                 try:
-                    if language and language != "auto":
-                        engine.language = language
+                    if language:
+                        engine.language = None if language.strip().lower() == "auto" else language
                     if prompt:
                         engine.initial_prompt = prompt
                     text = engine.transcribe_audio(audio_array) or ""

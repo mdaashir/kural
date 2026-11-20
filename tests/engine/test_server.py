@@ -266,6 +266,44 @@ class TestLiveServerEndpoints:
             res = json.loads(resp.read().decode("utf-8"))
             assert res["text"] == "Transcribed local audio speech"
 
+    def test_language_auto_enables_detection_and_restores_engine_language(self):
+        engine = MockEngine()
+        engine.language = "ta"
+        observed_languages = []
+        engine.transcribe_audio = lambda _audio: observed_languages.append(engine.language) or "ok"
+        handler = make_handler(engine)
+        server = ThreadingHTTPServer(("127.0.0.1", 0), handler)
+        thread = threading.Thread(target=server.serve_forever, daemon=True)
+        thread.start()
+        try:
+            boundary = "auto-language-boundary"
+            wav_bytes = _generate_test_wav(0.1, 16000)
+            body = (
+                f"--{boundary}\r\n".encode()
+                + b'Content-Disposition: form-data; name="file"; filename="audio.wav"\r\n\r\n'
+                + wav_bytes
+                + b"\r\n"
+                + f"--{boundary}\r\n".encode()
+                + b'Content-Disposition: form-data; name="language"\r\n\r\n'
+                + b"auto\r\n"
+                + f"--{boundary}--\r\n".encode()
+            )
+            request = urllib.request.Request(
+                f"http://127.0.0.1:{server.server_address[1]}/v1/audio/transcriptions",
+                data=body,
+                headers={"Content-Type": f"multipart/form-data; boundary={boundary}"},
+                method="POST",
+            )
+            with urllib.request.urlopen(request) as response:
+                assert response.status == 200
+                assert json.loads(response.read().decode("utf-8"))["text"] == "ok"
+
+            assert observed_languages == [None]
+            assert engine.language == "ta"
+        finally:
+            server.shutdown()
+            server.server_close()
+
     def test_inference_failure_returns_json_500_and_restores_engine_state(self):
         engine = MockEngine()
         engine.transcribe_audio = lambda _audio: (_ for _ in ()).throw(
