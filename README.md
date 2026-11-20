@@ -34,8 +34,8 @@ and Windows-native privacy features.
   - Push-to-talk via keyboard hotkey, multi-key chord (`ctrl+windows`, `ctrl+alt`), or mouse thumb button (Mouse Flow).
 - **Privacy-First:**
   - Zero runtime telemetry or cloud calls.
-  - **Incognito Mode:** One tray click — zero history, zero adaptive learning, zero audio retention.
-  - DPAPI-encrypted audio retention for one-click retry and paste-last recovery.
+  - **Incognito Mode:** disables transcript history, adaptive learning, audio retention, and in-memory Paste Last retention while active. Entering Incognito clears any prior retained take and ledger text.
+  - DPAPI-encrypted audio retention for one-click retry and paste-last recovery when Incognito is off.
   - Transcript text is never logged at INFO level.
 - **Never-Lose-A-Dictation:** Paste last dictation and retry last recording directly from the system tray.
 - **Text Delivery Choice:** Clipboard paste (`paste` / Ctrl+V), direct SendInput Unicode keystrokes (`type`) for paste-blocked apps, or Copy Only (`copy`) to clipboard without disturbing foreground focus (Hex-inspired).
@@ -275,6 +275,32 @@ python -m kural --transcribe recording.wav --format srt --output subtitles.srt
 
 # Structured JSON export with timestamps and segments
 python -m kural --transcribe audio.wav --format json --output transcript.json
+```
+
+### Local OpenAI-Compatible Transcription API
+
+Kural can serve transcription requests locally on `127.0.0.1` using the configured Whisper model:
+
+```powershell
+# Start the local API server (default port 7777)
+python -m kural --serve
+```
+
+Available endpoints:
+
+| Method | Path | Description |
+|---|---|---|
+| `GET` | `/health` | Local server health check |
+| `GET` | `/v1/models` | OpenAI-compatible model list |
+| `POST` | `/v1/audio/transcriptions` | Multipart audio transcription |
+
+The POST endpoint requires a multipart `file` field. Optional fields include `language`, `prompt`, and `response_format`. Response formats are `json` (default, `{"text":"..."}`) and `text`; other values are rejected with HTTP 400. Audio is decoded to mono 16 kHz; `soundfile` handles supported audio formats when installed, with standard PCM WAV fallback support for 16-, 24-, and 32-bit WAV. Upload bodies are limited to 500 MiB.
+
+```powershell
+curl.exe -X POST http://127.0.0.1:7777/v1/audio/transcriptions `
+  -F "file=@meeting.wav" `
+  -F "language=ta" `
+  -F "response_format=json"
 ```
 
 ### Benchmarks

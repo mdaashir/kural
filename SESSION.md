@@ -1,23 +1,23 @@
 # SESSION.md
 
 ## Current milestone
-**Preserve binary upload data containing multipart boundary-like bytes**
+**Refresh API, privacy, and project handoff documentation**
 
 ## Current branch
-`fix/server-multipart-boundary-binary`
+`docs/refresh-api-and-privacy-docs`
 
 ## PR
 PR to be opened with gh after verification passes.
 
 ## Last completed step
-PR #85 merged into main, adding incomplete-body checks. Reproduced a separate multipart bug: `_parse_multipart()` split raw bytes on the boundary token anywhere, truncating valid binary file payloads that contained the same byte sequence. This branch uses the standard-library email MIME parser to recognize delimiter lines and preserve payload bytes, while retaining the request size and Content-Length checks. Regression verifies repeated boundary-like bytes inside the file payload are returned intact. `ruff check .`, `ruff format --check .`, and `pytest -q` passed (570 tests); diff reviewed.
+PR #86 merged into main. Audited all project-authored Markdown files. The README had stale Incognito wording, lacked local transcription API usage details, and its test badge was out of date. This branch documents Incognito’s history/learning/audio/ledger behavior and adds the verified loopback API routes, request fields, response formats, audio decode/resample behavior, 500 MiB limit, and curl example. `memory.md` had an old commit/test count; its historical M0–M5 summary is preserved while current state and next steps are refreshed. `AGENTS.md` and `THIRD_PARTY_NOTICES.md` are unchanged.
 
 ## Next step
-1. Push `fix/server-multipart-boundary-binary` and open a PR with gh.
+1. Run required Ruff/pytest gates, review docs diff, then push `docs/refresh-api-and-privacy-docs` and open a PR with gh.
 2. Wait for user review and merge.
 
 ## Open questions
-- The parser still relies on the standard-library MIME parser’s handling of malformed multipart structures; this fix specifically covers boundary-like data inside binary payloads.
+- None for the documentation claims in this branch; the local API CLI flag and default port were checked against `kural/__main__.py` and the server constants.
 
 ## Verify items (from AGENTS.md)
 - [x] **Hotkey-driven only?** Confirmed and resolved in M5.
@@ -27,5 +27,5 @@ PR #85 merged into main, adding incomplete-body checks. Reproduced a separate mu
 - [x] **Elevated window message implemented** — UIPI token inspection warns user with actionable advice.
 
 ## Decisions recorded (this session)
-- Parse multipart bodies with Python's standard-library MIME parser instead of splitting raw data on boundary bytes.
-  Reason: boundary tokens may legally occur inside arbitrary binary file payloads and are only delimiters in valid MIME framing positions.
+- Update README with API usage and privacy behavior; refresh memory.md current state without rewriting its historical roadmap; leave governing and license files unchanged.
+  Reason: satisfy the requested full-doc iteration while preserving provenance and project instructions.

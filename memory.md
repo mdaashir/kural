@@ -1,6 +1,6 @@
 # Memory — Kural Full Roadmap Implementation (M0 - M5)
 
-Last updated: 2026-11-14 22:30 IST
+Last updated: 2026-11-20 13:29 IST
 
 ## What was built
 
@@ -33,18 +33,20 @@ Implemented the complete Kural architecture across 9 merged Pull Requests:
 
 ## Current state
 
-- All roadmap milestones (**M0 through M5**) are 100% complete and merged into `main`.
-- Working tree clean on `main` at commit `bf78588`.
-- 227 passing unit tests in `pytest`.
-- 100% `ruff` clean (lint and format).
-- `kural --doctor` verified live on Windows 11 with NVIDIA RTX 3050 6GB GPU and CUDA v6.5 runtime.
+- M0–M5 are complete; later desktop/runtime features and targeted fixes have been merged through PR #86.
+- Current `main` at the start of this docs iteration: `7211cba` (PR #86 merge).
+- 570 unit tests pass; `ruff check .` and `ruff format --check .` pass.
+- Recent local API fixes cover exact routes, JSON/text response format validation, `language=auto`, inference error responses, multipart Content-Length checks, and binary-safe MIME boundary parsing.
+- Recent privacy fix ensures Incognito does not retain transcripts in history, adaptive learning, encrypted audio, or the recovery ledger/Paste Last.
+- Local model/GPU inference and full live microphone/UI workflows still require verification on the target Windows 11 RTX 3050 machine.
 
 ## Next session starts with
 
-- Run live audio dictation or voice control on the physical machine (`python -m kural`).
-- Benchmark candidate Whisper models using real audio clips (`python -m benchmarks.run`).
-- Package the Windows standalone `.exe` using `packaging\build.bat`.
+- Finish and verify the documentation refresh on branch `docs/refresh-api-and-privacy-docs`.
+- Push the branch and open its PR; wait for review and merge before starting another task.
+- After that, verify README commands with `python -m kural --help` and local `/health` + multipart API smoke tests when appropriate.
 
 ## Open questions
 
-- None. All requirements from `AGENTS.md` are satisfied.
+- The local transcription API currently supports only `json` and `text` response formats; SRT is rejected explicitly.
+- Live model inference and client-disconnect behavior are not covered by unit tests; continue to verify on the target machine when available.
