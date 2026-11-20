@@ -129,7 +129,7 @@ clipboard: # Insertion settings
     auto_paste: true
     restore_clipboard: true
     return_to_app: true # Refocus the window dictation started in if another window stole focus (Hex-inspired)
-    delivery_method: paste # paste (clipboard + Ctrl+V) or type (SendInput Unicode keystrokes)
+    delivery_method: paste # paste (Ctrl+V), type (Unicode keystrokes), or copy (clipboard only)
 
 logging: # Logging configuration
     level: INFO

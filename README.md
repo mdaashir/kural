@@ -213,9 +213,10 @@ Model Cache
 |---|---|---|
 | Dictation | `Ctrl+Space` | Toggle (or hold in push-to-talk mode) |
 | Command | `Ctrl+Shift+Space` | Voice control |
-| Paste Last | Tray menu | Re-type last dictation at active cursor |
-| Retry Last | Tray menu | Re-transcribe encrypted last audio take |
-| Incognito | Tray menu | Zero history, zero learning, zero audio retention |
+| Cancel | `Escape` | Discard active recording without transcribing or delivering it |
+| Paste Last | Tray menu / `Ctrl+Alt+V` | Re-type last non-Incognito dictation at the active cursor |
+| Retry Last | Tray menu | Re-transcribe the retained audio take when Incognito is off |
+| Incognito | Tray menu | Disable history, learning, audio retention, and ledger/Paste Last retention |
 
 **Push-to-Talk variants:**
 - **Keyboard hotkey** – hold `Ctrl+Space` while speaking
@@ -227,6 +228,7 @@ Model Cache
 **Text delivery methods:**
 - `paste` (default): copies to clipboard and sends `Ctrl+V`, then restores the prior clipboard.
 - `type`: injects each character directly via Win32 `SendInput` KEYEVENTF_UNICODE — works in paste-blocked apps such as VMs, remote desktops, and games.
+- `copy`: copies the formatted transcript to the clipboard without sending keystrokes to the foreground app.
 
 ### Voice Commands
 
@@ -294,7 +296,7 @@ Available endpoints:
 | `GET` | `/v1/models` | OpenAI-compatible model list |
 | `POST` | `/v1/audio/transcriptions` | Multipart audio transcription |
 
-The POST endpoint requires a multipart `file` field. Optional fields include `language`, `prompt`, and `response_format`. Response formats are `json` (default, `{"text":"..."}`) and `text`; other values are rejected with HTTP 400. Audio is decoded to mono 16 kHz; `soundfile` handles supported audio formats when installed, with standard PCM WAV fallback support for 16-, 24-, and 32-bit WAV. Upload bodies are limited to 500 MiB.
+The POST endpoint requires a multipart `file` field. Optional fields include `language`, `prompt`, and `response_format`. Response formats are `json` (default, `{"text":"..."}`) and `text`; other values are rejected with HTTP 400. Malformed or incomplete multipart requests and undecodable audio return HTTP 400; transcription failures return HTTP 500 with a JSON error. Audio is decoded to mono 16 kHz; `soundfile` handles supported audio formats when installed, with standard PCM WAV fallback support for 16-, 24-, and 32-bit WAV. Upload bodies are limited to 500 MiB, and truncated bodies or malformed multipart framing are rejected.
 
 ```powershell
 curl.exe -X POST http://127.0.0.1:7777/v1/audio/transcriptions `

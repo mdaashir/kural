@@ -1,6 +1,6 @@
 # Memory — Kural Full Roadmap Implementation (M0 - M5)
 
-Last updated: 2026-11-20 15:47 IST
+Last updated: 2026-11-20 17:43 IST
 
 ## What was built
 
@@ -33,20 +33,20 @@ Implemented the complete Kural architecture across 9 merged Pull Requests:
 
 ## Current state
 
-- The historical M0–M5 roadmap above is complete; desktop/runtime features and targeted fixes have continued through PR #88.
-- PR #88 is merged into `main`; current recovery-data fix is on `fix/recovery-corrupt-last-take`.
+- The historical M0–M5 roadmap above is complete; subsequent features and fixes have continued through PR #89.
+- PR #89 merged into `main`; current work is a documentation update on `docs/current-delivery-incognito-api-behavior`.
 - The current full suite has 571 passing tests; `ruff check .` and `ruff format --check .` pass.
-- Local API supports exact routes `GET /health`, `GET /v1/models`, and `POST /v1/audio/transcriptions`; supported response formats are JSON and plain text. Multipart parsing uses the stdlib MIME parser, enforces Content-Length and a 500 MiB cap, and preserves boundary-like bytes in binary files.
+- Local API supports exact routes `GET /health`, `GET /v1/models`, and `POST /v1/audio/transcriptions`; supported response formats are JSON and plain text. Multipart parsing uses the standard-library MIME parser, enforces Content-Length and a 500 MiB cap, and preserves boundary-like bytes in binary uploads.
 - Incognito disables history/adaptive/audio retention and in-memory ledger/Paste Last retention; entering the mode clears the existing take and ledger.
-- Local GPU inference and live microphone/UI behavior have not been re-verified in this iteration.
+- Local GPU inference and live microphone/UI behavior have not been re-verified in this documentation iteration.
 
 ## Next session starts with
 
-- Finish verification and open the PR for `fix/recovery-corrupt-last-take`.
-- After that PR is reviewed and merged, continue one focused implementation issue at a time, reproducing it before editing and updating all relevant docs each iteration.
+- Finish and verify the current docs update on `docs/current-delivery-incognito-api-behavior`, then open its PR.
+- After that PR is reviewed and merged, continue one focused bug fix at a time, reproducing it before editing and updating all relevant documentation.
 
 ## Open questions
 
 - The local transcription API intentionally supports only `json` and `text`; SRT response output is not implemented.
 - Live model inference, full microphone/UI workflows, and real client-disconnect timing still need hardware/manual verification when available.
-- The recovery fix stubs decryption for malformed-plaintext testing; Windows DPAPI corruption behavior is not tested on hardware.
+- LastTake corruption handling has mocked decrypted-payload coverage; real DPAPI corruption behavior is not tested on hardware.
