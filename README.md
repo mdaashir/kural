@@ -6,6 +6,7 @@
 [![Platform: Windows 11](https://img.shields.io/badge/platform-Windows%2011-0078D6.svg)](https://www.microsoft.com/windows)
 [![CUDA: RTX 3050](https://img.shields.io/badge/CUDA-RTX%203050%206GB-76B900.svg)](https://developer.nvidia.com/cuda-zone)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+[![CI](https://github.com/mdaashir/kural/actions/workflows/ci.yml/badge.svg)](https://github.com/mdaashir/kural/actions/workflows/ci.yml)
 [![Tests: 571](https://img.shields.io/badge/tests-571%20passing-brightgreen.svg)](tests/)
 
 Kural merges two MIT-licensed upstream projects into one cohesive desktop voice assistant:
@@ -313,13 +314,26 @@ Run the ASR benchmark harness to measure latency (RTF) and error rates (WER, Tam
 python -m benchmarks.run --models large-v3-turbo --device cuda --compute-type float16
 ```
 
-### Building the Standalone Executable
+### Building Packages and Standalone Executable
+
+#### 1. Python Package Distributions (Wheel & sdist)
+
+```powershell
+uv build
+```
+Outputs: `dist/kural-0.1.0-py3-none-any.whl` and `dist/kural-0.1.0.tar.gz`.
+
+#### 2. Standalone Windows Executable (kural.exe)
 
 ```cmd
 packaging\build.bat
 ```
+Output: `dist\kural\kural.exe` — a self-contained Windows application bundle with bundled configurations and no Python runtime installation required.
 
-Output: `dist\kural\kural.exe` — a self-contained Windows executable with no Python installation required.
+#### 3. Automated CI / CD & Releases
+
+- **Continuous Integration (`.github/workflows/ci.yml`):** Runs on every push and pull request to `main`. Automatically checks Ruff formatting, lints the codebase, executes all 571 offline tests on Windows, builds wheels/sdist distributions, and verifies the standalone application binary (`kural.exe --doctor`).
+- **Release Automation (`.github/workflows/release.yml`):** Automatically triggered on version tags (`v*.*.*`) or via manual dispatch. Tests the codebase, builds distributions, packages `kural-windows-x64.zip`, and creates an official GitHub Release with assets attached.
 
 ---
 
