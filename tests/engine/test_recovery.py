@@ -37,6 +37,22 @@ class TestLastTakeStorage:
         take = LastTake(storage_dir=str(tmp_path))
         assert take.save(np.array([], dtype=np.float32)) is False
 
+    def test_corrupt_decrypted_metadata_clears_take(self, tmp_path):
+        from unittest.mock import patch
+
+        from kural.engine.recovery import _MAGIC
+
+        take = LastTake(storage_dir=str(tmp_path), max_age_s=60)
+        assert take.save(np.zeros(16000, dtype=np.float32)) is True
+        malformed_payload = _MAGIC + (100).to_bytes(4, "little") + b'{"saved":'
+
+        with patch("kural.engine.recovery.unprotect", return_value=malformed_payload):
+            loaded_audio, metadata = take.load()
+
+        assert loaded_audio is None
+        assert metadata is None
+        assert take.exists() is False
+
     def test_expired_take_returns_none(self, tmp_path):
         take = LastTake(storage_dir=str(tmp_path), max_age_s=0.1)
         audio = np.zeros(16000, dtype=np.float32)

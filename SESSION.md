@@ -1,23 +1,23 @@
 # SESSION.md
 
 ## Current milestone
-**Keep all project Markdown current with merged code and workflow state**
+**Handle malformed or corrupted LastTake recovery data safely**
 
 ## Current branch
-`docs/update-all-markdown-after-pr-87`
+`fix/recovery-corrupt-last-take`
 
 ## PR
-Documentation refresh PR to be opened with gh after verification passes.
+PR for `fix/recovery-corrupt-last-take` to be opened with gh after verification passes.
 
 ## Last completed step
-PR #87 merged into main; local `main` was synced before this documentation iteration. A follow-up audit found README's Privacy & Safety table omitted the in-memory Ledger/Paste Last behavior added in PR #84, while the README feature list already described it. This branch makes those sections consistent and updates the session/memory handoff to reflect PR #87's merge and the current verified project state. `AGENTS.md` and `THIRD_PARTY_NOTICES.md` are intentionally unchanged. Full tests currently report 570 passed; Ruff lint and format checks pass.
+PR #88 merged into main, refreshing README, SESSION.md, and memory.md. On the current recovery fix branch, reproduced a recovery-data issue: after decryption succeeds, malformed header lengths or JSON metadata can raise from `LastTake.load()` and leave the bad take on disk, breaking Retry Last. This branch validates payload header/metadata bounds and types and PCM alignment; corrupt takes are logged, cleared, and returned as unavailable. Regression stubs decryption with malformed plaintext and verifies safe return plus file removal. `ruff check .`, `ruff format --check .`, and `pytest -q` passed (571 tests); diff reviewed.
 
 ## Next step
-1. Finish Markdown audit, run required checks, review diff, then push `docs/update-all-markdown-after-pr-87` and open a PR with gh.
+1. Push `fix/recovery-corrupt-last-take` and open its PR with gh.
 2. Wait for user review and merge.
 
 ## Open questions
-- None for the documentation changes; CLI and API claims were checked against implementation.
+- The corruption test stubs the decrypt layer; live DPAPI corruption behavior is not exercised on hardware.
 
 ## Verify items (from AGENTS.md)
 - [x] **Hotkey-driven only?** Confirmed and resolved in M5.
@@ -27,7 +27,5 @@ PR #87 merged into main; local `main` was synced before this documentation itera
 - [x] **Elevated window message implemented** — UIPI token inspection warns user with actionable advice.
 
 ## Decisions recorded (this session)
-- Keep `AGENTS.md` as governing workflow and preserve `THIRD_PARTY_NOTICES.md` unless a concrete attribution error is found.
-  Reason: update all project-facing handoffs without weakening instructions or perturbing verified license text.
-- Keep `memory.md` roadmap history, but refresh its current state and next steps instead of rewriting the historical record.
-  Reason: preserve durable milestone context while removing stale operating status.
+- Treat malformed decrypted recovery payloads as unusable: validate magic/header bounds, JSON metadata schema, and PCM alignment; log, clear the take, and return `(None, None)`.
+  Reason: corrupted recovery data should not crash Retry Last or remain as a repeatedly failing take.
