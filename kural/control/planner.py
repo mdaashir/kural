@@ -185,6 +185,7 @@ _NO_SPACE_BEFORE = set(".,;:!?)]}%'’”")
 
 # Preceding characters that take no extra trailing space before new text
 _OPENERS = set("([{\"'‘“/\\-@#$₹\n\t ")
+_CLOSERS = set(")]}'\"’”")
 
 # Punctuation patterns that mark the end of a sentence
 _SENTENCE_END = re.compile(r"[.!?।॥]['\")\]’”]*\s*$")
@@ -237,7 +238,13 @@ def plan_insertion(
 
     # 2. Spacing: join with a single space unless either side supplies one or
     # the dictation starts with closing punctuation.
-    if before and before[-1] not in _OPENERS and text[0] not in _NO_SPACE_BEFORE:
+    ends_with_closer = len(stripped) > 1 and stripped[-1] in _CLOSERS and not stripped[-2].isspace()
+    if (
+        before
+        and not before[-1].isspace()
+        and (before[-1] not in _OPENERS or ends_with_closer)
+        and text[0] not in _NO_SPACE_BEFORE
+    ):
         text = " " + text
 
     return text

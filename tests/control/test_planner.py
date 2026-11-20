@@ -22,6 +22,11 @@ class TestPlanInsertion:
         assert plan_insertion("we should go", before="Are you ready? ") == "We should go"
         assert plan_insertion("great job", before="Awesome! ") == "Great job"
 
+    def test_after_sentence_ending_closing_quote_or_bracket(self):
+        assert plan_insertion("The next step", before='He said "Done."') == " The next step"
+        assert plan_insertion("The next step", before="Finished (Done!)") == " The next step"
+        assert plan_insertion("The next step", before='He said "done"') == " the next step"
+
     def test_mid_sentence_lowercases_common_words(self):
         # "We discussed" + "The project" -> " we discussed the project"
         res = plan_insertion("The project", before="We discussed")
