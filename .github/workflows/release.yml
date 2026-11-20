@@ -35,15 +35,13 @@ jobs:
         run: uv python install 3.12
 
       - name: Install dependencies
-        run: |
-          uv sync --extra dev
-          uv pip install pyinstaller
+        run: uv sync --extra dev
 
       - name: Run verification test suite
         run: uv run pytest -m "not gpu and not mic" -v
 
       - name: Build Python distributions (Wheel & sdist)
-        run: uv build --out-dir dist
+        run: uv build --out-dir dist/packages
 
       - name: Build standalone Windows executable with PyInstaller
         run: uv run pyinstaller --noconfirm --clean packaging/kural.spec
@@ -64,6 +62,6 @@ jobs:
           tag_name: ${{ github.event.inputs.tag || github.ref_name }}
           files: |
             dist/kural-windows-x64.zip
-            dist/*.whl
-            dist/*.tar.gz
+            dist/packages/*.whl
+            dist/packages/*.tar.gz
           generate_release_notes: true
