@@ -1,23 +1,23 @@
 # SESSION.md
 
 ## Current milestone
-**Reset malformed non-dictionary user config sections to defaults**
+**Prevent Incognito transcripts from entering recovery ledger**
 
 ## Current branch
-`fix/config-manager-malformed-sections`
+`fix/incognito-ledger-retention`
 
 ## PR
 PR to be opened with gh after verification passes.
 
 ## Last completed step
-PR #82 merged into main. Reproduced a ConfigManager load issue with a real temporary user settings YAML: top-level sections such as `audio: []` and `whisper: nope` were merged unchanged because `_remove_unused_keys_from_user_config()` only sanitized keys inside dictionary sections. `get_audio_config()` consequently returned a list, and `get_whisper_config()` could raise when calling `.copy()`. This branch detects non-dictionary user values where shipped defaults require a mapping, discards that malformed section, and allows shipped defaults to restore it. Regression loads malformed YAML and verifies typed getters and defaults. `ruff check .`, `ruff format --check .`, and `pytest -q` passed (565 tests); diff reviewed.
+PR #83 merged into main. Reproduced a privacy gap: `_process_audio()` wrote transcribed text to the in-memory `Ledger` even when incognito was active, on both successful insertion and failed-delivery fallback paths. `paste_last()` then remained able to retrieve that supposedly unsaved transcript. This branch gates both ledger writes on `not incognito`, clears preexisting ledger content when incognito is enabled, and disables Paste Last while incognito is active. A thread-safe `Ledger.clear()` clears text and metadata. Tests use a real Ledger and verify successful/failed dictation is not retained, history is not written, and paste_last does not insert text. `ruff check .`, `ruff format --check .`, and `pytest -q` passed (568 tests); diff reviewed.
 
 ## Next step
-1. Push `fix/config-manager-malformed-sections` and open a PR with gh.
+1. Push `fix/incognito-ledger-retention` and open a PR with gh.
 2. Wait for user review and merge.
 
 ## Open questions
-- The repair is tested with malformed sections in temporary user settings; no actual user configuration file was modified.
+- The failed-delivery popup displays the current transcript for immediate recovery while Incognito is active; it is not retained in the ledger/history afterward.
 
 ## Verify items (from AGENTS.md)
 - [x] **Hotkey-driven only?** Confirmed and resolved in M5.
@@ -27,5 +27,5 @@ PR #82 merged into main. Reproduced a ConfigManager load issue with a real tempo
 - [x] **Elevated window message implemented** — UIPI token inspection warns user with actionable advice.
 
 ## Decisions recorded (this session)
-- For user config sections whose shipped default is a mapping, discard malformed non-mapping overrides and merge from shipped defaults.
-  Reason: section-level type corruption should be non-destructively healed rather than leaking wrong types to typed getters or causing runtime failures.
+- Incognito mode clears the in-memory recovery ledger on entry, does not write new ledger text, and disables Paste Last until Incognito is off.
+  Reason: align recoverability behavior with the privacy promise that incognito transcripts are not retained.
