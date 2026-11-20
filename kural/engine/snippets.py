@@ -67,7 +67,7 @@ def _render_variables(expansion: str) -> str:
 
 
 def apply_snippets(text: str, snippets_config: list[dict] | None = None) -> str:
-    """Expand spoken snippet triggers within transcribed text."""
+    """Expand standalone and inline spoken snippet triggers in transcribed text."""
     if not text or not snippets_config:
         return text
 
@@ -75,10 +75,14 @@ def apply_snippets(text: str, snippets_config: list[dict] | None = None) -> str:
     if not parsed:
         return text
 
-    # Map trigger to (expansion, mode)
-    mapping = {t: (exp, mode) for t, exp, mode in parsed}
-    triggers_tuple = tuple(mapping.keys())
-    pattern = _compile_pattern(triggers_tuple)
+    normalized_text = " ".join(text.split()).lower()
+    for trigger, expansion, mode in parsed:
+        if mode == "alone" and normalized_text == trigger:
+            return _render_variables(expansion)
+
+    # Only anywhere-mode snippets may match as part of a larger utterance.
+    mapping = {trigger: expansion for trigger, expansion, mode in parsed if mode == "anywhere"}
+    pattern = _compile_pattern(tuple(mapping.keys()))
     if not pattern:
         return text
 
@@ -86,9 +90,7 @@ def apply_snippets(text: str, snippets_config: list[dict] | None = None) -> str:
         matched_str = match.group(0).rstrip(_TRAILING_PUNCT).strip().lower()
         # Find corresponding key
         normalized_matched = " ".join(matched_str.split())
-        for trigger, (expansion, _mode) in mapping.items():
-            if normalized_matched == trigger:
-                return _render_variables(expansion)
-        return match.group(0)
+        expansion = mapping.get(normalized_matched)
+        return _render_variables(expansion) if expansion is not None else match.group(0)
 
     return pattern.sub(_replace_match, text)

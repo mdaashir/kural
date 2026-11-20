@@ -6,7 +6,7 @@
 [![Platform: Windows 11](https://img.shields.io/badge/platform-Windows%2011-0078D6.svg)](https://www.microsoft.com/windows)
 [![CUDA: RTX 3050](https://img.shields.io/badge/CUDA-RTX%203050%206GB-76B900.svg)](https://developer.nvidia.com/cuda-zone)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
-[![Tests: 558](https://img.shields.io/badge/tests-558%20passing-brightgreen.svg)](tests/)
+[![Tests: 560](https://img.shields.io/badge/tests-560%20passing-brightgreen.svg)](tests/)
 
 Kural merges two MIT-licensed upstream projects into one cohesive desktop voice assistant:
 the **GPU speech engine** from `drajb/whisper-local` with the **deep voice-control engine**
@@ -252,7 +252,7 @@ Kural recognizes commands in English, formal Tamil, and colloquial Tanglish:
 - **Spoken punctuation:** *"full stop"* → `.`, *"புள்ளி"* → `.`
 - **Voice rewrites:** *"make it a bullet list"*, *"title case"*, *"camelCase"*, *"snake_case"*
 - **Voice editing:** *"replace error with issue"*, *"sort lines"*, code formatting transforms
-- **Snippet expansion:** `${date}`, `${time}`, `${clipboard}` expanded inline
+- **Snippet expansion:** `${date}`, `${time}`, `${clipboard}` variables; `mode: anywhere` (default) expands inline, while `mode: alone` expands only when the full normalized dictation matches the trigger
 - **Custom dictionary:** `kural --dict-add "Aashir"` — hotwords preserved during transcription
 - **Adaptive vocabulary:** corrections and context learned on-disk session by session
 - **Whisper Mode:** adaptive gain boost for quiet or whispered speech (99.9th percentile pop rejection)
