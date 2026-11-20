@@ -51,6 +51,20 @@ class TestApplySnippets:
         expanded = apply_snippets(text, self.snippets_cfg)
         assert "Best regards,\nMohamed Aashir" in expanded
 
+    def test_alone_snippet_expands_only_full_normalized_utterance(self):
+        config = [{"trigger": "open sesame", "expansion": "SECRET", "mode": "alone"}]
+
+        assert apply_snippets("  OPEN   sesame  ", config) == "SECRET"
+        embedded = "I said open sesame yesterday"
+        assert apply_snippets(embedded, config) == embedded
+
+    def test_first_configured_alone_snippet_wins_for_duplicate_trigger(self):
+        config = [
+            {"trigger": "unlock", "expansion": "FIRST", "mode": "alone"},
+            {"trigger": " unlock ", "expansion": "SECOND", "mode": "alone"},
+        ]
+        assert apply_snippets("Unlock", config) == "FIRST"
+
     def test_expand_snippet_with_date(self):
         text = "Meeting on today's date."
         expanded = apply_snippets(text, self.snippets_cfg)
