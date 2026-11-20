@@ -1,6 +1,6 @@
 # Memory — Kural Full Roadmap Implementation (M0 - M5)
 
-Last updated: 2026-11-20 18:55 IST
+Last updated: 2026-11-20 20:15 IST
 
 ## What was built
 
@@ -31,28 +31,30 @@ Implemented the complete Kural architecture across 9 merged Pull Requests:
 - **Upstream 1,900-line monolith**: Decomposed into 6 single-responsibility modules under 300 lines each (`app_index`, `guardrails`, `media`, `windows`, `parser`, `executor`).
 - **GPU VRAM starvation**: Idle VRAM unload prevents running out of VRAM when other graphics applications or games run alongside Kural.
 
-## CI/build update — 2026-11-20
+## Release hardening & distribution update — 2026-11-20
 
-Branch `fix/verified-build-release` adds a committed uv lock, reusable test/package/desktop builds, external temporary uv tool and extracted ZIP smokes, exact-version tag releases and disabled-by-default environment-gated PyPI OIDC publishing. Run 44745162603 failed because runtime tests consulted real foreground app rules and user settings; these are now isolated with original formatting assertions intact. Full runtime/tray installation also required explicitly isolating the clipboard fallback test.
+PR #93 merged into `main` after all three jobs in CI run 44751292568 passed cleanly. Current branch `chore/release-distribution-hardening` hardens release packaging:
+- **Windows Setup Installer (`packaging/kural.iss`):** Built with runner Inno Setup 6 for clean per-user non-admin installation, tested in `packaging/smoke.py --installer` with silent install, execution, and uninstallation verification.
+- **Release Verification & Checksums (`packaging/release_check.py`):** Validates tag ancestry against `main`, verifies the 4 release artifacts, generates `SHA256SUMS`, and verifies digests.
+- **Workflows:** Added job timeouts, concurrency management, `twine check --strict` package metadata validation, and secure `workflow_dispatch` release builds tied to the validated tag commit.
+- **Offline test suite:** 579 tests passing; Ruff format and check passing.
 
-Local verification: 571 tests, Ruff, uv build, wheel and sdist fresh tool installs, real full PyInstaller build, extracted desktop import/resource smoke and actionlint passed. No GPU/mic/model/live UI checks or actual releases/publishing were performed. PR #93 is open; hosted CI run 44748239399 passed tests, package and desktop jobs including artifact uploads. Wait for user review/merge; consult SESSION.md for current status. Historical state below describes the prior iteration, not this branch.
+## Current state
 
-## Current state (prior iteration)
-
-- The historical M0–M5 roadmap above is complete; subsequent features and fixes have continued through PR #91.
-- PR #91 merged into `main`; current work fixes CI dependency resolution on `fix/ci-dependency-resolution`.
-- The current full suite has 571 passing tests; `ruff check .` and `ruff format --check .` pass.
-- `.github/workflows/ci.yml`: streamlined to install dependencies via `uv sync --extra dev` with fixed `global-hotkeys>=0.1.0` constraint, building wheels/sdists and smoke-testing standalone `kural.exe`.
-- `.github/workflows/release.yml`: automated tag-driven (`v*.*.*`) GitHub release workflow producing `kural-windows-x64.zip`, wheels, and source archives.
+- The historical M0–M5 roadmap is complete; post-M5 features and CI/CD distribution pipelines are verified and passing on `main`.
+- Current `main` commit: `3bab419`.
+- The current full offline suite has 579 passing tests; `ruff check .` and `ruff format --check .` pass.
+- `.github/workflows/ci.yml`: automated PR/push workflow testing with `uv`, `ruff`, and `pytest`, package metadata checking with `twine`, building wheel/sdist packages with external smoke checks, and compiling/smoke-testing the standalone Windows desktop bundle and installer.
+- `.github/workflows/release.yml`: tag-driven (`v*.*.*`) and validated dispatch release workflow producing `kural-windows-x64.zip`, `kural-windows-x64-setup.exe`, wheels, source archives, and cryptographically verified `SHA256SUMS`.
 - Local GPU inference and live microphone/UI behavior have not been re-verified in this documentation iteration.
 
 ## Next session starts with
 
-- Finish and verify branch `fix/ci-dependency-resolution`, then open its PR.
+- Finish and verify branch `chore/release-distribution-hardening`, then open its PR.
 - After that PR is reviewed and merged, verify the GitHub Actions CI run completes green.
 
 ## Open questions
 
 - The local transcription API intentionally supports only `json` and `text`; SRT response output is not implemented.
 - Live model inference, full microphone/UI workflows, and real client-disconnect timing still need hardware/manual verification when available.
-- Workflows target `windows-latest` runners with `astral-sh/setup-uv@v5`.
+- Workflows target `windows-latest` runners with `astral-sh/setup-uv@v5` and Inno Setup 6.

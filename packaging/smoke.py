@@ -22,6 +22,7 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--packages", type=Path)
     parser.add_argument("--bundle", type=Path)
+    parser.add_argument("--installer", type=Path)
     args = parser.parse_args()
     packages = args.packages.resolve() if args.packages else None
     bundle = args.bundle.resolve() if args.bundle else None
@@ -50,6 +51,26 @@ def main() -> None:
                 run(str(root / "bin" / "kural.exe"), "--version")
                 run(str(root / "bin" / "kural.exe"), "--help")
                 run(str(root / "tools" / "kural" / "Scripts" / "python.exe"), "-c", CHECK)
+        if args.installer:
+            destination = root / "installed"
+            run(
+                str(args.installer.resolve()),
+                "/VERYSILENT",
+                "/SUPPRESSMSGBOXES",
+                "/NORESTART",
+                "/SP-",
+                "/NOICONS",
+                "/SmokeTest=1",
+                f"/AppId=Kural-Smoke-{root.name}",
+                f"/DIR={destination}",
+            )
+            try:
+                run(str(destination / "kural.exe"), "--version")
+                run(str(destination / "kural.exe"), "--packaging-smoke")
+            finally:
+                run(str(destination / "unins000.exe"), "/VERYSILENT", "/NORESTART")
+            if (destination / "kural.exe").exists():
+                raise RuntimeError("Uninstall left the application executable behind")
         if bundle:
             import shutil
 

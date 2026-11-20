@@ -2,6 +2,12 @@ name: Verified builds
 
 on:
   workflow_call:
+    inputs:
+      ref:
+        description: Exact validated commit for release builds
+        required: false
+        type: string
+        default: ''
 
 permissions:
   contents: read
@@ -9,8 +15,12 @@ permissions:
 jobs:
   test:
     runs-on: windows-latest
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref || github.sha }}
+          persist-credentials: false
       - uses: astral-sh/setup-uv@v5
         with:
           enable-cache: true
@@ -23,14 +33,19 @@ jobs:
   packages:
     needs: test
     runs-on: windows-latest
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref || github.sha }}
+          persist-credentials: false
       - uses: astral-sh/setup-uv@v5
         with:
           version: "0.13.9"
           enable-cache: true
       - run: uv python install 3.12
       - run: uv build --out-dir dist/packages
+      - run: uvx --from twine twine check --strict dist/packages/*
       - run: uv run --no-project --python 3.12 packaging/smoke.py --packages dist/packages
       - uses: actions/upload-artifact@v4
         with:
@@ -41,8 +56,12 @@ jobs:
   desktop:
     needs: test
     runs-on: windows-latest
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref || github.sha }}
+          persist-credentials: false
       - uses: astral-sh/setup-uv@v5
         with:
           version: "0.13.9"
@@ -51,8 +70,19 @@ jobs:
       - run: uv run --no-sync pyinstaller --noconfirm --clean packaging/kural.spec
       - run: Compress-Archive -Path dist/kural/* -DestinationPath dist/kural-windows-x64.zip
       - run: uv run --no-sync python packaging/smoke.py --bundle dist/kural-windows-x64.zip
+      - name: Build unsigned per-user installer with runner Inno Setup
+        shell: pwsh
+        run: |
+          $compiler = "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe"
+          if (-not (Test-Path $compiler)) { throw 'Runner Inno Setup 6 is required' }
+          $version = uv run --no-sync python -c "import tomllib; print(tomllib.load(open('pyproject.toml','rb'))['project']['version'])"
+          & $compiler "/DAppVersion=$version" packaging/kural.iss
+          if ($LASTEXITCODE -ne 0) { throw 'Installer compilation failed' }
+      - run: uv run --no-sync python packaging/smoke.py --installer dist/kural-windows-x64-setup.exe
       - uses: actions/upload-artifact@v4
         with:
           name: kural-windows-x64
-          path: dist/kural-windows-x64.zip
+          path: |
+            dist/kural-windows-x64.zip
+            dist/kural-windows-x64-setup.exe
           if-no-files-found: error

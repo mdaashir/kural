@@ -3,56 +3,87 @@ name: Release
 on:
   push:
     tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Existing stable vX.Y.Z tag (must match project version)
+        required: true
+        type: string
 
 permissions:
   contents: read
 
+concurrency:
+  group: release-${{ inputs.tag || github.ref_name }}
+  cancel-in-progress: false
+
 jobs:
   validate:
     runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      commit: ${{ steps.tag.outputs.commit }}
+      version: ${{ steps.tag.outputs.version }}
+      tag: ${{ steps.tag.outputs.tag }}
     steps:
       - uses: actions/checkout@v4
-      - name: Require existing exact version tag
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Require existing exact version tag on main history
+        id: tag
         env:
-          RELEASE_TAG: ${{ github.ref_name }}
-        run: |
-          python3 - <<'PY'
-          import os, subprocess, tomllib
-          with open('pyproject.toml', 'rb') as stream:
-              version = tomllib.load(stream)['project']['version']
-          tag = os.environ['RELEASE_TAG']
-          assert tag == f'v{version}', (tag, version)
-          assert subprocess.check_output(['git', 'rev-parse', f'refs/tags/{tag}^{{commit}}']).strip() == subprocess.check_output(['git', 'rev-parse', 'HEAD']).strip()
-          PY
+          RELEASE_TAG: ${{ inputs.tag || github.ref_name }}
+        run: python3 packaging/release_check.py --tag "$RELEASE_TAG"
 
   build:
     needs: validate
     uses: ./.github/workflows/build.yml
+    with:
+      ref: ${{ needs.validate.outputs.commit }}
 
   github-release:
-    needs: build
+    needs: [validate, build]
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     permissions:
       contents: write
     steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          fetch-depth: 0
       - uses: actions/download-artifact@v4
         with:
           path: artifacts
+      - name: Check artifact set and tag has not moved; generate checksums
+        env:
+          RELEASE_TAG: ${{ needs.validate.outputs.tag }}
+          RELEASE_COMMIT: ${{ needs.validate.outputs.commit }}
+          RELEASE_VERSION: ${{ needs.validate.outputs.version }}
+        run: |
+          test "$(git rev-parse "refs/tags/$RELEASE_TAG^{commit}")" = "$RELEASE_COMMIT"
+          python3 packaging/release_check.py --artifacts artifacts --version "$RELEASE_VERSION"
+          (cd artifacts && sha256sum --check SHA256SUMS)
       - uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ github.ref_name }}
+          tag_name: ${{ needs.validate.outputs.tag }}
+          target_commitish: ${{ needs.validate.outputs.commit }}
           fail_on_unmatched_files: true
           files: |
             artifacts/kural-windows-x64/*.zip
+            artifacts/kural-windows-x64/*.exe
             artifacts/kural-python-packages/*.whl
             artifacts/kural-python-packages/*.tar.gz
+            artifacts/SHA256SUMS
           generate_release_notes: true
 
   pypi:
-    # Opt in only after configuring a protected environment and trusted publisher.
+    # Requires verified project ownership, trusted publisher and protected environment.
     if: ${{ vars.PUBLISH_PYPI == 'true' && github.event_name == 'push' && startsWith(github.ref, 'refs/tags/') }}
     needs: [build, github-release]
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     environment:
       name: pypi
       url: https://pypi.org/p/kural
