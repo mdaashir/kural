@@ -18,6 +18,19 @@ def test_reject_non_tag_input(tag):
         release.validate_tag(tag)
 
 
+def test_pypi_publish_workflow_is_oidc_gated_and_uses_cmd_kural(tmp_path):
+    workflow = (Path(__file__).parents[1] / ".github" / "workflows" / "publish-pypi.yml").read_text(
+        encoding="utf-8"
+    )
+    assert "vars.PUBLISH_PYPI == 'true'" in workflow
+    assert "workflow_dispatch" in workflow
+    assert "permissions:\n      id-token: write" in workflow
+    assert "environment:\n      name: pypi" in workflow
+    assert "https://pypi.org/project/cmd-kural/" in workflow
+    assert "pypa/gh-action-pypi-publish@release/v1" in workflow
+    assert "api-token" not in workflow.lower()
+
+
 def test_exact_tag_commit_and_version(monkeypatch):
     monkeypatch.delenv("GITHUB_EVENT_NAME", raising=False)
     monkeypatch.setattr(
@@ -36,19 +49,29 @@ def test_exact_tag_commit_and_version(monkeypatch):
 
 
 def test_artifact_set_and_checksums(tmp_path):
+    project = release.tomllib.loads(
+        (Path(__file__).parents[1] / "pyproject.toml").read_text(encoding="utf-8")
+    )["project"]
+    version = project["version"]
+    distribution = project["name"]
     names = [
-        "kural-1.2.3-py3-none-any.whl",
-        "kural-1.2.3.tar.gz",
+        f"{distribution}-{version}-py3-none-any.whl",
+        f"{distribution}-{version}.tar.gz",
         "kural-windows-x64.zip",
         "kural-windows-x64-setup.exe",
     ]
     with pytest.raises(ValueError):
-        release.checksums(tmp_path, "1.2.3")
+        release.checksums(tmp_path, version)
     for name in names:
         (tmp_path / name).write_bytes(b"verified artifact")
-    release.checksums(tmp_path, "1.2.3")
+    release.checksums(tmp_path, version)
     assert len((tmp_path / "SHA256SUMS").read_text().splitlines()) == 4
     (tmp_path / "SHA256SUMS").unlink()
     (tmp_path / names[0]).write_bytes(b"")
     with pytest.raises(ValueError, match="Empty"):
-        release.checksums(tmp_path, "1.2.3")
+        release.checksums(tmp_path, version)
+
+
+def test_artifact_check_rejects_version_mismatch(tmp_path):
+    with pytest.raises(ValueError, match="does not match pyproject.toml"):
+        release.checksums(tmp_path, "0.1.0")

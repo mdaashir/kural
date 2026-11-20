@@ -78,20 +78,5 @@ jobs:
             artifacts/SHA256SUMS
           generate_release_notes: true
 
-  pypi:
-    # Requires verified project ownership, trusted publisher and protected environment.
-    if: ${{ vars.PUBLISH_PYPI == 'true' && github.event_name == 'push' && startsWith(github.ref, 'refs/tags/') }}
-    needs: [build, github-release]
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    environment:
-      name: pypi
-      url: https://pypi.org/p/kural
-    permissions:
-      id-token: write
-    steps:
-      - uses: actions/download-artifact@v4
-        with:
-          name: kural-python-packages
-          path: dist
-      - uses: pypa/gh-action-pypi-publish@release/v1
+  # PyPI publication is intentionally separate and manual. Run
+  # publish-pypi.yml only after claiming cmd-kural and configuring trusted publishing.

@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [Unreleased]
+
+### Changed
+- Prepare the next Python distribution as `cmd-kural` version `0.1.1`; the v0.1.0 GitHub Release and its `kural` wheel remain unchanged.
+- Add a manually triggered, OIDC-only PyPI publishing workflow gated on package ownership, PyPI Trusted Publisher setup, the protected GitHub `pypi` environment, and `PUBLISH_PYPI=true`.
+
+### Notes
+- `cmd-kural` is not published yet. A pending PyPI publisher does not reserve the name; the owner must claim the project before enabling publication.
+- Install command after publication: `uv tool install --python 3.12 --from "cmd-kural[runtime,tray]" kural`. The installed command and Python import remain `kural`.
+
 ## [0.1.0] - 2026-11-20
 
 ### Added

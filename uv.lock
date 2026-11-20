@@ -145,6 +145,56 @@ wheels = [
 ]
 
 [[package]]
+name = "cmd-kural"
+version = "0.1.1"
+source = { editable = "." }
+dependencies = [
+    { name = "numpy" },
+    { name = "ruamel-yaml" },
+]
+
+[package.optional-dependencies]
+dev = [
+    { name = "pyinstaller" },
+    { name = "pytest" },
+    { name = "pytest-mock" },
+    { name = "ruff" },
+]
+runtime = [
+    { name = "faster-whisper" },
+    { name = "global-hotkeys" },
+    { name = "pyperclip" },
+    { name = "sounddevice" },
+    { name = "soxr" },
+]
+tray = [
+    { name = "pillow" },
+    { name = "pystray" },
+]
+vad = [
+    { name = "ten-vad" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "faster-whisper", marker = "extra == 'runtime'", specifier = ">=1.0.0" },
+    { name = "global-hotkeys", marker = "extra == 'runtime'", specifier = ">=0.1.0" },
+    { name = "numpy", specifier = ">=1.26.0" },
+    { name = "pillow", marker = "extra == 'tray'", specifier = ">=10.0.0" },
+    { name = "pyinstaller", marker = "extra == 'dev'", specifier = ">=6.0" },
+    { name = "pyperclip", marker = "extra == 'runtime'", specifier = ">=1.8.2" },
+    { name = "pystray", marker = "extra == 'tray'", specifier = ">=0.19.5" },
+    { name = "pytest", marker = "extra == 'dev'", specifier = ">=8.0" },
+    { name = "pytest-mock", marker = "extra == 'dev'", specifier = ">=3.14" },
+    { name = "ruamel-yaml", specifier = ">=0.18.0" },
+    { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.4" },
+    { name = "sounddevice", marker = "extra == 'runtime'", specifier = ">=0.4.6" },
+    { name = "soxr", marker = "extra == 'runtime'", specifier = ">=0.3.7" },
+    { name = "ten-vad", marker = "extra == 'vad'", specifier = ">=0.0.4" },
+]
+provides-extras = ["dev", "runtime", "tray", "vad"]
+
+[[package]]
 name = "colorama"
 version = "0.4.6"
 source = { registry = "https://pypi.org/simple" }
@@ -367,56 +417,6 @@ sdist = { url = "https://files.pythonhosted.org/packages/79/75/c969f2258e908c39a
 wheels = [
     { url = "https://files.pythonhosted.org/packages/55/88/287159903c5b3fc6d47b651c7ab65a54dcf9c9916de546188a7f62870d6d/keyboard-0.13.5-py3-none-any.whl", hash = "sha256:8e9c2422f1217e0bd84489b9ecd361027cc78415828f4fe4f88dd4acd587947b", size = 58098, upload-time = "2020-03-23T21:47:05.023Z" },
 ]
-
-[[package]]
-name = "kural"
-version = "0.1.0"
-source = { editable = "." }
-dependencies = [
-    { name = "numpy" },
-    { name = "ruamel-yaml" },
-]
-
-[package.optional-dependencies]
-dev = [
-    { name = "pyinstaller" },
-    { name = "pytest" },
-    { name = "pytest-mock" },
-    { name = "ruff" },
-]
-runtime = [
-    { name = "faster-whisper" },
-    { name = "global-hotkeys" },
-    { name = "pyperclip" },
-    { name = "sounddevice" },
-    { name = "soxr" },
-]
-tray = [
-    { name = "pillow" },
-    { name = "pystray" },
-]
-vad = [
-    { name = "ten-vad" },
-]
-
-[package.metadata]
-requires-dist = [
-    { name = "faster-whisper", marker = "extra == 'runtime'", specifier = ">=1.0.0" },
-    { name = "global-hotkeys", marker = "extra == 'runtime'", specifier = ">=0.1.0" },
-    { name = "numpy", specifier = ">=1.26.0" },
-    { name = "pillow", marker = "extra == 'tray'", specifier = ">=10.0.0" },
-    { name = "pyinstaller", marker = "extra == 'dev'", specifier = ">=6.0" },
-    { name = "pyperclip", marker = "extra == 'runtime'", specifier = ">=1.8.2" },
-    { name = "pystray", marker = "extra == 'tray'", specifier = ">=0.19.5" },
-    { name = "pytest", marker = "extra == 'dev'", specifier = ">=8.0" },
-    { name = "pytest-mock", marker = "extra == 'dev'", specifier = ">=3.14" },
-    { name = "ruamel-yaml", specifier = ">=0.18.0" },
-    { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.4" },
-    { name = "sounddevice", marker = "extra == 'runtime'", specifier = ">=0.4.6" },
-    { name = "soxr", marker = "extra == 'runtime'", specifier = ">=0.3.7" },
-    { name = "ten-vad", marker = "extra == 'vad'", specifier = ">=0.0.4" },
-]
-provides-extras = ["dev", "runtime", "tray", "vad"]
 
 [[package]]
 name = "macholib"

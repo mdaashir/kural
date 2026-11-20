@@ -30,9 +30,14 @@ def validate_tag(tag: str) -> tuple[str, str]:
 
 def checksums(root: Path, version: str) -> None:
     """Reject missing, extra, empty or misversioned artifacts; write SHA256SUMS."""
+    with (Path(__file__).parents[1] / "pyproject.toml").open("rb") as stream:
+        project = tomllib.load(stream)["project"]
+    distribution = re.sub(r"[-_.]+", "-", project["name"]).lower()
+    if version != project["version"]:
+        raise ValueError("Artifact version does not match pyproject.toml")
     expected = {
-        f"kural-{version}-py3-none-any.whl",
-        f"kural-{version}.tar.gz",
+        f"{distribution}-{version}-py3-none-any.whl",
+        f"{distribution}-{version}.tar.gz",
         "kural-windows-x64.zip",
         "kural-windows-x64-setup.exe",
     }
