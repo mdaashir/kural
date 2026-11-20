@@ -1,36 +1,28 @@
 # SESSION.md
 
 ## Current milestone
-**Release Hardening: Windows Setup Installer, SHA256SUMS Verification, and Secure Release Dispatch**
+**Release Preparation for v0.1.0 (Documentation, Changelog & Maintainer Runbook)**
 
 ## Current branch
-`chore/release-distribution-hardening`
+`chore/prepare-release-v0.1.0`
 
 ## PR
 PR to be opened with gh after verification passes.
 
 ## Last completed step
-PR #93 merged into main. Added full release distribution hardening:
-1. **Windows Setup Installer (`packaging/kural.iss`):**
-   - Unsigned, offline, per-user lowest-privilege Windows installer built with runner-native Inno Setup 6 (`ISCC.exe`).
-   - Installs to `{localappdata}\Programs\Kural` with clean uninstallation and non-admin privileges.
-   - Tested in `packaging/smoke.py --installer` with silent install (`/VERYSILENT /NORESTART /SmokeTest=1`), `--version` and `--packaging-smoke` verification, and silent uninstallation clean-up check.
-2. **Release Validation & Checksum Generator (`packaging/release_check.py` & `tests/test_release_check.py`):**
-   - Validates that release tag strictly matches `vX.Y.Z` and equals `pyproject.toml` version.
-   - Ensures tag commit is an ancestor of `origin/main` and matches checkout HEAD.
-   - Verifies the complete 4-file artifact set (`.whl`, `.tar.gz`, `kural-windows-x64.zip`, `kural-windows-x64-setup.exe`), rejects empty files, and generates `SHA256SUMS` with cryptographic verification (`sha256sum --check SHA256SUMS`).
-3. **Workflow Hardening (`.github/workflows/`):**
-   - Added concurrency groups (`cancel-in-progress: true` for CI, `cancel-in-progress: false` for release).
-   - Added step timeouts (`timeout-minutes`) across all workflow jobs.
-   - Added package metadata linting via `twine check --strict`.
-   - Enabled secure `workflow_dispatch` with required tag parameter, ensuring release builds checkout the exact commit of the validated tag (`inputs.ref`).
-4. **Offline Test Suite:** 579 offline unit tests passing; Ruff format and check passing.
+PR #94 merged into main (CI run 44766083309 passed all jobs). Prepared repository for initial `v0.1.0` release:
+1. Created `CHANGELOG.md` following Keep a Changelog standard detailing all additions across M0 through M5 and post-M5 desktop features.
+2. Created `RELEASE.md` maintainer guide documenting the automated release workflow, pre-release checklist, tag creation (`git tag -a v0.1.0`), SHA256 checksum verification, post-release smoke testing, and rollback procedures.
+3. Updated `README.md` with links to `CHANGELOG.md` and `RELEASE.md`, and added `anomalyco/hex` to the main README attribution section.
+4. Refreshed `memory.md` to reflect `v0.1.0` release preparation readiness.
+5. All 579 offline unit tests passing; Ruff lint and format checks passing.
 
 ## Next step
-1. Commit, push `chore/release-distribution-hardening`, and open a PR with gh.
-2. Wait for user review and merge.
+1. Commit, push `chore/prepare-release-v0.1.0`, and open a PR with gh.
+2. Wait for user review and merge into `main`.
+3. After merge, user executes: `git tag -a v0.1.0 -m "Release v0.1.0: Local-first voice typing and voice control for Windows"` and `git push origin v0.1.0` to trigger the automated release workflow.
 
 ## Limitations and decisions
-- No mic capture, GPU inference, model download or live desktop UI/hotkey verification.
-- Optional TEN VAD and NVIDIA CUDA libraries are not bundled.
-- PyPI publishing remains disabled by default (`PUBLISH_PYPI == 'true'`) and requires explicit trusted publisher / OIDC environment configuration on GitHub.
+- Kept `version = "0.1.0"` in `pyproject.toml` matching target tag `v0.1.0`.
+- Release workflow is verified via CI on `main` and dry-run tests; actual GitHub Release creation will occur when the tag is pushed to GitHub.
+- PyPI publishing remains opt-in via repository variable `PUBLISH_PYPI == 'true'` and requires PyPI trusted publisher configuration.

@@ -1,6 +1,6 @@
 # Memory — Kural Full Roadmap Implementation (M0 - M5)
 
-Last updated: 2026-11-20 20:15 IST
+Last updated: 2026-11-20 21:57 IST
 
 ## What was built
 
@@ -31,18 +31,18 @@ Implemented the complete Kural architecture across 9 merged Pull Requests:
 - **Upstream 1,900-line monolith**: Decomposed into 6 single-responsibility modules under 300 lines each (`app_index`, `guardrails`, `media`, `windows`, `parser`, `executor`).
 - **GPU VRAM starvation**: Idle VRAM unload prevents running out of VRAM when other graphics applications or games run alongside Kural.
 
-## Release hardening & distribution update — 2026-11-20
+## Release preparation & distribution — 2026-11-20
 
-PR #93 merged into `main` after all three jobs in CI run 44751292568 passed cleanly. Current branch `chore/release-distribution-hardening` hardens release packaging:
-- **Windows Setup Installer (`packaging/kural.iss`):** Built with runner Inno Setup 6 for clean per-user non-admin installation, tested in `packaging/smoke.py --installer` with silent install, execution, and uninstallation verification.
-- **Release Verification & Checksums (`packaging/release_check.py`):** Validates tag ancestry against `main`, verifies the 4 release artifacts, generates `SHA256SUMS`, and verifies digests.
-- **Workflows:** Added job timeouts, concurrency management, `twine check --strict` package metadata validation, and secure `workflow_dispatch` release builds tied to the validated tag commit.
+PR #94 merged into `main` after all three jobs in CI run 44766083309 passed cleanly. Current branch `chore/prepare-release-v0.1.0` prepares the initial `v0.1.0` release:
+- **`CHANGELOG.md`:** Comprehensive Keep-a-Changelog standard release notes for `v0.1.0` documenting speech engine, voice control, guardrails, desktop UI, smart text insertion, audio ducking, file transcription CLI, and distribution packaging.
+- **`RELEASE.md`:** Maintainer runbook documenting pre-release checklist, git tag creation (`git tag -a v0.1.0`), automated workflow triggers, checksum verification, and rollback procedures.
+- **Distribution Packages:** Windows setup wizard installer (`kural-windows-x64-setup.exe`), portable zip (`kural-windows-x64.zip`), Python wheel, source distribution, and `SHA256SUMS`.
 - **Offline test suite:** 579 tests passing; Ruff format and check passing.
 
 ## Current state
 
 - The historical M0–M5 roadmap is complete; post-M5 features and CI/CD distribution pipelines are verified and passing on `main`.
-- Current `main` commit: `3bab419`.
+- Current `main` commit: `80ef28e`.
 - The current full offline suite has 579 passing tests; `ruff check .` and `ruff format --check .` pass.
 - `.github/workflows/ci.yml`: automated PR/push workflow testing with `uv`, `ruff`, and `pytest`, package metadata checking with `twine`, building wheel/sdist packages with external smoke checks, and compiling/smoke-testing the standalone Windows desktop bundle and installer.
 - `.github/workflows/release.yml`: tag-driven (`v*.*.*`) and validated dispatch release workflow producing `kural-windows-x64.zip`, `kural-windows-x64-setup.exe`, wheels, source archives, and cryptographically verified `SHA256SUMS`.
@@ -50,8 +50,8 @@ PR #93 merged into `main` after all three jobs in CI run 44751292568 passed clea
 
 ## Next session starts with
 
-- Finish and verify branch `chore/release-distribution-hardening`, then open its PR.
-- After that PR is reviewed and merged, verify the GitHub Actions CI run completes green.
+- Review and merge PR for branch `chore/prepare-release-v0.1.0`.
+- After merge into `main`, tag and push: `git tag -a v0.1.0 -m "Release v0.1.0"` and `git push origin v0.1.0` to trigger the GitHub Release pipeline.
 
 ## Open questions
 
