@@ -174,14 +174,22 @@ uv tool install --python 3.12 "C:\path\to\kural-0.1.0-py3-none-any.whl[runtime,t
 kural --version
 ```
 
-Releases run only when an existing `v<project.version>` tag is pushed; the tag must
-match `pyproject.toml` exactly. Verified artifacts are attached to that GitHub release.
-PyPI publishing is **disabled by default**. Maintainers may opt in with repository
-variable `PUBLISH_PYPI=true` only after configuring a protected `pypi` environment
-(with required reviewers/tag restrictions) and a PyPI trusted publisher for
-`release.yml` and that environment. OIDC permission is limited to the publish job;
-no API token is used and PRs never publish. No tag or publication was created while
-implementing this pipeline.
+After `cmd-kural` 0.1.1 is published, install it from PyPI as a CLI tool:
+
+```powershell
+uv tool install --python 3.12 --from "cmd-kural[runtime,tray]" kural
+kural --version
+```
+
+The PyPI distribution is named `cmd-kural`; the installed CLI and Python import stay `kural`. This package is not published yet. The existing `kural` PyPI project belongs to an unrelated package; the owner must claim `cmd-kural` and configure its Trusted Publisher before the gated OIDC workflow can publish. The GitHub Release wheel above remains distribution `kural` version 0.1.0.
+
+GitHub Releases run only when an existing `v<project.version>` tag is pushed; the tag must
+match `pyproject.toml` exactly. Verified desktop and Python artifacts are attached there.
+PyPI publishing uses the separate manual `.github/workflows/publish-pypi.yml` workflow and
+is disabled unless repository variable `PUBLISH_PYPI=true`. Before enabling it, claim
+`cmd-kural` on PyPI, configure the exact trusted publisher and protected GitHub `pypi`
+environment, and verify the publisher is active. It uses OIDC only; no API token is used,
+and pull requests never publish. See [RELEASE.md](RELEASE.md) for exact PyPI setup steps.
 
 ### Running Kural
 

@@ -1,24 +1,30 @@
 # SESSION.md
 
 ## Current milestone
-**v0.1.0 Released; prepare GitHub discovery improvements**
+**Prepare PyPI distribution `cmd-kural` 0.1.1 with OIDC trusted publishing**
 
 ## Current branch
-`docs/seo-v0.1.0-release`
+`feat/cmd-kural-pypi-0.1.1`
 
 ## PR
-SEO/docs PR to be opened with gh after verification passes.
+PR to be opened after local verification passes.
 
 ## Last completed step
-PR #95 merged into main. The user authorized the initial release; annotated tag `v0.1.0` was created on commit `abc4a018` and pushed. GitHub Release [v0.1.0](https://github.com/mdaashir/kural/releases/tag/v0.1.0) published successfully after release workflow run `44782776964` passed validation, test, package, desktop, and GitHub release jobs. Independently downloaded all four distributed wheel/sdist/Windows installer/portable ZIP assets and verified each against `SHA256SUMS`. PyPI publishing remains disabled. Updated repository GitHub description and topics for discoverability. Current docs branch adds release links and corrects released version text in README.
+GitHub Release v0.1.0 is published at https://github.com/mdaashir/kural/releases/tag/v0.1.0; all four distributed wheel/sdist/Windows assets were independently checksum-verified. PyPI's existing `kural` name belongs to another project. User selected `cmd-kural` for the next Python distribution at version `0.1.1`; existing v0.1.0 assets remain unchanged. PyPI guide and dedicated OIDC workflow are being prepared but publishing remains disabled.
 
 ## Next step
-1. Finish README SEO links/version updates, run Ruff/pytest, review, commit, push `docs/seo-v0.1.0-release`, and open a PR with gh.
-2. Wait for user review and merge.
+1. Complete package rename, release validation, gated `publish-pypi.yml`, tests, and docs on this branch.
+2. Run `uv lock --check`, `uv sync --dry-run --locked`, `uv build`, Twine metadata checks, fresh `uv tool install` smoke tests, Ruff and pytest.
+3. Commit, push, inspect CI and open PR.
+4. After PR merge, user claims `cmd-kural` on PyPI, configures trusted publishing and GitHub environment `pypi`, confirms setup, then enables `PUBLISH_PYPI=true` and manually dispatches `gh workflow run publish-pypi.yml -f tag=v0.1.1`.
 
 ## Open questions / limitations
-- PyPI publishing remains opt-in via repository variable `PUBLISH_PYPI == 'true'` and requires PyPI package ownership, trusted publisher configuration, and GitHub environment protection.
-- Local GPU inference, microphone capture, and live Windows UI/hotkey behavior were not exercised during release publication.
+- Exact PyPI trusted publisher values: project `cmd-kural`; owner `mdaashir`; repository `kural`; workflow `publish-pypi.yml`; environment `pypi`.
+- `cmd-kural` returned 404 during a PyPI availability check, but this is not a reservation. The account owner must claim it before enabling publication; pending publishers do not reserve names.
+- No PyPI package is published by this PR; publication stays gated until user setup and confirmation.
+- GitHub Release v0.1.0 remains distribution `kural`. Next package distribution is `cmd-kural` 0.1.1; import package and CLI remain `kural`.
+- The `uv tool` command after publication will be `uv tool install --python 3.12 --from "cmd-kural[runtime,tray]" kural`.
+- Ruff and formatting passed; pytest passed 581 tests before the current package-name updates. Local GPU inference, mic capture, and live UI/hotkeys remain untested.
 
 ## Verify items (from AGENTS.md)
 - [x] **Hotkey-driven only?** Confirmed and resolved in M5.

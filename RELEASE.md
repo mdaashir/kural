@@ -1,6 +1,6 @@
 # Release Guide for Kural
 
-This document outlines the maintainer procedures for releasing a new version of Kural.
+This document outlines the maintainer procedures for releasing Kural desktop assets and Python distributions. The existing v0.1.0 GitHub Release uses the Python distribution name `kural`; because that PyPI name belongs to an unrelated project, the next Python distribution is being prepared as `cmd-kural` version 0.1.1. Desktop installer/ZIP releases remain on GitHub Releases.
 
 ---
 
@@ -32,9 +32,11 @@ Kural uses automated GitHub Actions workflows to validate, package, and publish 
      - `kural-X.Y.Z-py3-none-any.whl` (Python Wheel)
      - `kural-X.Y.Z.tar.gz` (Source Distribution)
      - `SHA256SUMS` (Checksums manifest)
-5. **Optional PyPI Publication (`pypi`):**
-   - Gated behind the `PUBLISH_PYPI == 'true'` repository variable and the `pypi` GitHub Environment.
-   - Uses PyPI Trusted Publishing (OIDC) without long-lived API tokens.
+5. **Separate optional PyPI publication (`publish-pypi.yml`):**
+   - Publishes the Python distribution named `cmd-kural` (the import package and CLI remain `kural`).
+   - Requires the repository variable `PUBLISH_PYPI=true`, the protected GitHub Environment `pypi`, and a matching PyPI Trusted Publisher.
+   - Uses OIDC without long-lived API tokens. It is a manual, tag-validating workflow separate from the GitHub Release workflow.
+   - v0.1.0 remains the original GitHub Release with distribution name `kural`; PyPI publishing starts with `cmd-kural` version 0.1.1 after the package rename PR is merged and ownership/configuration is complete.
 
 ---
 
@@ -151,20 +153,68 @@ kural --version
 
 ---
 
-## 6. Enabling PyPI Publishing (Optional)
+## 6. PyPI Trusted Publisher Setup (Optional; `cmd-kural`)
 
-PyPI publishing is disabled by default for safety. To enable automatic PyPI publishing on release tags:
+**Do not enable publishing until the distribution rename PR is merged and you own the `cmd-kural` project on PyPI.** The existing PyPI project named `kural` belongs to an unrelated package. The v0.1.0 GitHub Release remains unchanged; this setup is for the next Python distribution, `cmd-kural` 0.1.1.
 
-1. Register or claim the `kural` package name on [pypi.org](https://pypi.org).
-2. Configure **Trusted Publishing (OIDC)** on PyPI:
-   - Owner: `mdaashir`
-   - Repository: `kural`
-   - Workflow name: `release.yml`
-   - Environment name: `pypi`
-3. On GitHub (`Settings` → `Environments`), create the `pypi` environment with protection rules.
-4. On GitHub (`Settings` → `Secrets and variables` → `Actions` → `Variables`), set:
-   - Name: `PUBLISH_PYPI`
-   - Value: `true`
+### Step 1: Claim the PyPI Project Name
+
+1. Sign in to the PyPI account that will own the package and create/claim the project `cmd-kural`.
+2. Confirm `https://pypi.org/project/cmd-kural/` identifies your project before enabling publishing.
+3. A PyPI **pending publisher does not reserve the name**. Another user can claim it before the first publish, so claim the project first. If the name is taken, stop and choose another distribution name; update package metadata/release checks before proceeding.
+
+### Step 2: Configure the PyPI Trusted Publisher
+
+After the package-rename PR is merged and the workflow exists, sign in to the owning PyPI account and open **Publishing** → **Add a new publisher** on the `cmd-kural` project. Choose **GitHub** and enter exactly:
+
+| PyPI field | Value |
+|---|---|
+| PyPI Project Name | `cmd-kural` |
+| Owner | `mdaashir` |
+| Repository name | `kural` |
+| Workflow name | `publish-pypi.yml` |
+| Environment name | `pypi` |
+
+Do not create an API token. The workflow uses GitHub OIDC (`id-token: write`) and the `pypa/gh-action-pypi-publish` trusted-publisher action.
+
+### Step 3: Configure the Protected GitHub Environment
+
+In repository **Settings → Environments → New environment**, create an environment named exactly `pypi`. Add protection rules; recommended: required reviewer(s) and deployment-branch/tag restrictions for release refs. The PyPI publisher's environment value must match this name exactly.
+
+### Step 4: Keep Publishing Disabled Until Ready
+
+The workflow gate is the repository Actions variable:
+
+- Name: `PUBLISH_PYPI`
+- Value: `true`
+
+Leave it unset (or set to any other value) until all previous steps are complete and the package-rename PR is merged. The manual workflow also validates that the supplied existing tag matches `pyproject.toml` and points to a commit on `main`.
+
+### Step 5: First PyPI Publication
+
+After the `cmd-kural` package rename PR is merged:
+
+1. Claim/create the `cmd-kural` project under the intended PyPI owner account.
+2. Add the PyPI Trusted Publisher with the exact fields above and create the protected GitHub `pypi` environment.
+3. Verify the publisher is active on the PyPI project.
+4. Set the repository variable `PUBLISH_PYPI=true` only after ownership and publisher setup are confirmed.
+5. Confirm the existing `v0.1.1` tag matches `pyproject.toml` and is on `main`.
+6. Trigger the publisher manually:
+
+```powershell
+gh workflow run publish-pypi.yml -f tag=v0.1.1
+```
+
+Approve the protected `pypi` environment if prompted. Watch the workflow and verify `https://pypi.org/project/cmd-kural/0.1.1/`. Install the published CLI using:
+
+```powershell
+uv tool install --python 3.12 --from "cmd-kural[runtime,tray]" kural
+kural --version
+```
+
+The PyPI distribution is `cmd-kural`; its import package and console command remain `kural`. This job publishes only the Python wheel and source archive; it does not publish to GitHub Packages, create a GitHub Release, or deploy the website. The GitHub Release workflow remains separate.
+
+If PyPI reports that the name is owned by another account or the trusted publisher does not match, stop and keep `PUBLISH_PYPI` disabled. Do not attempt to publish the existing `kural` name.
 
 ---
 

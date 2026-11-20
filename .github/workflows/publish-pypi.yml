@@ -1,0 +1,64 @@
+name: Publish Python package to PyPI
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Existing release tag matching project version (for example v0.1.1)
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: publish-pypi-${{ inputs.tag }}
+  cancel-in-progress: false
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      commit: ${{ steps.tag.outputs.commit }}
+      version: ${{ steps.tag.outputs.version }}
+      tag: ${{ steps.tag.outputs.tag }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Validate exact existing release tag on main
+        id: tag
+        env:
+          RELEASE_TAG: ${{ inputs.tag }}
+        run: python3 packaging/release_check.py --tag "$RELEASE_TAG"
+
+  build:
+    needs: validate
+    uses: ./.github/workflows/build.yml
+    with:
+      ref: ${{ needs.validate.outputs.commit }}
+
+  publish:
+    if: ${{ vars.PUBLISH_PYPI == 'true' }}
+    needs: [validate, build]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment:
+      name: pypi
+      url: https://pypi.org/project/cmd-kural/
+    permissions:
+      id-token: write
+    steps:
+      - name: Download verified Python distributions
+        uses: actions/download-artifact@v4
+        with:
+          name: kural-python-packages
+          path: dist
+      - name: Check Python distribution metadata
+        run: uvx --from twine twine check --strict dist/*
+      - name: Publish to PyPI with Trusted Publishing (OIDC)
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          packages-dir: dist/

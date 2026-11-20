@@ -8,9 +8,11 @@ import time
 from pathlib import Path
 
 CHECK = """
+from importlib.metadata import version as distribution_version
 from importlib.resources import files
 from kural.config import ConfigManager
 from kural.control.app_rules import apply_formatting_style
+assert distribution_version('cmd-kural') == '0.1.1'
 assert files('kural.config').joinpath('config.defaults.yaml').is_file()
 assert files('kural.config').joinpath('commands.defaults.yaml').is_file()
 assert files('kural.config').joinpath('app_rules.defaults.yaml').is_file()
@@ -51,7 +53,8 @@ def main() -> None:
                 run("uv", "tool", "install", "--python", "3.12", "--force", str(artifacts[0]))
                 run(str(root / "bin" / "kural.exe"), "--version")
                 run(str(root / "bin" / "kural.exe"), "--help")
-                run(str(root / "tools" / "kural" / "Scripts" / "python.exe"), "-c", CHECK)
+                tool_name = artifacts[0].name.split("-", 1)[0].replace("_", "-")
+                run(str(root / "tools" / tool_name / "Scripts" / "python.exe"), "-c", CHECK)
         if args.installer:
             destination = root / "installed"
             run(
