@@ -75,7 +75,8 @@ class TestHistoryWindowRefreshAndCopy:
     def test_copy_to_clipboard_root_fallback(self):
         mock_root = MagicMock()
         self.win.root = mock_root
-        res = self.win._copy_to_clipboard("test text")
+        with patch.dict("sys.modules", {"pyperclip": None}):
+            res = self.win._copy_to_clipboard("test text")
         assert res is True
         mock_root.clipboard_clear.assert_called_once()
         mock_root.clipboard_append.assert_called_once_with("test text")

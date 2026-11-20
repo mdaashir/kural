@@ -3,9 +3,22 @@
 from unittest.mock import MagicMock, patch
 
 import numpy as np
+import pytest
 
 from kural.control.windows import WindowInfo
 from kural.runtime import KuralRuntime, RuntimeState
+
+
+@pytest.fixture(autouse=True)
+def isolated_runtime_environment(tmp_path, monkeypatch):
+    """Keep real formatting rules, but never consult the user's files or desktop."""
+    monkeypatch.setattr("pathlib.Path.home", lambda: tmp_path)
+    monkeypatch.setenv("APPDATA", str(tmp_path))
+    monkeypatch.setattr(
+        "kural.control.windows.get_foreground_window_info",
+        lambda: WindowInfo(1001, "Test document", "winword.exe"),
+    )
+    monkeypatch.setattr("kural.control.windows.get_foreground_hwnd", lambda: 1001)
 
 
 class TestKuralRuntimeStateTransitions:
