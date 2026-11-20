@@ -1,28 +1,34 @@
 # SESSION.md
 
 ## Current milestone
-**Release Preparation for v0.1.0 (Documentation, Changelog & Maintainer Runbook)**
+**v0.1.0 Released; prepare GitHub discovery improvements**
 
 ## Current branch
-`chore/prepare-release-v0.1.0`
+`docs/seo-v0.1.0-release`
 
 ## PR
-PR to be opened with gh after verification passes.
+SEO/docs PR to be opened with gh after verification passes.
 
 ## Last completed step
-PR #94 merged into main (CI run 44766083309 passed all jobs). Prepared repository for initial `v0.1.0` release:
-1. Created `CHANGELOG.md` following Keep a Changelog standard detailing all additions across M0 through M5 and post-M5 desktop features.
-2. Created `RELEASE.md` maintainer guide documenting the automated release workflow, pre-release checklist, tag creation (`git tag -a v0.1.0`), SHA256 checksum verification, post-release smoke testing, and rollback procedures.
-3. Updated `README.md` with links to `CHANGELOG.md` and `RELEASE.md`, and added `anomalyco/hex` to the main README attribution section.
-4. Refreshed `memory.md` to reflect `v0.1.0` release preparation readiness.
-5. All 579 offline unit tests passing; Ruff lint and format checks passing.
+PR #95 merged into main. The user authorized the initial release; annotated tag `v0.1.0` was created on commit `abc4a018` and pushed. GitHub Release [v0.1.0](https://github.com/mdaashir/kural/releases/tag/v0.1.0) published successfully after release workflow run `44782776964` passed validation, test, package, desktop, and GitHub release jobs. Independently downloaded all four distributed wheel/sdist/Windows installer/portable ZIP assets and verified each against `SHA256SUMS`. PyPI publishing remains disabled. Updated repository GitHub description and topics for discoverability. Current docs branch adds release links and corrects released version text in README.
 
 ## Next step
-1. Commit, push `chore/prepare-release-v0.1.0`, and open a PR with gh.
-2. Wait for user review and merge into `main`.
-3. After merge, user executes: `git tag -a v0.1.0 -m "Release v0.1.0: Local-first voice typing and voice control for Windows"` and `git push origin v0.1.0` to trigger the automated release workflow.
+1. Finish README SEO links/version updates, run Ruff/pytest, review, commit, push `docs/seo-v0.1.0-release`, and open a PR with gh.
+2. Wait for user review and merge.
 
-## Limitations and decisions
-- Kept `version = "0.1.0"` in `pyproject.toml` matching target tag `v0.1.0`.
-- Release workflow is verified via CI on `main` and dry-run tests; actual GitHub Release creation will occur when the tag is pushed to GitHub.
-- PyPI publishing remains opt-in via repository variable `PUBLISH_PYPI == 'true'` and requires PyPI trusted publisher configuration.
+## Open questions / limitations
+- PyPI publishing remains opt-in via repository variable `PUBLISH_PYPI == 'true'` and requires PyPI package ownership, trusted publisher configuration, and GitHub environment protection.
+- Local GPU inference, microphone capture, and live Windows UI/hotkey behavior were not exercised during release publication.
+
+## Verify items (from AGENTS.md)
+- [x] **Hotkey-driven only?** Confirmed and resolved in M5.
+- [x] **Feature overlap between base and donor** — Confirmed and resolved across M0-M5.
+- [x] **Tamil voice commands supported** — SVO, SOV, and Tanglish supported.
+- [x] **Idle VRAM unload implemented** — Configurable timer unloads model from VRAM after inactivity.
+- [x] **Elevated window message implemented** — UIPI token inspection warns user with actionable advice.
+
+## Decisions recorded (this session)
+- Create and push the v0.1.0 tag after user authorization; verify resulting release assets and checksums.
+  Reason: the user explicitly authorized release execution after PR #95 merged.
+- Improve repo discoverability using factual metadata only; do not claim unverified capabilities.
+  Reason: SEO must reflect supported product behavior accurately.

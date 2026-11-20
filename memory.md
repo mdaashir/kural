@@ -1,6 +1,6 @@
 # Memory — Kural Full Roadmap Implementation (M0 - M5)
 
-Last updated: 2026-11-20 21:57 IST
+Last updated: 2026-11-20 23:07 IST
 
 ## What was built
 
@@ -31,30 +31,31 @@ Implemented the complete Kural architecture across 9 merged Pull Requests:
 - **Upstream 1,900-line monolith**: Decomposed into 6 single-responsibility modules under 300 lines each (`app_index`, `guardrails`, `media`, `windows`, `parser`, `executor`).
 - **GPU VRAM starvation**: Idle VRAM unload prevents running out of VRAM when other graphics applications or games run alongside Kural.
 
-## Release preparation & distribution — 2026-11-20
+## v0.1.0 release & distribution — 2026-11-20
 
-PR #94 merged into `main` after all three jobs in CI run 44766083309 passed cleanly. Current branch `chore/prepare-release-v0.1.0` prepares the initial `v0.1.0` release:
-- **`CHANGELOG.md`:** Comprehensive Keep-a-Changelog standard release notes for `v0.1.0` documenting speech engine, voice control, guardrails, desktop UI, smart text insertion, audio ducking, file transcription CLI, and distribution packaging.
-- **`RELEASE.md`:** Maintainer runbook documenting pre-release checklist, git tag creation (`git tag -a v0.1.0`), automated workflow triggers, checksum verification, and rollback procedures.
-- **Distribution Packages:** Windows setup wizard installer (`kural-windows-x64-setup.exe`), portable zip (`kural-windows-x64.zip`), Python wheel, source distribution, and `SHA256SUMS`.
-- **Offline test suite:** 579 tests passing; Ruff format and check passing.
+- PR #95 merged and the authorized annotated `v0.1.0` tag was pushed from main commit `abc4a018`.
+- GitHub Release: https://github.com/mdaashir/kural/releases/tag/v0.1.0
+- Release workflow run `44782776964` passed validation, test, packages, desktop, and GitHub release jobs.
+- Published assets: Windows setup installer, portable ZIP, Python wheel, source archive, and `SHA256SUMS`. Downloaded each of the four binary/package assets and independently verified its SHA256 against the published manifest.
+- PyPI publishing remains disabled; no PyPI package was published.
+- Current full suite has 579 passing tests; Ruff lint and format checks pass.
 
 ## Current state
 
 - The historical M0–M5 roadmap is complete; post-M5 features and CI/CD distribution pipelines are verified and passing on `main`.
-- Current `main` commit: `80ef28e`.
-- The current full offline suite has 579 passing tests; `ruff check .` and `ruff format --check .` pass.
+- Current release: `v0.1.0`.
 - `.github/workflows/ci.yml`: automated PR/push workflow testing with `uv`, `ruff`, and `pytest`, package metadata checking with `twine`, building wheel/sdist packages with external smoke checks, and compiling/smoke-testing the standalone Windows desktop bundle and installer.
 - `.github/workflows/release.yml`: tag-driven (`v*.*.*`) and validated dispatch release workflow producing `kural-windows-x64.zip`, `kural-windows-x64-setup.exe`, wheels, source archives, and cryptographically verified `SHA256SUMS`.
-- Local GPU inference and live microphone/UI behavior have not been re-verified in this documentation iteration.
+- Current docs-only work is on `docs/seo-v0.1.0-release`; README links the release assets and uses factual SEO metadata.
+- PyPI publishing requires explicit trusted publisher/OIDC configuration. Local GPU inference and live microphone/UI behavior were not tested as part of publication.
 
 ## Next session starts with
 
-- Review and merge PR for branch `chore/prepare-release-v0.1.0`.
-- After merge into `main`, tag and push: `git tag -a v0.1.0 -m "Release v0.1.0"` and `git push origin v0.1.0` to trigger the GitHub Release pipeline.
+- Finish and verify `docs/seo-v0.1.0-release`, then open its PR.
+- After merge, next release requires version bump, changelog update, CI verification, and a new explicit release tag after user approval.
 
 ## Open questions
 
 - The local transcription API intentionally supports only `json` and `text`; SRT response output is not implemented.
 - Live model inference, full microphone/UI workflows, and real client-disconnect timing still need hardware/manual verification when available.
-- Workflows target `windows-latest` runners with `astral-sh/setup-uv@v5` and Inno Setup 6.
+- PyPI package ownership and trusted publishing remain unconfigured.
