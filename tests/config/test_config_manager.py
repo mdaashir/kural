@@ -1,6 +1,7 @@
 """Tests for kural.config.config_manager — fast unit tests without network or mic."""
 
 import logging
+from pathlib import Path
 
 from kural.config.config_manager import (
     ConfigManager,
@@ -85,6 +86,19 @@ class TestConfigManager:
         assert "max_duration" in audio
         hotkey = cfg.get_hotkey_config()
         assert "recording_hotkey" in hotkey
+
+    def test_malformed_user_sections_reset_to_defaults(self, tmp_path, monkeypatch):
+        monkeypatch.setenv("APPDATA", str(tmp_path))
+        cfg = ConfigManager(quiet=True)
+        Path(cfg.user_settings_path).write_text(
+            "audio: []\nwhisper: nope\nhotkey: {}\n", encoding="utf-8"
+        )
+
+        reloaded = ConfigManager(quiet=True)
+
+        assert isinstance(reloaded.get_audio_config(), dict)
+        assert isinstance(reloaded.get_whisper_config(), dict)
+        assert reloaded.get_whisper_config()["model"] == "large-v3-turbo"
 
     def test_user_override_persists(self, tmp_path, monkeypatch):
         monkeypatch.setenv("APPDATA", str(tmp_path))
