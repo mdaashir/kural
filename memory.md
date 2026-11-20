@@ -35,7 +35,7 @@ Implemented the complete Kural architecture across 9 merged Pull Requests:
 
 Branch `fix/verified-build-release` adds a committed uv lock, reusable test/package/desktop builds, external temporary uv tool and extracted ZIP smokes, exact-version tag releases and disabled-by-default environment-gated PyPI OIDC publishing. Run 44745162603 failed because runtime tests consulted real foreground app rules and user settings; these are now isolated with original formatting assertions intact. Full runtime/tray installation also required explicitly isolating the clipboard fallback test.
 
-Local verification: 571 tests, Ruff, uv build, wheel and sdist fresh tool installs, real full PyInstaller build, extracted desktop import/resource smoke and actionlint passed. No GPU/mic/model/live UI checks or actual releases/publishing were performed. Hosted CI is pending the branch PR; consult SESSION.md for current status. Historical state below describes the prior iteration, not this branch.
+Local verification: 571 tests, Ruff, uv build, wheel and sdist fresh tool installs, real full PyInstaller build, extracted desktop import/resource smoke and actionlint passed. No GPU/mic/model/live UI checks or actual releases/publishing were performed. PR #93 is open; hosted CI run 44748239399 passed tests, package and desktop jobs including artifact uploads. Wait for user review/merge; consult SESSION.md for current status. Historical state below describes the prior iteration, not this branch.
 
 ## Current state (prior iteration)
 

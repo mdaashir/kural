@@ -7,7 +7,7 @@ Verified CI, Python packages and Windows desktop release pipeline.
 `fix/verified-build-release` (from clean, updated main).
 
 ## PR
-Pending creation after local verification; see branch PR on GitHub.
+https://github.com/mdaashir/kural/pull/93
 
 ## Last completed step
 Diagnosed run 44745162603: four runtime tests used actual foreground-window rules and user settings, selecting verbatim instead of formal formatting. Isolated the test home and foreground window without weakening assertions. Full desktop extras exposed an additional clipboard fallback test dependency; it now simulates missing pyperclip explicitly.
@@ -20,10 +20,11 @@ Added committed uv.lock, reusable locked Windows test/build jobs, fresh wheel/sd
 - uv build succeeded; wheel and sdist tool installation, CLI and packaged defaults passed in temporary directories.
 - Full PyInstaller build and extracted desktop archive import/resource smoke passed; no spec change was needed.
 - actionlint v1.7.7 passed.
-- Hosted CI pending PR creation; no release, publication, credentials or environment configuration performed.
+- Hosted CI run 44748239399 passed all three jobs: tests, fresh Python package installs, full desktop build/extracted archive smoke and artifact uploads. Actions emitted non-blocking Node 20 deprecation notices.
+- No release, publication, credentials or environment configuration performed.
 
 ## Next step
-Inspect PR CI, fix concrete failures on this branch, then wait for user review/merge.
+Wait for user review/merge of PR #93. Do not merge automatically.
 
 ## Limitations and decisions
 - No mic capture, GPU inference, model download or live desktop UI/hotkey verification.
