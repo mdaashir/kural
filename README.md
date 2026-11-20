@@ -374,7 +374,7 @@ Output:
 #### 3. Automated CI / CD & Releases
 
 - **Continuous Integration (`.github/workflows/ci.yml`):** Runs on every push and pull request to `main`. Checks Ruff formatting, lints the codebase, executes all 579 offline unit tests, verifies package metadata (`twine check`), builds wheel/sdist distributions with smoke tests outside the repo, compiles the standalone desktop bundle, and smoke-tests both the portable `kural.exe` and silent installer.
-- **Release Automation (`.github/workflows/release.yml`):** Triggered on version tags (`v*.*.*`) or via manual dispatch with a validated existing tag. Validates tag ancestry against `main`, executes the verified build pipeline, verifies the complete artifact set, generates cryptographically verified `SHA256SUMS`, creates an official GitHub Release with all binary assets attached, and optionally publishes to PyPI when trusted publishing is enabled.
+- **Release Automation (`.github/workflows/release.yml`):** Triggered on version tags (`v*.*.*`) or via manual dispatch with a validated existing tag. Validates tag ancestry against `main`, executes the verified build pipeline, verifies the complete artifact set, generates cryptographically verified `SHA256SUMS`, creates an official GitHub Release with all binary assets attached, and optionally publishes to PyPI when trusted publishing is enabled. See [RELEASE.md](RELEASE.md) for maintainer procedures and [CHANGELOG.md](CHANGELOG.md) for full version history.
 
 ---
 
@@ -432,5 +432,6 @@ All settings can be changed via the **Settings** dialog (tray → Settings...) w
 Kural is open-source under the [MIT License](LICENSE). It merges and adapts components from:
 - **`drajb/whisper-local`** (fork of Pin Wang's `whisper-key-local`) — GPU engine, onboarding, doctor, settings
 - **`ROHITCRAFTSYT/WhispLocal`** (by Rohit Burani) — voice-control engine, app index, fuzzy matching, guardrails, adaptive learning, recovery
+- **`anomalyco/hex`** (by Christopher Langton) — audio ducking, file transcription CLI, stop phrases, cancel shortcuts, window focus return, clipboard retention
 
-All upstream copyright lines are preserved in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
+All upstream copyright lines are preserved in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md). See [CHANGELOG.md](CHANGELOG.md) for detailed version history.
