@@ -4,6 +4,7 @@
 #endif
 [Setup]
 AppId={param:AppId|Kural-A5928891-970C-4482-A991-365DA5625B38}
+UsePreviousLanguage=no
 AppName=Kural
 AppVersion={#AppVersion}
 DefaultDirName={localappdata}\Programs\Kural

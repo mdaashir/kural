@@ -4,6 +4,7 @@ import argparse
 import os
 import subprocess
 import tempfile
+import time
 from pathlib import Path
 
 CHECK = """
@@ -68,7 +69,13 @@ def main() -> None:
                 run(str(destination / "kural.exe"), "--version")
                 run(str(destination / "kural.exe"), "--packaging-smoke")
             finally:
-                run(str(destination / "unins000.exe"), "/VERYSILENT", "/NORESTART")
+                uninstaller = destination / "unins000.exe"
+                if uninstaller.exists():
+                    run(str(uninstaller), "/VERYSILENT", "/NORESTART", "/SUPPRESSMSGBOXES")
+                    for _ in range(50):
+                        if not (destination / "kural.exe").exists():
+                            break
+                        time.sleep(0.2)
             if (destination / "kural.exe").exists():
                 raise RuntimeError("Uninstall left the application executable behind")
         if bundle:
