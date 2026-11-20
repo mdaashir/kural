@@ -36,6 +36,22 @@ class TestConfigValidation:
         assert "Invalid whisper.device" in issues[0]
         assert clean["whisper"]["device"] == "cuda"
 
+    def test_unhashable_enum_values_fall_back_without_raising(self):
+        cases = [
+            ({"whisper": {"device": []}}, "whisper", "device", "cuda"),
+            ({"whisper": {"compute_type": {}}}, "whisper", "compute_type", "float16"),
+            ({"whisper": {"backend": []}}, "whisper", "backend", "faster_whisper"),
+            ({"whisper": {"indic_script": {}}}, "whisper", "indic_script", "native"),
+            ({"hotkey": {"recording_mode": []}}, "hotkey", "recording_mode", "toggle"),
+            ({"overlay": {"position": {}}}, "overlay", "position", "bottom-center"),
+            ({"clipboard": {"delivery_method": []}}, "clipboard", "delivery_method", "paste"),
+        ]
+
+        for config, section, key, expected in cases:
+            cleaned, issues = validate_config(config)
+            assert cleaned[section][key] == expected
+            assert issues
+
     def test_invalid_compute_type_falls_back_to_float16(self):
         cfg = {"whisper": {"compute_type": "int4_unknown"}}
         clean, issues = validate_config(cfg)

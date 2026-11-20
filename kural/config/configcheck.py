@@ -52,22 +52,22 @@ def validate_config(config: dict[str, Any]) -> tuple[dict[str, Any], list[str]]:
         issues.append("Section 'whisper' must be a dictionary; reset to defaults.")
 
     dev = whisper.get("device")
-    if dev is not None and dev not in VALID_DEVICES:
+    if dev is not None and (not isinstance(dev, str) or dev not in VALID_DEVICES):
         issues.append(f"Invalid whisper.device '{dev}'. Falling back to 'cuda'.")
         whisper["device"] = "cuda"
 
     comp = whisper.get("compute_type")
-    if comp is not None and comp not in VALID_COMPUTE_TYPES:
+    if comp is not None and (not isinstance(comp, str) or comp not in VALID_COMPUTE_TYPES):
         issues.append(f"Invalid whisper.compute_type '{comp}'. Falling back to 'float16'.")
         whisper["compute_type"] = "float16"
 
     backend = whisper.get("backend")
-    if backend is not None and backend not in VALID_BACKENDS:
+    if backend is not None and (not isinstance(backend, str) or backend not in VALID_BACKENDS):
         issues.append(f"Invalid whisper.backend '{backend}'. Falling back to 'faster_whisper'.")
         whisper["backend"] = "faster_whisper"
 
     script = whisper.get("indic_script")
-    if script is not None and script not in VALID_INDIC_SCRIPTS:
+    if script is not None and (not isinstance(script, str) or script not in VALID_INDIC_SCRIPTS):
         issues.append(f"Invalid whisper.indic_script '{script}'. Falling back to 'native'.")
         whisper["indic_script"] = "native"
 
@@ -107,7 +107,7 @@ def validate_config(config: dict[str, Any]) -> tuple[dict[str, Any], list[str]]:
         issues.append("Section 'hotkey' must be a dictionary; reset to defaults.")
 
     mode = hotkey.get("recording_mode")
-    if mode is not None and mode not in VALID_RECORDING_MODES:
+    if mode is not None and (not isinstance(mode, str) or mode not in VALID_RECORDING_MODES):
         issues.append(f"Invalid hotkey.recording_mode '{mode}'. Falling back to 'toggle'.")
         hotkey["recording_mode"] = "toggle"
 
@@ -138,7 +138,7 @@ def validate_config(config: dict[str, Any]) -> tuple[dict[str, Any], list[str]]:
     overlay = cfg.setdefault("overlay", {})
     if isinstance(overlay, dict):
         pos = overlay.get("position")
-        if pos is not None and pos not in VALID_OVERLAY_POSITIONS:
+        if pos is not None and (not isinstance(pos, str) or pos not in VALID_OVERLAY_POSITIONS):
             issues.append(f"Invalid overlay.position '{pos}'. Falling back to 'bottom-center'.")
             overlay["position"] = "bottom-center"
 
@@ -197,7 +197,7 @@ def validate_config(config: dict[str, Any]) -> tuple[dict[str, Any], list[str]]:
     clip = cfg.setdefault("clipboard", {})
     if isinstance(clip, dict):
         dm = clip.get("delivery_method")
-        if dm is not None and dm not in VALID_DELIVERY_METHODS:
+        if dm is not None and (not isinstance(dm, str) or dm not in VALID_DELIVERY_METHODS):
             issues.append(f"Invalid clipboard.delivery_method '{dm}'. Falling back to 'paste'.")
             clip["delivery_method"] = "paste"
 
