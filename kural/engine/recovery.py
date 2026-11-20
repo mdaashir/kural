@@ -130,17 +130,32 @@ class LastTake:
                 logger.warning(f"Failed to decrypt last take: {e}")
                 return None, None
 
-        if payload[:4] != _MAGIC:
-            return None, None
+        try:
+            if len(payload) < 8 or payload[:4] != _MAGIC:
+                raise ValueError("Invalid recovery take header")
 
-        (header_len,) = struct.unpack("<I", payload[4:8])
-        meta = json.loads(payload[8 : 8 + header_len].decode("utf-8"))
+            (header_len,) = struct.unpack("<I", payload[4:8])
+            data_offset = 8 + header_len
+            if data_offset > len(payload):
+                raise ValueError("Recovery take metadata is truncated")
 
-        if time.time() - meta.get("saved", 0) > self.max_age_s:
+            meta = json.loads(payload[8:data_offset].decode("utf-8"))
+            if not isinstance(meta, dict) or not isinstance(meta.get("saved"), (int, float)):
+                raise ValueError("Recovery take metadata is invalid")
+
+            pcm_bytes = payload[data_offset:]
+            if len(pcm_bytes) % 2:
+                raise ValueError("Recovery take audio data is truncated")
+            pcm = np.frombuffer(pcm_bytes, dtype="<i2")
+        except (ValueError, TypeError, UnicodeDecodeError, json.JSONDecodeError, struct.error) as e:
+            logger.warning(f"Discarding corrupt last take: {e}")
             self.clear()
             return None, None
 
-        pcm = np.frombuffer(payload[8 + header_len :], dtype="<i2")
+        if time.time() - meta["saved"] > self.max_age_s:
+            self.clear()
+            return None, None
+
         audio = pcm.astype(np.float32) / 32767.0
         return audio, meta
 

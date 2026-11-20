@@ -1,6 +1,6 @@
 # Memory — Kural Full Roadmap Implementation (M0 - M5)
 
-Last updated: 2026-11-20 14:59 IST
+Last updated: 2026-11-20 15:47 IST
 
 ## What was built
 
@@ -33,19 +33,20 @@ Implemented the complete Kural architecture across 9 merged Pull Requests:
 
 ## Current state
 
-- The historical M0–M5 roadmap above is complete; desktop/runtime features and targeted fixes continued through PR #87.
-- PR #87 is merged into `main`; documentation follow-up branch is `docs/update-all-markdown-after-pr-87`.
-- The current full suite has 570 passing tests; `ruff check .` and `ruff format --check .` pass.
+- The historical M0–M5 roadmap above is complete; desktop/runtime features and targeted fixes have continued through PR #88.
+- PR #88 is merged into `main`; current recovery-data fix is on `fix/recovery-corrupt-last-take`.
+- The current full suite has 571 passing tests; `ruff check .` and `ruff format --check .` pass.
 - Local API supports exact routes `GET /health`, `GET /v1/models`, and `POST /v1/audio/transcriptions`; supported response formats are JSON and plain text. Multipart parsing uses the stdlib MIME parser, enforces Content-Length and a 500 MiB cap, and preserves boundary-like bytes in binary files.
 - Incognito disables history/adaptive/audio retention and in-memory ledger/Paste Last retention; entering the mode clears the existing take and ledger.
-- Local GPU inference and live microphone/UI behavior have not been re-verified in this documentation iteration.
+- Local GPU inference and live microphone/UI behavior have not been re-verified in this iteration.
 
 ## Next session starts with
 
-- Finish the Markdown audit on `docs/update-all-markdown-after-pr-87`, run Ruff/pytest, review the docs diff, and open a PR.
-- After that PR is reviewed and merged, return to one focused implementation issue at a time, reproducing it before editing.
+- Finish verification and open the PR for `fix/recovery-corrupt-last-take`.
+- After that PR is reviewed and merged, continue one focused implementation issue at a time, reproducing it before editing and updating all relevant docs each iteration.
 
 ## Open questions
 
 - The local transcription API intentionally supports only `json` and `text`; SRT response output is not implemented.
 - Live model inference, full microphone/UI workflows, and real client-disconnect timing still need hardware/manual verification when available.
+- The recovery fix stubs decryption for malformed-plaintext testing; Windows DPAPI corruption behavior is not tested on hardware.
