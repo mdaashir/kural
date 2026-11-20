@@ -326,7 +326,7 @@ Output: `dist\kural\kural.exe` — a self-contained Windows executable with no P
 All unit tests run 100% offline — no microphone, GPU, or network download required:
 
 ```powershell
-# Run the complete test suite (419 tests)
+# Run the complete offline test suite
 pytest tests/ -q
 
 # Code style and format checks
@@ -363,7 +363,7 @@ All settings can be changed via the **Settings** dialog (tray → Settings...) w
 |---|---|
 | **No telemetry** | Zero runtime network calls; only the one-time model download |
 | **Transcript privacy** | Transcribed text is never logged at INFO level or transmitted anywhere |
-| **Incognito Mode** | Disables history.jsonl writes, adaptive learning, and DPAPI audio retention |
+| **Incognito Mode** | Disables history.jsonl writes, adaptive learning, DPAPI audio retention, and in-memory ledger/Paste Last retention; entering Incognito clears the prior take and ledger |
 | **Audio retention** | DPAPI-encrypted, single take, 24 h expiry, wiped in Incognito |
 | **Destructive action block** | File deletion, partition format, purchases blocked; shutdown/restart need 60 s cancel window |
 | **Elevated window UIPI** | Detects and warns when target app runs as Administrator instead of silently failing |

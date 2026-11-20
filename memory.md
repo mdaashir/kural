@@ -1,6 +1,6 @@
 # Memory — Kural Full Roadmap Implementation (M0 - M5)
 
-Last updated: 2026-11-20 13:29 IST
+Last updated: 2026-11-20 14:59 IST
 
 ## What was built
 
@@ -22,7 +22,7 @@ Implemented the complete Kural architecture across 9 merged Pull Requests:
 - **Idle VRAM unload**: Configurable timer (default 5 min) unloads model from VRAM (`del self.model; gc.collect()`) and transparently reloads on the next dictation without app restart.
 - **Strict safety hierarchy**: User commands exact match -> Guardrails check -> Built-in parser -> Fuzzy app index -> Optional LLM fallback -> Not understood. Destructive file operations and financial transactions are completely blocked by voice.
 - **Dual-language parser**: Supports English, pure Tamil, and colloquial Tanglish code-switching in both Subject-Object-Verb and Verb-Object syntax.
-- **Offline test rule**: All 227 unit tests run completely offline without GPU, mic, model download, or network.
+- **Offline test rule**: Unit tests are designed to run without GPU, mic, model download, or network.
 
 ## Problems solved
 
@@ -33,20 +33,19 @@ Implemented the complete Kural architecture across 9 merged Pull Requests:
 
 ## Current state
 
-- M0–M5 are complete; later desktop/runtime features and targeted fixes have been merged through PR #86.
-- Current `main` at the start of this docs iteration: `7211cba` (PR #86 merge).
-- 570 unit tests pass; `ruff check .` and `ruff format --check .` pass.
-- Recent local API fixes cover exact routes, JSON/text response format validation, `language=auto`, inference error responses, multipart Content-Length checks, and binary-safe MIME boundary parsing.
-- Recent privacy fix ensures Incognito does not retain transcripts in history, adaptive learning, encrypted audio, or the recovery ledger/Paste Last.
-- Local model/GPU inference and full live microphone/UI workflows still require verification on the target Windows 11 RTX 3050 machine.
+- The historical M0–M5 roadmap above is complete; desktop/runtime features and targeted fixes continued through PR #87.
+- PR #87 is merged into `main`; documentation follow-up branch is `docs/update-all-markdown-after-pr-87`.
+- The current full suite has 570 passing tests; `ruff check .` and `ruff format --check .` pass.
+- Local API supports exact routes `GET /health`, `GET /v1/models`, and `POST /v1/audio/transcriptions`; supported response formats are JSON and plain text. Multipart parsing uses the stdlib MIME parser, enforces Content-Length and a 500 MiB cap, and preserves boundary-like bytes in binary files.
+- Incognito disables history/adaptive/audio retention and in-memory ledger/Paste Last retention; entering the mode clears the existing take and ledger.
+- Local GPU inference and live microphone/UI behavior have not been re-verified in this documentation iteration.
 
 ## Next session starts with
 
-- Finish and verify the documentation refresh on branch `docs/refresh-api-and-privacy-docs`.
-- Push the branch and open its PR; wait for review and merge before starting another task.
-- After that, verify README commands with `python -m kural --help` and local `/health` + multipart API smoke tests when appropriate.
+- Finish the Markdown audit on `docs/update-all-markdown-after-pr-87`, run Ruff/pytest, review the docs diff, and open a PR.
+- After that PR is reviewed and merged, return to one focused implementation issue at a time, reproducing it before editing.
 
 ## Open questions
 
-- The local transcription API currently supports only `json` and `text` response formats; SRT is rejected explicitly.
-- Live model inference and client-disconnect behavior are not covered by unit tests; continue to verify on the target machine when available.
+- The local transcription API intentionally supports only `json` and `text`; SRT response output is not implemented.
+- Live model inference, full microphone/UI workflows, and real client-disconnect timing still need hardware/manual verification when available.
