@@ -372,6 +372,57 @@ class TestKuralRuntimeStateTransitions:
         self.runtime.overlay.hide.assert_called_once()
         self.runtime.engine.transcribe_audio.assert_not_called()
 
+    def test_incognito_successful_delivery_does_not_retain_transcript(self):
+        from kural.engine.recovery import Ledger
+
+        self.runtime.state = RuntimeState.RECORDING_DICTATION
+        self.runtime.engine.transcribe_audio.return_value = "private dictation"
+        self.runtime.ledger = Ledger()
+        self.runtime.incognito = True
+
+        with (
+            patch("kural.runtime.insert_text_at_caret", return_value=True),
+            patch("kural.engine.history.append_history") as save_history,
+        ):
+            self.runtime._process_audio(np.zeros(16000, dtype=np.float32))
+            self.runtime.paste_last()
+
+        assert self.runtime.ledger.last() == ""
+        save_history.assert_not_called()
+
+    def test_incognito_failed_delivery_does_not_retain_transcript(self):
+        from kural.engine.recovery import Ledger
+
+        self.runtime.state = RuntimeState.RECORDING_DICTATION
+        self.runtime.engine.transcribe_audio.return_value = "private dictation"
+        self.runtime.ledger = Ledger()
+        self.runtime.incognito = True
+        self.runtime.fallback_window = MagicMock()
+
+        with (
+            patch("kural.runtime.insert_text_at_caret", return_value=False),
+            patch("kural.engine.history.append_history") as save_history,
+        ):
+            self.runtime._process_audio(np.zeros(16000, dtype=np.float32))
+            self.runtime.paste_last()
+
+        assert self.runtime.ledger.last() == ""
+        self.runtime.fallback_window.show.assert_called_once()
+        save_history.assert_not_called()
+
+    def test_incognito_clears_ledger_and_disables_paste_last(self):
+        from kural.engine.recovery import Ledger
+
+        self.runtime.ledger = Ledger()
+        self.runtime.ledger.record("previous text")
+        self.runtime.incognito = False
+        self.runtime.toggle_incognito()
+
+        assert self.runtime.ledger.last() == ""
+        with patch("kural.runtime.insert_text_at_caret") as insert:
+            self.runtime.paste_last()
+        insert.assert_not_called()
+
     def test_cancel_when_idle_is_noop(self):
         self.runtime.state = RuntimeState.IDLE
         self.runtime.recorder = MagicMock()

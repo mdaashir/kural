@@ -219,6 +219,8 @@ class KuralRuntime:
         if self.incognito:
             if getattr(self, "last_take", None):
                 self.last_take.clear()
+            if getattr(self, "ledger", None):
+                self.ledger.clear()
             print("🕶️  Incognito Mode ON: nothing is saved or learned")
             self.overlay.flash_success("Incognito On")
         else:
@@ -230,6 +232,11 @@ class KuralRuntime:
 
     def paste_last(self) -> None:
         """Paste the last dictated text again from the in-memory ledger."""
+        if self.incognito:
+            print("⚠️  Paste Last is unavailable while Incognito Mode is active")
+            self.overlay.flash_error("Incognito Mode")
+            return
+
         text = self.ledger.last() if getattr(self, "ledger", None) else ""
         if not text:
             print("⚠️  Nothing dictated yet to paste")
@@ -680,7 +687,7 @@ class KuralRuntime:
                             reason="No active text field was focused — your dictation is safe here.",
                         )
                     # Record to ledger and history so unplaced speech is preserved for Paste Last / search
-                    if getattr(self, "ledger", None):
+                    if getattr(self, "ledger", None) and not self.incognito:
                         self.ledger.record(text)
                     if not self.incognito:
                         append_history(
@@ -696,7 +703,7 @@ class KuralRuntime:
                     return
 
                 # 6. Record to ledger, adaptive learner, and history.jsonl
-                if getattr(self, "ledger", None):
+                if getattr(self, "ledger", None) and not self.incognito:
                     self.ledger.record(text)
                 if getattr(self, "adaptive", None) and not self.incognito:
                     self.adaptive.learn_text(text)

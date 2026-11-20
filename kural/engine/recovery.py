@@ -155,7 +155,7 @@ class LastTake:
 
 
 class Ledger:
-    """Ephemeral, in-memory store of the most recently inserted dictation text."""
+    """Ephemeral, in-memory store of the most recently inserted non-incognito dictation."""
 
     def __init__(self):
         self.text = ""
@@ -172,3 +172,10 @@ class Ledger:
     def last(self) -> str:
         with self._lock:
             return self.text
+
+    def clear(self) -> None:
+        """Clear the in-memory recovery text and its associated metadata."""
+        with self._lock:
+            self.text = ""
+            self.app = ""
+            self.timestamp = 0.0
