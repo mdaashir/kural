@@ -7,7 +7,7 @@
 [![CUDA: RTX 3050](https://img.shields.io/badge/CUDA-RTX%203050%206GB-76B900.svg)](https://developer.nvidia.com/cuda-zone)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![CI](https://github.com/mdaashir/kural/actions/workflows/ci.yml/badge.svg)](https://github.com/mdaashir/kural/actions/workflows/ci.yml)
-[![Tests: 571](https://img.shields.io/badge/tests-571%20passing-brightgreen.svg)](tests/)
+[![Tests: 579](https://img.shields.io/badge/tests-579%20passing-brightgreen.svg)](tests/)
 
 Kural merges two MIT-licensed upstream projects into one cohesive desktop voice assistant:
 the **GPU speech engine** from `drajb/whisper-local` with the **deep voice-control engine**
@@ -361,17 +361,20 @@ uv build
 ```
 Outputs: `dist/kural-0.1.0-py3-none-any.whl` and `dist/kural-0.1.0.tar.gz`.
 
-#### 2. Standalone Windows Executable (kural.exe)
+#### 2. Standalone Windows Desktop App & Setup Installer
 
 ```cmd
 packaging\build.bat
 ```
-Output: `dist\kural\kural.exe` — a self-contained Windows application bundle with bundled configurations and no Python runtime installation required.
+Output:
+- `dist\kural\kural.exe` — a self-contained Windows application bundle with bundled configurations and no Python runtime installation required.
+- `dist\kural-windows-x64.zip` — portable archive ready to unzip and run anywhere.
+- `dist\kural-windows-x64-setup.exe` — per-user setup wizard installer (built with Inno Setup, lowest privileges, no admin rights required).
 
 #### 3. Automated CI / CD & Releases
 
-- **Continuous Integration (`.github/workflows/ci.yml`):** Runs on every push and pull request to `main`. Automatically checks Ruff formatting, lints the codebase, executes all 571 offline tests on Windows, builds wheels/sdist distributions, and verifies the standalone application binary (`kural.exe --doctor`).
-- **Release Automation (`.github/workflows/release.yml`):** Automatically triggered on version tags (`v*.*.*`) or via manual dispatch. Tests the codebase, builds distributions, packages `kural-windows-x64.zip`, and creates an official GitHub Release with assets attached.
+- **Continuous Integration (`.github/workflows/ci.yml`):** Runs on every push and pull request to `main`. Checks Ruff formatting, lints the codebase, executes all 579 offline unit tests, verifies package metadata (`twine check`), builds wheel/sdist distributions with smoke tests outside the repo, compiles the standalone desktop bundle, and smoke-tests both the portable `kural.exe` and silent installer.
+- **Release Automation (`.github/workflows/release.yml`):** Triggered on version tags (`v*.*.*`) or via manual dispatch with a validated existing tag. Validates tag ancestry against `main`, executes the verified build pipeline, verifies the complete artifact set, generates cryptographically verified `SHA256SUMS`, creates an official GitHub Release with all binary assets attached, and optionally publishes to PyPI when trusted publishing is enabled.
 
 ---
 
