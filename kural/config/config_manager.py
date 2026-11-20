@@ -160,10 +160,15 @@ class ConfigManager:
     ):
         sections_to_remove = []
 
-        for section, values in user_config.items():
+        for section, values in list(user_config.items()):
             if section not in default_config:
                 self.logger.info(f"Removed invalid config section: {section}")
                 sections_to_remove.append(section)
+            elif isinstance(default_config[section], dict) and not isinstance(values, dict):
+                self.logger.warning(
+                    f"Invalid config section '{section}' must be a dictionary; restoring defaults."
+                )
+                user_config[section] = {}
             elif isinstance(values, dict) and isinstance(default_config[section], dict):
                 keys_to_remove = []
                 for key in list(values):
