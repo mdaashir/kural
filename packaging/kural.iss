@@ -19,14 +19,7 @@ WizardStyle=modern
 DisableProgramGroupPage=yes
 LicenseFile=..\LICENSE
 UninstallDisplayIcon={app}\kural.exe
-CreateUninstallRegKey={code:RegisterUninstall}
-
-[Code]
-function RegisterUninstall(Param: String): String;
-begin
-  if ExpandConstant('{param:SmokeTest|0}') = '1' then Result := 'no'
-  else Result := 'yes';
-end;
+CreateUninstallRegKey=yes
 
 [Files]
 Source: "..\dist\kural\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
