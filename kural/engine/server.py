@@ -16,6 +16,8 @@ import json
 import logging
 import threading
 import wave
+from email import policy
+from email.parser import BytesParser
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from typing import Any
 from urllib.parse import urlsplit
@@ -140,36 +142,23 @@ def _parse_multipart(handler: BaseHTTPRequestHandler) -> dict[str, dict]:
     if len(raw) != length:
         raise ValueError(f"Incomplete request body: expected {length} bytes, received {len(raw)}")
 
-    sep = b"--" + boundary.encode("latin-1")
+    mime_headers = (
+        f"Content-Type: multipart/form-data; boundary={boundary}\r\nMIME-Version: 1.0\r\n\r\n"
+    ).encode("latin-1")
+    message = BytesParser(policy=policy.default).parsebytes(mime_headers + raw)
+    if not message.is_multipart():
+        raise ValueError("Malformed multipart request body")
+
     fields = {}
-
-    for chunk in raw.split(sep):
-        chunk = chunk.strip(b"\r\n")
-        if not chunk or chunk == b"--":
+    for part in message.iter_parts():
+        name = part.get_param("name", header="content-disposition")
+        if not name:
             continue
-        try:
-            header_blob, _, body = chunk.partition(b"\r\n\r\n")
-            headers = {}
-            for line in header_blob.split(b"\r\n"):
-                if b":" in line:
-                    k, v = line.split(b":", 1)
-                    headers[k.strip().lower().decode("latin-1", "replace")] = v.strip().decode(
-                        "latin-1", "replace"
-                    )
-            disp = headers.get("content-disposition", "")
-            name = None
-            for piece in disp.split(";"):
-                piece = piece.strip()
-                if piece.startswith("name="):
-                    name = piece.split("=", 1)[1].strip().strip('"')
-                    break
-            if not name:
-                continue
 
-            body = body[:-2] if body.endswith(b"\r\n") else body
-            fields[name] = {"value": body.decode("utf-8", "replace"), "data": body}
-        except Exception:
-            continue
+        body = part.get_payload(decode=True)
+        if body is None:
+            body = b""
+        fields[name] = {"value": body.decode("utf-8", "replace"), "data": body}
 
     return fields
 
