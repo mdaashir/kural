@@ -1,23 +1,23 @@
 # SESSION.md
 
 ## Current milestone
-**Validate local transcription API response_format values**
+**Honor `language=auto` for local transcription API requests**
 
 ## Current branch
-`fix/server-response-format-validation`
+`fix/server-auto-language-override`
 
 ## PR
 PR to be opened with gh after verification passes.
 
 ## Last completed step
-PR #79 merged into main. Reproduced that `response_format=srt` was silently accepted and returned a JSON success payload because every non-`text` value fell through to JSON. This branch validates the normalized field before audio decoding/inference: only `json` and `text` are accepted; omitted or blank values still default to `json`. Invalid values return HTTP 400 with `invalid_request_error`. A local HTTP regression verifies unsupported format rejection. `ruff check .`, `ruff format --check .`, and `pytest -q` passed (562 tests); diff reviewed.
+PR #80 merged into main. Reproduced a local API language override bug: when the configured engine language was `ta`, a POST request specifying `language=auto` left the engine language set to `ta` during inference. This branch maps the request's normalized `auto` value to `None`, enabling WhisperEngine language detection, while retaining `finally` restoration of the configured language and prompt. An HTTP regression verifies detection mode is active during inference and the previous language is restored afterward. `ruff check .`, `ruff format --check .`, and `pytest -q` passed (563 tests); diff reviewed.
 
 ## Next step
-1. Push `fix/server-response-format-validation` and open a PR with gh.
+1. Push `fix/server-auto-language-override` and open a PR with gh.
 2. Wait for user review and merge.
 
 ## Open questions
-- The endpoint intentionally supports JSON and plain text only; formats such as SRT are not implemented.
+- No live model inference was run; the request lifecycle is exercised using a mock engine.
 
 ## Verify items (from AGENTS.md)
 - [x] **Hotkey-driven only?** Confirmed and resolved in M5.
@@ -27,6 +27,5 @@ PR #79 merged into main. Reproduced that `response_format=srt` was silently acce
 - [x] **Elevated window message implemented** — UIPI token inspection warns user with actionable advice.
 
 ## Decisions recorded (this session)
-- Validate normalized `response_format` against the implemented set (`json`, `text`) and reject unsupported values before decoding audio or running inference.
-  Reason: do not silently return a different format than the client requested, and avoid wasted GPU work on invalid requests.
-- Continue defaulting omitted/blank response_format to `json` and trim surrounding whitespace before validation.
+- Treat a non-empty request language of `auto` case-insensitively as `engine.language = None` while inference runs.
+  Reason: WhisperEngine uses `None` to invoke automatic language detection; restore the prior configured language in `finally`.
