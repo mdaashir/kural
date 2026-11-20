@@ -32,12 +32,12 @@ def checksums(root: Path, version: str) -> None:
     """Reject missing, extra, empty or misversioned artifacts; write SHA256SUMS."""
     with (Path(__file__).parents[1] / "pyproject.toml").open("rb") as stream:
         project = tomllib.load(stream)["project"]
-    distribution = re.sub(r"[-_.]+", "-", project["name"]).lower()
+    wheel_distribution = re.sub(r"[-_.]+", "_", project["name"]).lower()
     if version != project["version"]:
         raise ValueError("Artifact version does not match pyproject.toml")
     expected = {
-        f"{distribution}-{version}-py3-none-any.whl",
-        f"{distribution}-{version}.tar.gz",
+        f"{wheel_distribution}-{version}-py3-none-any.whl",
+        f"{wheel_distribution}-{version}.tar.gz",
         "kural-windows-x64.zip",
         "kural-windows-x64-setup.exe",
     }
