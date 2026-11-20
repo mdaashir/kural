@@ -31,7 +31,13 @@ Implemented the complete Kural architecture across 9 merged Pull Requests:
 - **Upstream 1,900-line monolith**: Decomposed into 6 single-responsibility modules under 300 lines each (`app_index`, `guardrails`, `media`, `windows`, `parser`, `executor`).
 - **GPU VRAM starvation**: Idle VRAM unload prevents running out of VRAM when other graphics applications or games run alongside Kural.
 
-## Current state
+## CI/build update — 2026-11-20
+
+Branch `fix/verified-build-release` adds a committed uv lock, reusable test/package/desktop builds, external temporary uv tool and extracted ZIP smokes, exact-version tag releases and disabled-by-default environment-gated PyPI OIDC publishing. Run 44745162603 failed because runtime tests consulted real foreground app rules and user settings; these are now isolated with original formatting assertions intact. Full runtime/tray installation also required explicitly isolating the clipboard fallback test.
+
+Local verification: 571 tests, Ruff, uv build, wheel and sdist fresh tool installs, real full PyInstaller build, extracted desktop import/resource smoke and actionlint passed. No GPU/mic/model/live UI checks or actual releases/publishing were performed. PR #93 is open; hosted CI run 44748239399 passed tests, package and desktop jobs including artifact uploads. Wait for user review/merge; consult SESSION.md for current status. Historical state below describes the prior iteration, not this branch.
+
+## Current state (prior iteration)
 
 - The historical M0–M5 roadmap above is complete; subsequent features and fixes have continued through PR #91.
 - PR #91 merged into `main`; current work fixes CI dependency resolution on `fix/ci-dependency-resolution`.

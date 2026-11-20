@@ -140,6 +140,44 @@ uv pip install -e ".[runtime]"
 uv pip install -e ".[tray,vad]"
 ```
 
+### Reproducible builds and release artifacts
+
+Contributors and CI use the committed `uv.lock` with Python 3.12:
+
+```powershell
+uv sync --locked --python 3.12 --extra dev --extra runtime --extra tray
+uv run --no-sync ruff check .
+uv run --no-sync ruff format --check .
+uv run --no-sync pytest -m "not gpu and not mic"
+uv build --out-dir dist/packages
+uv run --no-sync python packaging/smoke.py --packages dist/packages
+packaging\build.bat
+```
+
+CI reuses the same verification jobs for PRs and tag releases. It uploads a wheel,
+sdist, and full Windows x64 desktop ZIP (runtime and tray dependencies included;
+optional TEN VAD, models and NVIDIA CUDA libraries are not bundled). Package checks
+install both archives with `uv tool install` into temporary tool environments;
+the desktop ZIP is extracted and checked outside the checkout. Checks cover CLI,
+packaged defaults, and desktop dependency imports, not live audio/GPU/UI behavior.
+`--doctor` and `--selftest` remain manual hardware diagnostics, not CI gates.
+
+To install a downloaded wheel as a desktop tool without cloning the repository:
+
+```powershell
+uv tool install --python 3.12 "C:\path\to\kural-0.1.0-py3-none-any.whl[runtime,tray]"
+kural --version
+```
+
+Releases run only when an existing `v<project.version>` tag is pushed; the tag must
+match `pyproject.toml` exactly. Verified artifacts are attached to that GitHub release.
+PyPI publishing is **disabled by default**. Maintainers may opt in with repository
+variable `PUBLISH_PYPI=true` only after configuring a protected `pypi` environment
+(with required reviewers/tag restrictions) and a PyPI trusted publisher for
+`release.yml` and that environment. OIDC permission is limited to the publish job;
+no API token is used and PRs never publish. No tag or publication was created while
+implementing this pipeline.
+
 ### Running Kural
 
 ```powershell

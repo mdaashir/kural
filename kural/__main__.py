@@ -135,7 +135,33 @@ def main() -> None:
         version=f"%(prog)s {get_version()}",
     )
 
+    parser.add_argument("--packaging-smoke", action="store_true", help=argparse.SUPPRESS)
     args = parser.parse_args()
+
+    if args.packaging_smoke:
+        from importlib import import_module
+        from importlib.resources import files
+
+        from kural.config import ConfigManager
+
+        for module in (
+            "faster_whisper",
+            "ctranslate2",
+            "sounddevice",
+            "soxr",
+            "global_hotkeys",
+            "pyperclip",
+            "pystray",
+            "PIL.Image",
+            "tkinter",
+            "kural.runtime",
+        ):
+            import_module(module)
+        for asset in ("config.defaults.yaml", "commands.defaults.yaml", "app_rules.defaults.yaml"):
+            assert files("kural.config").joinpath(asset).is_file(), asset
+        assert ConfigManager(use_user_settings=False, quiet=True).config
+        print("Offline desktop packaging smoke passed")
+        return
 
     if args.doctor:
         from kural.doctor import run_doctor
