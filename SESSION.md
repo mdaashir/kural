@@ -1,23 +1,23 @@
 # SESSION.md
 
 ## Current milestone
-**Reject truncated multipart request bodies in the local API**
+**Preserve binary upload data containing multipart boundary-like bytes**
 
 ## Current branch
-`fix/server-truncated-multipart-body`
+`fix/server-multipart-boundary-binary`
 
 ## PR
 PR to be opened with gh after verification passes.
 
 ## Last completed step
-PR #84 merged into main. Reproduced multipart parsing accepting a body shorter than its declared Content-Length: `_parse_multipart()` returned a partial `file` field. This branch checks the number of bytes read against the declared request length and raises an incomplete-body error on a short read, which the API maps to HTTP 400. Regression covers the parser with a truncated in-memory stream. `ruff check .`, `ruff format --check .`, and `pytest -q` passed (569 tests); diff reviewed.
+PR #85 merged into main, adding incomplete-body checks. Reproduced a separate multipart bug: `_parse_multipart()` split raw bytes on the boundary token anywhere, truncating valid binary file payloads that contained the same byte sequence. This branch uses the standard-library email MIME parser to recognize delimiter lines and preserve payload bytes, while retaining the request size and Content-Length checks. Regression verifies repeated boundary-like bytes inside the file payload are returned intact. `ruff check .`, `ruff format --check .`, and `pytest -q` passed (570 tests); diff reviewed.
 
 ## Next step
-1. Push `fix/server-truncated-multipart-body` and open a PR with gh.
+1. Push `fix/server-multipart-boundary-binary` and open a PR with gh.
 2. Wait for user review and merge.
 
 ## Open questions
-- The regression exercises short reads using an in-memory stream; no client disconnect against a live HTTP server was simulated.
+- The parser still relies on the standard-library MIME parser’s handling of malformed multipart structures; this fix specifically covers boundary-like data inside binary payloads.
 
 ## Verify items (from AGENTS.md)
 - [x] **Hotkey-driven only?** Confirmed and resolved in M5.
@@ -27,5 +27,5 @@ PR #84 merged into main. Reproduced multipart parsing accepting a body shorter t
 - [x] **Elevated window message implemented** — UIPI token inspection warns user with actionable advice.
 
 ## Decisions recorded (this session)
-- Reject multipart bodies if `rfile.read(Content-Length)` returns fewer bytes than declared.
-  Reason: do not accept partial file fields from interrupted or truncated uploads as valid transcription requests.
+- Parse multipart bodies with Python's standard-library MIME parser instead of splitting raw data on boundary bytes.
+  Reason: boundary tokens may legally occur inside arbitrary binary file payloads and are only delimiters in valid MIME framing positions.

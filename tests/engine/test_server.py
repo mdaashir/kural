@@ -169,6 +169,29 @@ class TestMultipartParsing:
         assert "file" in fields
         assert fields["file"]["data"] == b"dummy_audio_bytes"
 
+    def test_parse_preserves_boundary_bytes_inside_file_payload(self):
+        boundary = "boundary-token"
+        audio = b"prefix--boundary-token-middle--boundary-token-suffix"
+        body = (
+            (
+                f"--{boundary}\r\n"
+                'Content-Disposition: form-data; name="file"; filename="audio.wav"\r\n'
+                "Content-Type: audio/wav\r\n\r\n"
+            ).encode()
+            + audio
+            + f"\r\n--{boundary}--\r\n".encode()
+        )
+
+        class DummyHandler:
+            headers = {
+                "Content-Type": f"multipart/form-data; boundary={boundary}",
+                "Content-Length": str(len(body)),
+            }
+            rfile = io.BytesIO(body)
+
+        fields = _parse_multipart(DummyHandler())
+        assert fields["file"]["data"] == audio
+
     def test_parse_rejects_truncated_request_body(self):
         boundary = "truncated-boundary"
         body = (
