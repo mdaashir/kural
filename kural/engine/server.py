@@ -243,6 +243,18 @@ def make_handler(engine: Any):
                     if prompt:
                         engine.initial_prompt = prompt
                     text = engine.transcribe_audio(audio_array) or ""
+                except Exception as e:
+                    logger.exception("Local transcription inference failed")
+                    self._send_json(
+                        500,
+                        {
+                            "error": {
+                                "message": f"Transcription failed: {e}",
+                                "type": "server_error",
+                            }
+                        },
+                    )
+                    return
                 finally:
                     engine.language = old_lang
                     engine.initial_prompt = old_prompt

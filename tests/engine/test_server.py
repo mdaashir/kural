@@ -266,6 +266,53 @@ class TestLiveServerEndpoints:
             res = json.loads(resp.read().decode("utf-8"))
             assert res["text"] == "Transcribed local audio speech"
 
+    def test_inference_failure_returns_json_500_and_restores_engine_state(self):
+        engine = MockEngine()
+        engine.transcribe_audio = lambda _audio: (_ for _ in ()).throw(
+            RuntimeError("inference failed")
+        )
+        handler = make_handler(engine)
+        server = ThreadingHTTPServer(("127.0.0.1", 0), handler)
+        thread = threading.Thread(target=server.serve_forever, daemon=True)
+        thread.start()
+        try:
+            boundary = "inference-error-boundary"
+            wav_bytes = _generate_test_wav(0.1, 16000)
+            body = (
+                f"--{boundary}\r\n".encode()
+                + b'Content-Disposition: form-data; name="file"; filename="audio.wav"\r\n\r\n'
+                + wav_bytes
+                + b"\r\n"
+                + f"--{boundary}\r\n".encode()
+                + b'Content-Disposition: form-data; name="language"\r\n\r\n'
+                + b"ta\r\n"
+                + f"--{boundary}\r\n".encode()
+                + b'Content-Disposition: form-data; name="prompt"\r\n\r\n'
+                + b"temporary prompt\r\n"
+                + f"--{boundary}--\r\n".encode()
+            )
+            request = urllib.request.Request(
+                f"http://127.0.0.1:{server.server_address[1]}/v1/audio/transcriptions",
+                data=body,
+                headers={"Content-Type": f"multipart/form-data; boundary={boundary}"},
+                method="POST",
+            )
+            try:
+                urllib.request.urlopen(request)
+            except urllib.error.HTTPError as error:
+                assert error.code == 500
+                payload = json.loads(error.read().decode("utf-8"))
+                assert payload["error"]["type"] == "server_error"
+                assert "inference failed" in payload["error"]["message"]
+            else:
+                raise AssertionError("Expected structured 500 response")
+
+            assert engine.language == "en"
+            assert engine.initial_prompt == ""
+        finally:
+            server.shutdown()
+            server.server_close()
+
     def test_post_transcriptions_plain_text(self):
         url = f"http://127.0.0.1:{self.port}/v1/audio/transcriptions"
         boundary = "---------------------------boundary555"
