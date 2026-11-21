@@ -56,6 +56,10 @@ jobs:
         with:
           name: kural-python-packages
           path: dist
+      - uses: astral-sh/setup-uv@v5
+        with:
+          version: "0.13.9"
+          python-version: "3.12"
       - name: Check Python distribution metadata
         run: uvx --from twine twine check --strict dist/*
       - name: Publish to PyPI with Trusted Publishing (OIDC)

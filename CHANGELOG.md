@@ -15,8 +15,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The v0.1.0 GitHub Release and its `kural` distribution wheel remain unchanged.
 - Add a manually triggered, OIDC-only PyPI publishing workflow gated on package ownership, PyPI Trusted Publisher setup, the protected GitHub `pypi` environment, and `PUBLISH_PYPI=true`.
 
+### Fixed
+- Install uv 0.13.9 and Python 3.12 in the PyPI publish job before `uvx` metadata validation; add a parsed-workflow ordering regression test. Approved run `44851392430` failed before upload with exit 127.
+
 ### Notes
-- `cmd-kural` is not published yet. A pending PyPI publisher does not reserve the name; the owner must claim the project before enabling publication.
+- `cmd-kural` 0.1.2 publication remains pending; its existing tag is unchanged. A matching pending PyPI publisher can create the project on first successful upload, but does not reserve the name.
 - Install command after publication: `uv tool install --python 3.12 --from "cmd-kural[runtime,tray]" kural`. The installed command and Python import remain `kural`.
 
 ## [0.1.0] - 2026-11-20

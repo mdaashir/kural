@@ -181,14 +181,14 @@ uv tool install --python 3.12 --from "cmd-kural[runtime,tray]" kural
 kural --version
 ```
 
-The PyPI distribution is named `cmd-kural`; the installed CLI and Python import stay `kural`. **This PyPI package is not published yet**, so the command above cannot be used until the `cmd-kural` 0.1.2 upload completes. The existing `kural` PyPI project belongs to an unrelated package; the owner must claim `cmd-kural` and configure its Trusted Publisher before the gated OIDC workflow can publish. Until then, use the [v0.1.0 GitHub Release wheel](https://github.com/mdaashir/kural/releases/download/v0.1.0/kural-0.1.0-py3-none-any.whl).
+The PyPI distribution is named `cmd-kural`; the installed CLI and Python import stay `kural`. **PyPI publication is pending:** approved run `44851392430` failed before upload because the publish job lacked `uvx`. The publisher fix installs uv before metadata validation; the existing `v0.1.2` tag remains unchanged. Until publication succeeds, use the [v0.1.2 GitHub Release](https://github.com/mdaashir/kural/releases/tag/v0.1.2). The unrelated `kural` PyPI project must not be used. A matching pending Trusted Publisher can create `cmd-kural` on first successful upload; it does not reserve the name.
 
 GitHub Releases run only when an existing `v<project.version>` tag is pushed; the tag must
 match `pyproject.toml` exactly. Verified desktop and Python artifacts are attached there.
 PyPI publishing uses the separate manual `.github/workflows/publish-pypi.yml` workflow and
-is disabled unless repository variable `PUBLISH_PYPI=true`. Before enabling it, claim
-`cmd-kural` on PyPI, configure the exact trusted publisher and protected GitHub `pypi`
-environment, and verify the publisher is active. It uses OIDC only; no API token is used,
+is disabled unless repository variable `PUBLISH_PYPI=true`. Before publishing, configure
+the exact trusted publisher (pending publisher for a new project) and protected GitHub
+`pypi` environment, and verify their settings. It uses OIDC only; no API token is used,
 and pull requests never publish. See [RELEASE.md](RELEASE.md) for exact PyPI setup steps.
 
 ### Running Kural

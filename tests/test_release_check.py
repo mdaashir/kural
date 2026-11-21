@@ -4,6 +4,7 @@ import importlib.util
 from pathlib import Path
 
 import pytest
+from ruamel.yaml import YAML
 
 SPEC = importlib.util.spec_from_file_location(
     "release_check", Path(__file__).parents[1] / "packaging" / "release_check.py"
@@ -29,6 +30,28 @@ def test_pypi_publish_workflow_is_oidc_gated_and_uses_cmd_kural(tmp_path):
     assert "https://pypi.org/project/cmd-kural/" in workflow
     assert "pypa/gh-action-pypi-publish@release/v1" in workflow
     assert "api-token" not in workflow.lower()
+
+
+def test_pypi_publish_sets_up_uv_before_uvx():
+    workflows = Path(__file__).parents[1] / ".github" / "workflows"
+    yaml = YAML(typ="safe")
+    publish = yaml.load((workflows / "publish-pypi.yml").read_text(encoding="utf-8"))
+    build = yaml.load((workflows / "build.yml").read_text(encoding="utf-8"))
+    steps = publish["jobs"]["publish"]["steps"]
+    setup_index = next(
+        i for i, step in enumerate(steps) if step.get("uses", "").startswith("astral-sh/setup-uv@")
+    )
+    uvx_indices = [i for i, step in enumerate(steps) if "uvx" in step.get("run", "").split()]
+    assert uvx_indices
+    assert all(setup_index < i for i in uvx_indices)
+    setup = steps[setup_index]
+    assert setup["with"]["python-version"] == "3.12"
+    for job in build["jobs"].values():
+        build_setup = next(
+            step for step in job["steps"] if step.get("uses", "").startswith("astral-sh/setup-uv@")
+        )
+        assert setup["uses"] == build_setup["uses"]
+        assert setup["with"]["version"] == build_setup["with"]["version"]
 
 
 def test_exact_tag_commit_and_version(monkeypatch):
