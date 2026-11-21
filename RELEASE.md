@@ -217,7 +217,21 @@ If PyPI reports that the name is owned by another account or the trusted publish
 
 ---
 
-## 7. Rollback Procedures
+## 7. Container Images (GHCR & Docker Hub)
+
+Kural's headless Whisper API server is packaged as an OCI container image via `.github/workflows/docker.yml`.
+
+1. **GitHub Container Registry (GHCR):**
+   - Automatically published to `ghcr.io/mdaashir/kural` on every push to `main` and version tag (`v*`).
+   - Includes OCI annotation `LABEL org.opencontainers.image.source` linking the container directly to the repository's **Packages** sidebar.
+
+2. **Docker Hub (Optional):**
+   - If `DOCKERHUB_TOKEN` secret (or `DOCKERHUB_OIDC_CONNECTIONID` variable) and `DOCKERHUB_USERNAME` variable are configured in GitHub Actions, the workflow automatically authenticates and publishes dual tags to `docker.io/<username>/kural`.
+   - If not configured, Docker Hub publishing is skipped safely without failing the workflow.
+
+---
+
+## 8. Rollback Procedures
 
 If a critical issue is discovered post-release:
 

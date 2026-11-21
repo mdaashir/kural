@@ -359,7 +359,7 @@ curl.exe -X POST http://127.0.0.1:7777/v1/audio/transcriptions `
 
 #### Running via Docker / Docker Compose
 
-The headless Whisper transcription server is also available as a container image published to GitHub Container Registry (`ghcr.io/mdaashir/kural`):
+The headless Whisper transcription server is available as an OCI container image published to GitHub Container Registry (`ghcr.io/mdaashir/kural`) and optionally Docker Hub:
 
 ```bash
 # Launch with Docker Compose (ports bound strictly to 127.0.0.1 for local privacy)
@@ -373,7 +373,7 @@ curl http://127.0.0.1:7777/health
 
 ### Marketing & Documentation Site (GitHub Pages)
 
-The static [Next.js site](site/) contains the product overview, verified v0.1.3 download links, quickstart, voice-command reference, configuration guide, API/container notes, and troubleshooting. It is prepared for `https://mdaashir.github.io/kural/` (not live until Pages is enabled and the site PR is merged). Build and verify it locally:
+The static [Next.js site](site/) contains the product overview, verified v0.1.3 download links, quickstart, voice-command reference, configuration guide, API/container notes, and troubleshooting. It is live and deployed at **https://mdaashir.github.io/kural/**. Build and verify it locally:
 
 ```powershell
 cd site
@@ -384,7 +384,7 @@ npm run build
 npm test
 ```
 
-After merge, set **Settings → Pages → Build and deployment → GitHub Actions** if the Pages source is not already GitHub Actions. The [Pages workflow](.github/workflows/pages.yml) builds the export on pull requests and deploys from `main` into the `github-pages` environment. The site itself has no analytics or cloud speech inference; GitHub Pages may log requests.
+The [Pages workflow](.github/workflows/pages.yml) builds and tests the static export on pull requests, and deploys automatically from `main` into the `github-pages` environment. The site itself has no analytics or cloud speech inference; GitHub Pages may log technical requests.
 
 ### Benchmarks
 

@@ -1,29 +1,29 @@
 # SESSION.md
 
 ## Current milestone
-**Next.js marketing and documentation site for GitHub Pages**
+**OCI Source Annotation for GitHub Packages Linking & Docker Hub Publishing**
 
 ## Current branch
-`feat/nextjs-pages-site`
+`chore/package-linking-and-dockerhub`
 
 ## PR
-To be opened with gh after final checks.
+To be opened with gh after verification passes.
 
 ## Last completed step
-- PR #103 merged; headless API container workflow published successfully to GHCR on main. The Windows desktop distribution remains separate.
-- Next.js 16 static export built in `site/` for `https://mdaashir.github.io/kural/` with product landing page, downloads, documentation (quickstart, commands, configuration, API, troubleshooting), local artwork, canonical metadata, sitemap and robots.
-- `.github/workflows/pages.yml` builds on PR and deploys only from main/manual main to `github-pages` using Pages/OIDC permissions. Site links point to existing v0.1.3 GitHub Release and PyPI package; no site deployment has occurred.
+- PR #104 merged; GitHub Pages enabled via GitHub API (`build_type=workflow`), deployment workflow succeeded on `main`, and live site verified at `https://mdaashir.github.io/kural/` (responding HTTP 200).
+- Identified root cause of empty Packages column: `Dockerfile` lacked `LABEL org.opencontainers.image.source`.
+- Added OCI labels to `Dockerfile` (`org.opencontainers.image.source="https://github.com/mdaashir/kural"`, title, description, licenses) to link GHCR package directly to repository sidebar.
+- Added optional Docker Hub publishing support to `.github/workflows/docker.yml` supporting both access token and secretless OIDC (`DOCKERHUB_OIDC_CONNECTIONID`), falling back cleanly if unconfigured.
+- Added tests in `tests/test_docker.py` verifying OCI labels and workflow login step.
+- Documented OCI package linking and Docker Hub options in `README.md` and `RELEASE.md`.
 
 ## Verification
-- `npm ci`, `npm run typecheck`, `npm run lint`, `npm run build`, `npm test` passed; 4 export tests verify Pages base-path links and static assets.
-- Python Ruff lint/format passed (144 files); `pytest -q`: 590 passed. Hosted Pages/CI checks remain pending until PR.
-- Visual browser gate in design-taste-frontend skill was unavailable (script runner reported `scripts/gate.mjs` missing); no browser screenshots were checked.
+- `ruff check .` and `ruff format --check .` passed.
+- `pytest -q`: 590 passed.
+- `site/` static export tests: 4 passed.
+- `git diff --check` passed cleanly.
 
 ## Next steps
-1. Verify repository tests, Pages workflow syntax, and site links; review diff.
-2. Commit, push and open one focused site PR; inspect hosted Pages build and Python CI.
-3. Wait for user review/merge; configure GitHub Pages source to **GitHub Actions** if not already set, then verify deployment and live links.
-4. Docker Hub is deferred. GHCR uses GitHub token; Docker Hub publishing requires Docker Hub credentials or a supported trusted-publishing integration, not the GitHub token alone.
-
-## Open limitations
-- No live GitHub Pages deployment or browser layout screenshots yet. GPU/microphone/live desktop behavior is not exercised by site tests.
+1. Commit, push branch `chore/package-linking-and-dockerhub`, and open PR.
+2. Wait for user review and merge into `main`.
+3. Verify that `docker.yml` pushes with OCI labels on `main` and links the package to the repository's Packages sidebar.
