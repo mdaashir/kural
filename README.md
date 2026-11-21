@@ -5,14 +5,14 @@
 
 > Offline speech-to-text, voice typing, and voice commands for Windows. Powered by local GPU-accelerated Whisper; supports English, Tamil, and Tanglish without cloud transcription.
 
-**Latest release: [Kural v0.1.0](https://github.com/mdaashir/kural/releases/tag/v0.1.0)** — download the [Windows installer](https://github.com/mdaashir/kural/releases/download/v0.1.0/kural-windows-x64-setup.exe), [portable Windows bundle](https://github.com/mdaashir/kural/releases/download/v0.1.0/kural-windows-x64.zip), or [Python wheel](https://github.com/mdaashir/kural/releases/download/v0.1.0/kural-0.1.0-py3-none-any.whl). Verify downloads with the release [SHA256SUMS](https://github.com/mdaashir/kural/releases/download/v0.1.0/SHA256SUMS).
+**Latest release: [Kural v0.1.3](https://github.com/mdaashir/kural/releases/tag/v0.1.3)** — download the [Windows installer](https://github.com/mdaashir/kural/releases/download/v0.1.3/kural-windows-x64-setup.exe), [portable Windows bundle](https://github.com/mdaashir/kural/releases/download/v0.1.3/kural-windows-x64.zip), or [Python wheel](https://github.com/mdaashir/kural/releases/download/v0.1.3/cmd_kural-0.1.3-py3-none-any.whl). Verify downloads with the release [SHA256SUMS](https://github.com/mdaashir/kural/releases/download/v0.1.3/SHA256SUMS).
 
 [![Python 3.12+](https://img.shields.io/badge/python-3.12%2B-blue.svg)](https://www.python.org/)
 [![Platform: Windows 11](https://img.shields.io/badge/platform-Windows%2011-0078D6.svg)](https://www.microsoft.com/windows)
 [![CUDA: RTX 3050](https://img.shields.io/badge/CUDA-RTX%203050%206GB-76B900.svg)](https://developer.nvidia.com/cuda-zone)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![CI](https://github.com/mdaashir/kural/actions/workflows/ci.yml/badge.svg)](https://github.com/mdaashir/kural/actions/workflows/ci.yml)
-[![Tests: 589](https://img.shields.io/badge/tests-589%20passing-brightgreen.svg)](tests/)
+[![Tests: 590](https://img.shields.io/badge/tests-590%20passing-brightgreen.svg)](tests/)
 
 Kural merges two MIT-licensed upstream projects into one cohesive desktop voice assistant:
 the **GPU speech engine** from `drajb/whisper-local` with the **deep voice-control engine**
@@ -170,18 +170,18 @@ packaged defaults, and desktop dependency imports, not live audio/GPU/UI behavio
 To install a downloaded wheel as a desktop tool without cloning the repository:
 
 ```powershell
-uv tool install --python 3.12 "C:\path\to\kural-0.1.0-py3-none-any.whl[runtime,tray]"
+uv tool install --python 3.12 "C:\path\to\cmd_kural-0.1.3-py3-none-any.whl[runtime,tray]"
 kural --version
 ```
 
-The next PyPI distribution is `cmd-kural`; the import package and executable remain `kural`. **The published 0.1.2 package reports a stale `kural --version` value. Version 0.1.3 is being prepared to correct package and CLI version reporting; avoid 0.1.2 if checking the reported version.** After 0.1.3 is published, install it as a CLI tool:
+The PyPI distribution is [`cmd-kural`](https://pypi.org/project/cmd-kural/0.1.3/); the import package and executable remain `kural`. Install 0.1.3 as a CLI tool:
 
 ```powershell
 uv tool install --python 3.12 --from "cmd-kural[runtime,tray]==0.1.3" kural
 kural --version
 ```
 
-Until then, use the [v0.1.0 GitHub Release wheel](https://github.com/mdaashir/kural/releases/download/v0.1.0/kural-0.1.0-py3-none-any.whl). The unrelated `kural` PyPI project must not be used. A matching pending Trusted Publisher can create `cmd-kural` on first successful upload; it does not reserve the name.
+The published 0.1.2 package has a stale `--version` display; choose 0.1.3 for corrected version reporting. The unrelated `kural` PyPI project is not this application.
 
 GitHub Releases run only when an existing `v<project.version>` tag is pushed; the tag must
 match `pyproject.toml` exactly. Verified desktop and Python artifacts are attached there.
@@ -371,6 +371,21 @@ curl http://127.0.0.1:7777/health
 
 > **Security Note:** The transcription API does not include authentication. It must remain bound to loopback (`127.0.0.1`) and never exposed directly to public networks without an authenticating reverse proxy.
 
+### Marketing & Documentation Site (GitHub Pages)
+
+The static [Next.js site](site/) contains the product overview, verified v0.1.3 download links, quickstart, voice-command reference, configuration guide, API/container notes, and troubleshooting. It is prepared for `https://mdaashir.github.io/kural/` (not live until Pages is enabled and the site PR is merged). Build and verify it locally:
+
+```powershell
+cd site
+npm ci
+npm run typecheck
+npm run lint
+npm run build
+npm test
+```
+
+After merge, set **Settings → Pages → Build and deployment → GitHub Actions** if the Pages source is not already GitHub Actions. The [Pages workflow](.github/workflows/pages.yml) builds the export on pull requests and deploys from `main` into the `github-pages` environment. The site itself has no analytics or cloud speech inference; GitHub Pages may log requests.
+
 ### Benchmarks
 
 Run the ASR benchmark harness to measure latency (RTF) and error rates (WER, Tamil CER):
@@ -386,7 +401,7 @@ python -m benchmarks.run --models large-v3-turbo --device cuda --compute-type fl
 ```powershell
 uv build
 ```
-Outputs: `dist/kural-0.1.0-py3-none-any.whl` and `dist/kural-0.1.0.tar.gz`.
+Outputs: `dist/cmd_kural-0.1.3-py3-none-any.whl` and `dist/cmd_kural-0.1.3.tar.gz`.
 
 #### 2. Standalone Windows Desktop App & Setup Installer
 

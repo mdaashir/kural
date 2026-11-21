@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- A Next.js static-export marketing and documentation site prepared for GitHub Pages at `/kural/`, with verified v0.1.3 download links, product overview, user/developer docs, sitemap, and responsive navigation. Pages deployment is pending merge and repository Pages settings.
 - Containerization for headless Whisper API: multi-stage Linux `Dockerfile` (non-root `kural` user, healthcheck, `ffmpeg`), `docker-compose.yml` (loopback-bound to `127.0.0.1:7777` for privacy), and GitHub Actions automated build/push workflow (`.github/workflows/docker.yml`) publishing to GitHub Container Registry (`ghcr.io/mdaashir/kural`).
 - Optional `server` dependency extra in `pyproject.toml` containing `faster-whisper`, `soxr`, and `soundfile` for lightweight headless deployments without Windows desktop GUI/hotkey libraries.
 
