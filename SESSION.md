@@ -1,29 +1,41 @@
 # SESSION.md
 
 ## Current milestone
-**OCI Source Annotation for GitHub Packages Linking & Docker Hub Publishing**
+**Windows desktop UX: separate windowed launcher and visible console CLI**
 
 ## Current branch
-`chore/package-linking-and-dockerhub`
+`fix/windows-app-launcher-and-shortcuts`
 
 ## PR
-https://github.com/mdaashir/kural/pull/105 — open for review; hosted Docker and CI workflows pass.
+To be opened after final verification.
 
-## Last completed step
-- PR #104 merged; GitHub Pages enabled via GitHub API (`build_type=workflow`), deployment workflow succeeded on `main`, and live site verified at `https://mdaashir.github.io/kural/` (responding HTTP 200).
-- Identified root cause of empty Packages column: `Dockerfile` lacked `LABEL org.opencontainers.image.source`.
-- Added OCI labels to `Dockerfile` (`org.opencontainers.image.source="https://github.com/mdaashir/kural"`, title, description, licenses) to link GHCR package directly to repository sidebar.
-- Added optional Docker Hub publishing support to `.github/workflows/docker.yml` supporting both access token and secretless OIDC (`DOCKERHUB_OIDC_CONNECTIONID`), falling back cleanly if unconfigured.
-- Added tests in `tests/test_docker.py` verifying OCI labels and workflow login step.
-- Documented OCI package linking and Docker Hub options in `README.md` and `RELEASE.md`.
+## Confirmed installed-app diagnosis
+- Installer shortcut launched a PyInstaller executable built with `console=True`, so double-clicking opened a terminal.
+- Inno Setup created no desktop shortcut, and the bundle initially exposed one `kural.exe`.
+- Installed Kural log reports model initialization failure because NVIDIA cuBLAS/cuDNN DLLs are absent. The installer does not bundle these libraries; the model is downloaded on first use.
+- Upstream `drajb/whisper-local` uses a bootstrap single-file executable, but that does not solve Kural's CUDA DLL issue. Preserve Kural's own packaging and explicitly document first-run requirements.
+
+## This PR scope
+- Separate windowed `kural.exe` and console `kural-console.exe` PyInstaller launchers sharing one parser/runtime.
+- Inno Setup Start Menu shortcut plus optional desktop shortcut (checked by default) targets the windowed launcher.
+- CLI/diagnostic options invoked from the frozen windowed executable are forwarded to sibling `kural-console.exe`.
+- Model-load errors during an active transcription are surfaced in the overlay and log instead of being misreported as no speech.
+- No automatic CPU switch, CUDA package installation, configuration mutation, model download, or user-profile modification.
 
 ## Verification
-- `ruff check .` and `ruff format --check .` passed.
-- `pytest -q`: 590 passed.
-- `site/` static export tests: 4 passed.
-- `git diff --check` passed cleanly.
+- Ruff check and format passed (144 files).
+- Focused runtime/model tests: 58 passed.
+- Full test suite: 599 passed; retry-last regression uses an immediate fake thread to avoid async teardown races.
+- Local PyInstaller bundle build created both executables; console `--version` and `--packaging-smoke` passed.
+- Fresh portable ZIP smoke passed; it inspected the GUI executable but did not launch it.
 
 ## Next steps
-1. Commit, push branch `chore/package-linking-and-dockerhub`, and open PR.
-2. Wait for user review and merge into `main`.
-3. Verify that `docker.yml` pushes with OCI labels on `main` and links the package to the repository's Packages sidebar.
+1. Verify installer compilation and hosted Windows packaging smoke in the PR.
+2. Wait for review and merge.
+3. Handle first-start recovery for missing CUDA/cuDNN in a separate PR; add branded app icon/installer artwork separately.
+
+## Limitations
+- Initial CUDA failure still aborts runtime construction before tray startup; this PR does not make the app usable after that failure.
+- CUDA/cuDNN libraries remain external prerequisites for GPU inference and are not installed by the app. The user's configured device was not changed.
+- The installed app was not relaunched after diagnosis; the GUI executable was not started during verification.
+- The installer is unsigned; SmartScreen and app signing are separate work.

@@ -33,13 +33,14 @@ hiddenimports = [
 binaries = []
 try:
     from PyInstaller.utils.hooks import collect_data_files, collect_dynamic_libs
+
     binaries += collect_dynamic_libs("ctranslate2")
     datas += collect_data_files("faster_whisper")
 except Exception:
     pass
 
 a = Analysis(  # noqa: F821
-    [os.path.join(KURAL, "__main__.py")],  # noqa: F821
+    [os.path.join(ROOT, "packaging", "launcher_entry.py")],  # noqa: F821
     pathex=[ROOT],
     binaries=binaries,
     datas=datas,
@@ -57,19 +58,31 @@ a = Analysis(  # noqa: F821
 
 pyz = PYZ(a.pure)  # noqa: F821
 
-exe = EXE(  # noqa: F821
+console_exe = EXE(  # noqa: F821
+    pyz,
+    a.scripts,
+    [],
+    exclude_binaries=True,
+    name="kural-console",
+    console=True,
+    upx=False,
+    disable_windowed_traceback=False,
+)
+
+gui_exe = EXE(  # noqa: F821
     pyz,
     a.scripts,
     [],
     exclude_binaries=True,
     name="kural",
-    console=True,  # console enabled for CLI diagnostics and --doctor
-    upx=False,     # avoid antivirus heuristics
+    console=False,
+    upx=False,
     disable_windowed_traceback=False,
 )
 
 coll = COLLECT(  # noqa: F821
-    exe,
+    console_exe,
+    gui_exe,
     a.binaries,
     a.datas,
     strip=False,

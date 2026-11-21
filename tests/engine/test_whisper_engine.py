@@ -69,9 +69,19 @@ class TestWhisperEngineDefaults:
 
 
 class TestTranscribeAudio:
-    def test_none_model_returns_none(self, engine):
+    def test_none_model_returns_load_error_instead_of_silence(self, engine):
         engine.model = None
-        with patch.object(engine, "_load_model", side_effect=RuntimeError("Load failed")):
+        with patch.object(
+            engine, "_load_model", side_effect=RuntimeError("CUDA libraries missing")
+        ):
+            result = engine.transcribe_audio(np.zeros(16000, dtype=np.float32))
+        assert "CUDA libraries missing" in result
+        assert engine.last_error is not None
+
+    def test_none_model_without_load_error_returns_none(self, engine):
+        engine.model = None
+        engine.last_error = None
+        with patch.object(engine, "_load_model"):
             assert engine.transcribe_audio(np.zeros(16000, dtype=np.float32)) is None
 
     def test_empty_audio_returns_none(self, engine):

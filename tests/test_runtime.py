@@ -50,6 +50,158 @@ class TestKuralRuntimeStateTransitions:
         self.runtime.shutdown()
         self.runtime.ducker.close.assert_called_once()
 
+    def test_only_internal_windowed_marker_counts_as_desktop_start(self):
+        from kural.__main__ import _is_desktop_start
+
+        assert _is_desktop_start([]) is True
+        assert _is_desktop_start(["--windowed-launch"]) is True
+        for argv in (
+            ["--doctor"],
+            ["--selftest"],
+            ["--version"],
+            ["--transcribe", "voice.wav"],
+            ["--help"],
+            ["--serve"],
+            ["--future-cli-flag"],
+        ):
+            assert _is_desktop_start(argv) is False
+
+    def test_windowed_launcher_routes_default_start_through_shared_parser(self):
+        from unittest.mock import patch
+
+        from kural.__main__ import windowed_main
+
+        with (
+            patch("kural.__main__.main") as main,
+            patch("kural.__main__.sys.argv", ["kural.exe"]),
+        ):
+            windowed_main()
+        main.assert_called_once_with(["--windowed-launch"])
+
+    def test_windowed_doctor_relaunches_in_console_executable(self, tmp_path):
+        import sys
+
+        from kural.__main__ import main
+
+        windowed = tmp_path / "kural.exe"
+        console = tmp_path / "kural-console.exe"
+        windowed.touch()
+        console.touch()
+        with (
+            patch.object(sys, "frozen", True, create=True),
+            patch.object(sys, "executable", str(windowed)),
+            patch("kural.__main__.subprocess.Popen") as popen,
+        ):
+            main(["--doctor", "--windowed-launch"])
+        popen.assert_called_once_with([str(console), "--doctor"])
+
+    def test_windowed_launcher_redirects_streams_and_reports_startup_error(self, tmp_path):
+        import os
+        import sys
+        from unittest.mock import patch
+
+        from kural.__main__ import windowed_main
+
+        fake_stdout = tmp_path / "stdout.log"
+        fake_stderr = tmp_path / "stderr.log"
+        original_stdout, original_stderr = sys.stdout, sys.stderr
+        try:
+            with (
+                patch(
+                    "kural.__main__.open",
+                    side_effect=[fake_stdout.open("w"), fake_stderr.open("w")],
+                    create=True,
+                ),
+                patch("os.devnull", os.devnull),
+                patch("kural.__main__.sys.argv", ["kural.exe"]),
+                patch("kural.__main__.main", side_effect=RuntimeError("missing CUDA DLL")),
+                patch("kural.__main__._show_windowed_startup_error") as dialog,
+                patch("kural.__main__.logger.exception") as log_error,
+            ):
+                windowed_main()
+                assert "Install compatible CUDA/cuDNN" in dialog.call_args.args[0]
+                assert "choose CPU mode (int8)" in dialog.call_args.args[0]
+                log_error.assert_called_once_with("Kural desktop startup failed")
+        finally:
+            sys.stdout, sys.stderr = original_stdout, original_stderr
+
+    def test_windowed_help_is_forwarded_before_argparse_exits(self, tmp_path):
+        import sys
+
+        from kural.__main__ import main
+
+        windowed = tmp_path / "kural.exe"
+        console = tmp_path / "kural-console.exe"
+        windowed.touch()
+        console.touch()
+        with (
+            patch.object(sys, "frozen", True, create=True),
+            patch.object(sys, "executable", str(windowed)),
+            patch("kural.__main__.subprocess.Popen") as popen,
+        ):
+            main(["--help", "--windowed-launch"])
+        popen.assert_called_once_with([str(console), "--help"])
+
+    def test_console_launcher_preserves_cli_arguments(self):
+        from unittest.mock import patch
+
+        from kural.__main__ import console_main
+
+        with (
+            patch("kural.__main__.main") as main,
+            patch("kural.__main__.sys.argv", ["kural-console.exe", "--doctor"]),
+        ):
+            console_main()
+        main.assert_called_once_with()
+
+    def test_packaged_launcher_dispatches_using_executable_name(self):
+        import runpy
+        import sys
+        from pathlib import Path
+        from unittest.mock import MagicMock, patch
+
+        for exe_name, target in (
+            ("kural.exe", "windowed_main"),
+            ("kural-console.exe", "console_main"),
+        ):
+            entry = runpy.run_path(
+                str(Path(__file__).parents[1] / "packaging" / "launcher_entry.py"),
+                run_name="packaged_launcher_test",
+            )
+            chosen = MagicMock()
+            other = MagicMock()
+            modules = {
+                "kural.__main__": MagicMock(
+                    windowed_main=chosen if target == "windowed_main" else other,
+                    console_main=chosen if target == "console_main" else other,
+                )
+            }
+            with (
+                patch.object(sys, "executable", f"C:/Kural/{exe_name}"),
+                patch.dict(sys.modules, modules),
+            ):
+                entry["main"]()
+            chosen.assert_called_once()
+            other.assert_not_called()
+
+    def test_pyinstaller_build_has_windowed_and_console_entrypoints(self):
+        from pathlib import Path
+
+        root = Path(__file__).parents[1]
+        spec = (root / "packaging" / "kural.spec").read_text(encoding="utf-8")
+        entry = (root / "packaging" / "launcher_entry.py").read_text(encoding="utf-8")
+        installer = (root / "packaging" / "kural.iss").read_text(encoding="utf-8")
+        assert 'name="kural-console"' in spec
+        assert 'name="kural"' in spec
+        assert "console=True" in spec
+        assert "console=False" in spec
+        assert 'Path(sys.executable).stem.casefold() == "kural"' in entry
+        assert "windowed_main()" in entry and "console_main()" in entry
+        assert 'Name: "{userprograms}\\Kural"; Filename: "{app}\\kural.exe"' in installer
+        assert 'Name: "{autodesktop}\\Kural"; Filename: "{app}\\kural.exe"' in installer
+        assert 'Filename: "{app}\\kural-console.exe"' not in installer
+        assert "Flags: checkedonce" in installer
+
     def test_runtime_wires_model_registry_to_engine(self):
         fake_engine_cls = MagicMock()
         fake_rec_cls = MagicMock()
@@ -293,6 +445,23 @@ class TestKuralRuntimeStateTransitions:
             self.runtime._process_audio(np.zeros(16000, dtype=np.float32))
             restore.assert_not_called()
             insert.assert_called_once()
+
+    def test_model_initialization_error_is_reported_during_dictation(self):
+        self.runtime.state = RuntimeState.RECORDING_DICTATION
+        self.runtime.engine.last_error = "CUDA inference libraries are missing"
+        self.runtime.engine.transcribe_audio.return_value = None
+        self.runtime.overlay.flash_error = MagicMock()
+        self.runtime.fallback_window.show = MagicMock()
+        self.runtime.audio_feedback = MagicMock()
+
+        self.runtime._process_audio(np.zeros(16000, dtype=np.float32))
+
+        self.runtime.overlay.flash_error.assert_called_once_with(
+            "Speech model unavailable: check CUDA/cuDNN or select CPU in Settings. "
+            "Run kural-console.exe --doctor for details; the model downloads on first use."
+        )
+        self.runtime.fallback_window.show.assert_not_called()
+        self.runtime.audio_feedback.play_error.assert_called_once()
 
     def test_failed_insertion_triggers_fallback_window(self):
         self.runtime.state = RuntimeState.RECORDING_DICTATION
@@ -582,14 +751,21 @@ class TestKuralRuntimeStateTransitions:
             mock_insert.assert_called_once_with("previously dictated sentence")
 
     def test_retry_last_reruns_cached_audio(self):
-        import time
-
         self.runtime.last_take = MagicMock()
         fake_audio = np.zeros(16000, dtype=np.float32)
         self.runtime.last_take.load.return_value = (fake_audio, {"task": "transcribe"})
 
-        with patch.object(self.runtime, "_process_audio") as mock_proc:
+        class ImmediateThread:
+            def __init__(self, target, **_kwargs):
+                self.target = target
+
+            def start(self):
+                self.target()
+
+        with (
+            patch("kural.runtime.threading.Thread", ImmediateThread),
+            patch.object(self.runtime, "_process_audio") as mock_proc,
+        ):
             self.runtime.retry_last()
-            time.sleep(0.35)  # Wait for 0.25s thread delay
             mock_proc.assert_called_once()
             assert np.array_equal(mock_proc.call_args[0][0], fake_audio)

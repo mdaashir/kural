@@ -83,8 +83,23 @@ def main() -> None:
                 f"/DIR={destination}",
             )
             try:
-                run(str(destination / "kural.exe"), "--version")
-                run(str(destination / "kural.exe"), "--packaging-smoke")
+                run(str(destination / "kural-console.exe"), "--version")
+                run(str(destination / "kural-console.exe"), "--packaging-smoke")
+                if not (destination / "kural.exe").is_file():
+                    raise RuntimeError("Windowed launcher kural.exe is missing")
+                if args.installer:
+                    installer_script = (
+                        Path(__file__).with_name("kural.iss").read_text(encoding="utf-8")
+                    )
+                    for expected in (
+                        'Name: "{userprograms}\\Kural"; Filename: "{app}\\kural.exe"',
+                        'Name: "{autodesktop}\\Kural"; Filename: "{app}\\kural.exe"',
+                        "Flags: checkedonce",
+                    ):
+                        if expected not in installer_script:
+                            raise RuntimeError(
+                                f"Installer shortcut configuration missing: {expected}"
+                            )
             finally:
                 uninstaller = destination / "unins000.exe"
                 if uninstaller.exists():
@@ -100,10 +115,15 @@ def main() -> None:
 
             extracted = root / "bundle"
             shutil.unpack_archive(str(bundle), extracted)
-            executable = str(extracted / "kural.exe")
-            run(executable, "--version")
-            run(executable, "--help")
-            run(executable, "--packaging-smoke")
+            console_executable = extracted / "kural-console.exe"
+            windowed_executable = extracted / "kural.exe"
+            if not console_executable.is_file():
+                raise RuntimeError("Console CLI kural-console.exe is missing from the bundle")
+            if not windowed_executable.is_file():
+                raise RuntimeError("Windowed desktop launcher kural.exe is missing from the bundle")
+            run(str(console_executable), "--version")
+            run(str(console_executable), "--help")
+            run(str(console_executable), "--packaging-smoke")
 
 
 if __name__ == "__main__":

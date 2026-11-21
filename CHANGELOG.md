@@ -9,23 +9,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- Prepare separate Windows launchers: windowed desktop app (`kural.exe`) and console CLI (`kural-console.exe`). The installer will point Start Menu and optional desktop shortcuts at the GUI; this change is pending review and has not been released.
+- Report model-load errors during an active recording through the status overlay and log instead of treating them as "no speech." Initial startup recovery before the tray is available remains out of scope and unimplemented. Device selection is never changed silently.
+- Prepare a corrective `cmd-kural` 0.1.4 release: published `cmd-kural` 0.1.3 reports stale `kural.__version__`/`kural --version` values (0.1.0); the next-release fix is being prepared. Do not move or retry existing tags `v0.1.1`, `v0.1.2`, or `v0.1.3`.
+
 ### Added
 - A Next.js static-export marketing and documentation site prepared for GitHub Pages at `/kural/`, with verified v0.1.3 download links, product overview, user/developer docs, sitemap, and responsive navigation. Pages deployment is pending merge and repository Pages settings.
 - Containerization for headless Whisper API: multi-stage Linux `Dockerfile` (non-root `kural` user, healthcheck, `ffmpeg`), `docker-compose.yml` (loopback-bound to `127.0.0.1:7777` for privacy), and GitHub Actions automated build/push workflow (`.github/workflows/docker.yml`) publishing to GitHub Container Registry (`ghcr.io/mdaashir/kural`).
 - Optional `server` dependency extra in `pyproject.toml` containing `faster-whisper`, `soxr`, and `soundfile` for lightweight headless deployments without Windows desktop GUI/hotkey libraries.
 
 ### Changed
-- Prepare `cmd-kural` 0.1.2 after the failed unpublished 0.1.1 release; the `v0.1.1` tag remains unchanged because it points to a pre-fix commit.
-- Prepare `cmd-kural` 0.1.3 to fix installed `kural --version` and `kural.__version__`, which report stale 0.1.0/0.1.0-dev values in the published 0.1.2 package. The `kural` CLI and import package name remain unchanged.
-- The v0.1.0 GitHub Release and its `kural` distribution wheel remain unchanged.
-- Add a manually triggered, OIDC-only PyPI publishing workflow gated on package ownership, PyPI Trusted Publisher setup, the protected GitHub `pypi` environment, and `PUBLISH_PYPI=true`.
+- The Python distribution is `cmd-kural` while its import package and console command remain `kural`. GitHub Release v0.1.3 and PyPI cmd-kural 0.1.3 are published; earlier v0.1.1 and v0.1.2 tags remain immutable failed attempts.
+- Add a manually triggered, OIDC-only PyPI publisher gated by the `PUBLISH_PYPI=true` repository variable and protected `pypi` environment.
 
 ### Fixed
-- Install uv 0.13.9 and Python 3.12 in the PyPI publish job before `uvx` metadata validation; add a parsed-workflow ordering regression test. Approved run `44851392430` failed before upload with exit 127.
+- Install pinned uv and Python before PyPI metadata validation; normalize package artifact names in release checks.
 
 ### Notes
-- `cmd-kural` 0.1.2 publication remains pending; its existing tag is unchanged. A matching pending PyPI publisher can create the project on first successful upload, but does not reserve the name.
-- Install command after publication: `uv tool install --python 3.12 --from "cmd-kural[runtime,tray]" kural`. The installed command and Python import remain `kural`.
+- Published `cmd-kural==0.1.3` installs, but currently reports stale `kural` module/CLI version 0.1.0. A corrective 0.1.4 release is being prepared; do not move or retry v0.1.3.
+- Once 0.1.4 is published, install with `uv tool install --python 3.12 --from "cmd-kural[runtime,tray]==0.1.4" kural`. The import and command names remain `kural`.
 
 ## [0.1.0] - 2026-11-20
 
@@ -102,4 +105,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **GitHub Actions CI Pipeline (`ci.yml`):** Automated PR and push validation running `ruff check`, `ruff format --check`, offline `pytest`, `twine check --strict`, Python package builds, and standalone desktop bundle verification.
 - **GitHub Actions Release Pipeline (`release.yml`):** Automated release workflow triggered on version tags (`v*.*.*`) or manual dispatch, generating `kural-windows-x64-setup.exe`, `kural-windows-x64.zip`, Python wheels, source distributions, and cryptographic `SHA256SUMS`.
 - **Windows Setup Installer (`kural.iss`):** Inno Setup 6 per-user lowest-privilege Windows installer.
-- **Standalone Portable Bundle:** PyInstaller distribution (`dist\kural\kural.exe`) requiring no Python installation.
+- **Standalone Portable Bundle (v0.1.0):** PyInstaller distribution (`dist\kural\kural.exe`) requiring no Python installation. Later releases separate the windowed `kural.exe` from the `kural-console.exe` CLI.

@@ -197,9 +197,10 @@ class WhisperEngine:
                 self.logger.info("Reloading Whisper model into VRAM...")
                 try:
                     self._load_model()
+                    self.last_error = None
                 except Exception as e:
-                    self.last_error = f"Failed to reload model: {e}"
-                    self.logger.error(self.last_error)
+                    self.last_error = f"Failed to load Whisper model: {e}"
+                    self.logger.error(self.last_error, exc_info=True)
 
     def is_model_loaded(self) -> bool:
         return self.model is not None
@@ -299,7 +300,7 @@ class WhisperEngine:
 
         self._ensure_model_loaded()
         if self.model is None:
-            return None
+            return self.last_error
 
         self.last_error = None
         self.last_language_outsider = None
