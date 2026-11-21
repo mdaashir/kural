@@ -15,6 +15,10 @@ from importlib.resources import files
 from kural.config import ConfigManager
 from kural.control.app_rules import apply_formatting_style
 assert distribution_version(sys.argv[1]) == sys.argv[2]
+import kural
+assert kural.__version__ == distribution_version(sys.argv[1])
+from kural.engine.utils import get_version
+assert get_version() == distribution_version(sys.argv[1])
 assert files('kural.config').joinpath('config.defaults.yaml').is_file()
 assert files('kural.config').joinpath('commands.defaults.yaml').is_file()
 assert files('kural.config').joinpath('app_rules.defaults.yaml').is_file()

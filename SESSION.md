@@ -1,26 +1,28 @@
 # SESSION.md
 
 ## Current milestone
-Repair the approved cmd-kural 0.1.2 PyPI publisher; publication is pending.
+**Fix installed cmd-kural version reporting; prepare 0.1.3 corrective release**
 
 ## Current branch
-`fix/pypi-publisher-uv-setup`
+`fix/cmd-kural-installed-version`
 
 ## PR
-https://github.com/mdaashir/kural/pull/101 — open for review; CI results are recorded on the PR.
+To open after final review and verification.
 
 ## Last completed step
-Confirmed run `44851392430` failed before upload: `uvx: command not found` (exit 127). Added job-local `astral-sh/setup-uv@v5`, pinned to build.yml's uv `0.13.9`, with Python 3.12 before metadata validation. Added a ruamel.yaml regression test for setup ordering and matching build pins. Corrected pending-publisher instructions: first successful upload can create the project; it does not reserve the name.
+Reproduced from the published PyPI wheel: distribution metadata is `cmd-kural==0.1.2`, but `kural.__version__` reports `0.1.0` and `kural --version` prints `0.1.0-dev`. Fixed installed metadata lookup to use `cmd-kural`, made the import module version metadata-backed with a source-checkout fallback, and bumped package version to 0.1.3. Existing tags/releases v0.1.0, v0.1.1, v0.1.2 remain unchanged.
 
 ## Verification
-- `uv run --no-sync ruff check .` and `uv run --no-sync ruff format --check .` passed.
-- `uv run --no-sync pytest -q`: 584 passed.
-- actionlint is not installed/on PATH.
-- PyPI `/pypi/cmd-kural/0.1.2/json` still returns 404.
-- Existing GitHub Release v0.1.2 confirmed; tag object `fd7bd3152922ff205314280dcfc9707330bd3cf9` is unchanged.
+- `uv lock --check` and `uv sync --dry-run --locked --extra dev` passed.
+- Wheel and sdist build as `cmd_kural-0.1.3-*`; `twine check --strict` passed.
+- Isolated uv tool install from both wheel and sdist passed; smoke confirms distribution metadata, `kural.__version__`, `get_version()`, and CLI output all report 0.1.3.
+- Ruff check/format passed; `pytest -q`: 585 passed.
+- PyPI `cmd-kural==0.1.3` is not published; no tag/release was created.
 
-## Next step
-Review the fix PR and its CI. After owner merge, a separately authorized fresh publisher dispatch from main can target the existing v0.1.2 tag. Do not rerun the old workflow definition or move tags.
+## Next steps
+1. Commit/push and open the focused version-fix PR; verify hosted CI.
+2. After review/merge, create annotated v0.1.3 from current main and verify GitHub release artifacts/checksums.
+3. Only after checking PyPI Trusted Publisher and GitHub environment `pypi`, enabling `PUBLISH_PYPI`, and receiving explicit user authorization, dispatch the PyPI publisher for v0.1.3 and wait for deployment approval.
 
 ## Open limitations
-No merge, publisher dispatch, deployment approval, tag change, or upload performed in this task. OIDC/first upload remains unverified. No local desktop rebuild or hardware test needed for this workflow-only fix.
+The already-published v0.1.2 CLI/module report stale version values; do not retry or mutate that immutable release. PyPI trusted publishing has not been exercised for the fixed package.

@@ -1,21 +1,26 @@
-# Memory — PyPI publisher uv setup fix
+# Memory — cmd-kural installed version fix
 
 Last updated: 2026-11-21
 
-## What was built
-On `fix/pypi-publisher-uv-setup`, the isolated publish job now installs uv 0.13.9 (matching build.yml) and Python 3.12 before running uvx. A ruamel.yaml workflow regression test verifies ordering and matching pins. README, RELEASE, CHANGELOG and SESSION document the failure and pending publication.
-
-## Decisions made
-Keep cmd-kural version 0.1.2 and all existing tags unchanged. A pending Trusted Publisher can create the project on first successful upload; it does not reserve the name. No pre-existing project claim is required. Runtime import and CLI remain `kural`; the unrelated PyPI `kural` project must not be used.
-
-## Problems solved
-Approved publisher run `44851392430` failed metadata validation with `uvx: command not found`, exit 127. Tools installed in reusable build jobs are not available in the separate publish job.
-
 ## Current state
-GitHub Release v0.1.2 exists. PyPI cmd-kural 0.1.2 JSON endpoint still returns 404; publication remains pending. Local Ruff check/format pass and 584 pytest tests pass. actionlint is unavailable on PATH. Fix PR: https://github.com/mdaashir/kural/pull/101 (open for review; actual CI results are recorded there).
+Published PyPI `cmd-kural==0.1.2` was installed in an isolated uv tool environment and reproduced stale version output: package metadata 0.1.2, `kural.__version__` 0.1.0, and `kural --version` 0.1.0-dev. Fix branch `fix/cmd-kural-installed-version` now derives installed versions from distribution metadata `cmd-kural`; source checkouts use `0+unknown`, and frozen apps read the bundled `cmd-kural` pyproject version. Package version is prepared as 0.1.3. Published tags/releases v0.1.0, v0.1.1, and v0.1.2 remain unchanged.
 
-## Next session starts with
-Review the fix PR and actual CI results. After owner merge, use a separately authorized fresh dispatch from main targeting existing v0.1.2, rather than rerunning the failed workflow definition. This task does not merge, dispatch publication, approve deployments, or change tags.
+## Verification
+- `uv lock --check`, locked dev dependency resolution, wheel/sdist build, and strict Twine metadata checks pass.
+- Isolated uv tool smoke from both wheel and sdist verifies distribution metadata, module version, utility version, and CLI output `kural 0.1.3`.
+- Ruff lint/format pass; pytest: 585 passed.
+- PyPI 0.1.3 is not published; no new tag/release was created.
 
-## Open questions
-OIDC and the first upload remain unverified. No desktop rebuild or live GPU/microphone/UI test was needed for this workflow-only fix. Existing v0.1.1 is also immutable and must not be moved.
+## Decisions and release gates
+- Keep distribution name `cmd-kural`; CLI/import name remains `kural`.
+- Never mutate published versions/tags. Version correction ships only as 0.1.3.
+- Release tag creation requires user review/merge of the fix PR and explicit release authorization.
+- PyPI upload additionally requires verified Trusted Publisher, protected GitHub `pypi` environment, `PUBLISH_PYPI=true`, and explicit user authorization/approval. No PyPI publish has run for 0.1.3.
+
+## Next steps
+1. Review final diff, commit/push the focused fix PR, and verify hosted CI.
+2. Wait for review and merge before any release/tag.
+3. After explicit authorization, create annotated v0.1.3 from merged main, verify release artifacts/checksums, then complete PyPI gate/setup and publish only with approval.
+
+## Historical milestones
+The project roadmap M0–M5 and subsequent desktop/runtime milestones remain documented in the earlier project history; this note records current package-release status.

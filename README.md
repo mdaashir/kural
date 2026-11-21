@@ -12,7 +12,7 @@
 [![CUDA: RTX 3050](https://img.shields.io/badge/CUDA-RTX%203050%206GB-76B900.svg)](https://developer.nvidia.com/cuda-zone)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![CI](https://github.com/mdaashir/kural/actions/workflows/ci.yml/badge.svg)](https://github.com/mdaashir/kural/actions/workflows/ci.yml)
-[![Tests: 583](https://img.shields.io/badge/tests-583%20passing-brightgreen.svg)](tests/)
+[![Tests: 585](https://img.shields.io/badge/tests-585%20passing-brightgreen.svg)](tests/)
 
 Kural merges two MIT-licensed upstream projects into one cohesive desktop voice assistant:
 the **GPU speech engine** from `drajb/whisper-local` with the **deep voice-control engine**
@@ -174,14 +174,14 @@ uv tool install --python 3.12 "C:\path\to\kural-0.1.0-py3-none-any.whl[runtime,t
 kural --version
 ```
 
-After `cmd-kural` 0.1.2 has been published to PyPI, install it as a CLI tool:
+The next PyPI distribution is `cmd-kural`; the import package and executable remain `kural`. **The published 0.1.2 package reports a stale `kural --version` value. Version 0.1.3 is being prepared to correct package and CLI version reporting; avoid 0.1.2 if checking the reported version.** After 0.1.3 is published, install it as a CLI tool:
 
 ```powershell
-uv tool install --python 3.12 --from "cmd-kural[runtime,tray]" kural
+uv tool install --python 3.12 --from "cmd-kural[runtime,tray]==0.1.3" kural
 kural --version
 ```
 
-The PyPI distribution is named `cmd-kural`; the installed CLI and Python import stay `kural`. **PyPI publication is pending:** approved run `44851392430` failed before upload because the publish job lacked `uvx`. The publisher fix installs uv before metadata validation; the existing `v0.1.2` tag remains unchanged. Until publication succeeds, use the [v0.1.2 GitHub Release](https://github.com/mdaashir/kural/releases/tag/v0.1.2). The unrelated `kural` PyPI project must not be used. A matching pending Trusted Publisher can create `cmd-kural` on first successful upload; it does not reserve the name.
+Until then, use the [v0.1.0 GitHub Release wheel](https://github.com/mdaashir/kural/releases/download/v0.1.0/kural-0.1.0-py3-none-any.whl). The unrelated `kural` PyPI project must not be used. A matching pending Trusted Publisher can create `cmd-kural` on first successful upload; it does not reserve the name.
 
 GitHub Releases run only when an existing `v<project.version>` tag is pushed; the tag must
 match `pyproject.toml` exactly. Verified desktop and Python artifacts are attached there.
