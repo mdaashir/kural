@@ -7,7 +7,7 @@ Repair the approved cmd-kural 0.1.2 PyPI publisher; publication is pending.
 `fix/pypi-publisher-uv-setup`
 
 ## PR
-To be opened after verified commit/push; see this branch's GitHub PR.
+https://github.com/mdaashir/kural/pull/101 — open for review; CI results are recorded on the PR.
 
 ## Last completed step
 Confirmed run `44851392430` failed before upload: `uvx: command not found` (exit 127). Added job-local `astral-sh/setup-uv@v5`, pinned to build.yml's uv `0.13.9`, with Python 3.12 before metadata validation. Added a ruamel.yaml regression test for setup ordering and matching build pins. Corrected pending-publisher instructions: first successful upload can create the project; it does not reserve the name.
