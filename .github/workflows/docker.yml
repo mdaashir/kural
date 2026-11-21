@@ -73,13 +73,25 @@ jobs:
           registry: docker.io
           username: ${{ vars.DOCKERHUB_USERNAME || github.actor }}
 
+      - name: Determine Docker image destinations
+        id: images
+        shell: bash
+        run: |
+          IMAGES="ghcr.io/${{ github.repository }}"
+          DH_USER="${{ secrets.DOCKERHUB_USERNAME || vars.DOCKERHUB_USERNAME }}"
+          if [ -n "$DH_USER" ]; then
+            IMAGES="${IMAGES}
+          docker.io/${DH_USER}/kural"
+          fi
+          echo "images<<EOF" >> $GITHUB_OUTPUT
+          echo "$IMAGES" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
       - name: Extract Docker metadata
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: |
-            ghcr.io/${{ github.repository }}
-            ${{ (secrets.DOCKERHUB_USERNAME != '' || vars.DOCKERHUB_USERNAME != '') && format('docker.io/{0}/kural', secrets.DOCKERHUB_USERNAME || vars.DOCKERHUB_USERNAME) || '' }}
+          images: ${{ steps.images.outputs.images }}
           labels: |
             org.opencontainers.image.title=Kural
             org.opencontainers.image.description=Local-first voice typing and voice control for Windows - Headless Whisper API
