@@ -1,28 +1,34 @@
 # SESSION.md
 
 ## Current milestone
-**Fix installed cmd-kural version reporting; prepare 0.1.3 corrective release**
+**Headless Whisper API Containerization & GitHub Container Registry (GHCR)**
 
 ## Current branch
-`fix/cmd-kural-installed-version`
+`feat/ghcr-docker-container`
 
 ## PR
-To open after final review and verification.
+To be opened via gh after verification passes.
 
 ## Last completed step
-Reproduced from the published PyPI wheel: distribution metadata is `cmd-kural==0.1.2`, but `kural.__version__` reports `0.1.0` and `kural --version` prints `0.1.0-dev`. Fixed installed metadata lookup to use `cmd-kural`, made the import module version metadata-backed with a source-checkout fallback, and bumped package version to 0.1.3. Existing tags/releases v0.1.0, v0.1.1, v0.1.2 remain unchanged.
+- `cmd-kural==0.1.3` is live and verified on PyPI; `uv tool install "cmd-kural[runtime,tray]==0.1.3"` verified locally.
+- Implemented containerization for Kural's headless Whisper API:
+  - Multi-stage Linux `Dockerfile` (`python:3.12-slim`, non-root user `kural`, pinned `uv 0.13.9`, healthcheck, `ffmpeg`).
+  - `.dockerignore` excluding `.git`, `.venv`, and temporary artifacts.
+  - `docker-compose.yml` binding port `7777` strictly to host loopback `127.0.0.1` for privacy.
+  - Added `server` optional dependency extra in `pyproject.toml` (`faster-whisper`, `soxr`, `soundfile`) and updated `uv.lock`.
+  - Added GitHub Actions workflow `.github/workflows/docker.yml` building and publishing to `ghcr.io/mdaashir/kural` on tag/push to main, with PR container smoke testing.
+  - Added regression test suite `tests/test_docker.py` (4 tests).
 
 ## Verification
+- `ruff check .` and `ruff format --check .` passed (143 files).
+- `pytest -q`: 589 passed.
 - `uv lock --check` and `uv sync --dry-run --locked --extra dev` passed.
-- Wheel and sdist build as `cmd_kural-0.1.3-*`; `twine check --strict` passed.
-- Isolated uv tool install from both wheel and sdist passed; smoke confirms distribution metadata, `kural.__version__`, `get_version()`, and CLI output all report 0.1.3.
-- Ruff check/format passed; `pytest -q`: 585 passed.
-- PyPI `cmd-kural==0.1.3` is not published; no tag/release was created.
+- `git diff --check` passed cleanly.
 
 ## Next steps
-1. Commit/push and open the focused version-fix PR; verify hosted CI.
-2. After review/merge, create annotated v0.1.3 from current main and verify GitHub release artifacts/checksums.
-3. Only after checking PyPI Trusted Publisher and GitHub environment `pypi`, enabling `PUBLISH_PYPI`, and receiving explicit user authorization, dispatch the PyPI publisher for v0.1.3 and wait for deployment approval.
+1. Commit and push branch `feat/ghcr-docker-container`, open PR into `main`.
+2. Wait for user review and merge.
+3. Next milestone: Modernized Next.js marketing and documentation site deployed to GitHub Pages.
 
 ## Open limitations
-The already-published v0.1.2 CLI/module report stale version values; do not retry or mutate that immutable release. PyPI trusted publishing has not been exercised for the fixed package.
+- Container image provides headless transcription API only; desktop UI, system tray, hotkeys, and Windows audio capture are not included.

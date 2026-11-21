@@ -37,6 +37,11 @@ tray = [
 vad = [
     "ten-vad>=0.0.4",
 ]
+server = [
+    "faster-whisper>=1.0.0",
+    "soxr>=0.3.7",
+    "soundfile>=0.12.0",
+]
 
 [project.scripts]
 kural = "kural.__main__:main"

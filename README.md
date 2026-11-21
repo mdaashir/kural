@@ -12,7 +12,7 @@
 [![CUDA: RTX 3050](https://img.shields.io/badge/CUDA-RTX%203050%206GB-76B900.svg)](https://developer.nvidia.com/cuda-zone)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![CI](https://github.com/mdaashir/kural/actions/workflows/ci.yml/badge.svg)](https://github.com/mdaashir/kural/actions/workflows/ci.yml)
-[![Tests: 585](https://img.shields.io/badge/tests-585%20passing-brightgreen.svg)](tests/)
+[![Tests: 589](https://img.shields.io/badge/tests-589%20passing-brightgreen.svg)](tests/)
 
 Kural merges two MIT-licensed upstream projects into one cohesive desktop voice assistant:
 the **GPU speech engine** from `drajb/whisper-local` with the **deep voice-control engine**
@@ -356,6 +356,20 @@ curl.exe -X POST http://127.0.0.1:7777/v1/audio/transcriptions `
   -F "language=ta" `
   -F "response_format=json"
 ```
+
+#### Running via Docker / Docker Compose
+
+The headless Whisper transcription server is also available as a container image published to GitHub Container Registry (`ghcr.io/mdaashir/kural`):
+
+```bash
+# Launch with Docker Compose (ports bound strictly to 127.0.0.1 for local privacy)
+docker compose up -d
+
+# Verify liveness
+curl http://127.0.0.1:7777/health
+```
+
+> **Security Note:** The transcription API does not include authentication. It must remain bound to loopback (`127.0.0.1`) and never exposed directly to public networks without an authenticating reverse proxy.
 
 ### Benchmarks
 
