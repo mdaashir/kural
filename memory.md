@@ -1,6 +1,6 @@
 # Memory — Kural Full Roadmap Implementation (M0 - M5)
 
-Last updated: 2026-11-21 05:08 IST
+Last updated: 2026-11-21 05:55 IST
 
 ## What was built
 
@@ -44,24 +44,25 @@ Implemented the complete Kural architecture across 9 merged Pull Requests:
 - PR #97 prepared distribution `cmd-kural` version 0.1.1; Python import and CLI remain `kural`.
 - PR #98 corrected PEP 427 underscore normalization for wheel/sdist names; CI run `44835854722` passed all test/package/desktop jobs.
 - Existing tag `v0.1.1` points to pre-PR #98 commit `f82ac4d`. Release run `44832574129` failed artifact validation before GitHub Release creation or PyPI publication. Do not move or force-update this tag.
-- Safe recovery requires a new version/tag (proposed 0.1.2): PR bumps `pyproject.toml`, uv.lock, changelog/docs; after merge create a new annotated tag from main.
+- Safe recovery is a new version/tag `v0.1.2`: prepare a PR bumping `pyproject.toml`, uv.lock, changelog/docs; after merge create a new annotated tag from merged main. Keep immutable `v0.1.1` unchanged.
 - PyPI `cmd-kural` returned 404 at last check, but is not reserved. Pending publisher screenshot shows owner/repo/workflow/environment configured; GitHub `pypi` environment exists but has no protection rules. `PUBLISH_PYPI` remains unset and no PyPI upload has occurred.
 - Trusted publisher values: project `cmd-kural`, owner `mdaashir`, repository `kural`, workflow `publish-pypi.yml`, environment `pypi`; OIDC only, no API token.
 
 ## Current state
 
 - The historical M0–M5 roadmap is complete; post-M5 features, desktop builds, and CI/CD pipelines are merged on `main`.
-- Current `main` at handoff: `f52e5b5`; current GitHub Release is v0.1.0. Next intended distribution is `cmd-kural` 0.1.2 after a version-bump PR.
-- `.github/workflows/ci.yml` and `build.yml` validate code, package wheel/sdist, smoke-test `uv tool`, and build/smoke-test Windows portable bundle and installer.
-- `.github/workflows/release.yml` publishes desktop/GitHub assets; separate manual `.github/workflows/publish-pypi.yml` is gated by `PUBLISH_PYPI == 'true'`.
-- Last local verification after PR #98: 582 tests pass. Do not retry v0.1.1 release as its tag commit is not current-main ancestry after the artifact fix.
+- PRs #97 and #98 merged; current package-prep branch is `chore/cmd-kural-v0.1.2-release`. Current GitHub Release is v0.1.0; runtime import and CLI stay named `kural`.
+- `.github/workflows/ci.yml` and `build.yml` validate code, package wheel/sdist, smoke-test fresh `uv tool` installs, and build/smoke-test the Windows portable bundle and installer.
+- `.github/workflows/release.yml` publishes desktop/GitHub assets; `.github/workflows/publish-pypi.yml` is a separate manual OIDC workflow gated by `PUBLISH_PYPI == 'true'`.
+- The original `v0.1.1` release attempt failed before publishing; its tag must remain untouched. Recovery is version `cmd-kural` 0.1.2 and a new tag from merged main.
+- Local package verification: `uv lock --check`, locked sync dry-run, wheel/sdist build, Twine, isolated uv tool smoke, Ruff, and 583 pytest tests pass.
 - No v0.1.2 release, PyPI upload, GHCR image, or Pages deployment has occurred.
 
 ## Next session starts with
 
-- Confirm PR #98 post-merge CI on main; prepare one version-bump PR to `cmd-kural` 0.1.2 and update lock/changelog/docs.
-- After review/merge, tag v0.1.2 from main and verify GitHub Release artifacts/checksums.
-- Only after the user verifies package ownership/trusted publisher and adds protection to GitHub `pypi` environment, with explicit confirmation, set `PUBLISH_PYPI=true` and manually dispatch `publish-pypi.yml`.
+- Review and open the focused `cmd-kural` 0.1.2 version-bump PR.
+- After PR review/merge, tag v0.1.2 from main and verify GitHub Release artifacts/checksums.
+- Only after user claims the PyPI project, verifies the trusted publisher, protects environment `pypi`, and explicitly confirms, enable `PUBLISH_PYPI=true` and manually dispatch `publish-pypi.yml`.
 - Then handle separate GHCR API image and Next.js GitHub Pages site PRs.
 
 ## Open questions

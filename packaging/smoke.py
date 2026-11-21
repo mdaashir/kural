@@ -5,14 +5,16 @@ import os
 import subprocess
 import tempfile
 import time
+import tomllib
 from pathlib import Path
 
 CHECK = """
+import sys
 from importlib.metadata import version as distribution_version
 from importlib.resources import files
 from kural.config import ConfigManager
 from kural.control.app_rules import apply_formatting_style
-assert distribution_version('cmd-kural') == '0.1.1'
+assert distribution_version(sys.argv[1]) == sys.argv[2]
 assert files('kural.config').joinpath('config.defaults.yaml').is_file()
 assert files('kural.config').joinpath('commands.defaults.yaml').is_file()
 assert files('kural.config').joinpath('app_rules.defaults.yaml').is_file()
@@ -29,6 +31,8 @@ def main() -> None:
     args = parser.parse_args()
     packages = args.packages.resolve() if args.packages else None
     bundle = args.bundle.resolve() if args.bundle else None
+    with (Path(__file__).parents[1] / "pyproject.toml").open("rb") as stream:
+        project = tomllib.load(stream)["project"]
     with tempfile.TemporaryDirectory(prefix="kural-smoke-") as directory:
         root = Path(directory)
         env = dict(
@@ -54,7 +58,13 @@ def main() -> None:
                 run(str(root / "bin" / "kural.exe"), "--version")
                 run(str(root / "bin" / "kural.exe"), "--help")
                 tool_name = artifacts[0].name.split("-", 1)[0].replace("_", "-")
-                run(str(root / "tools" / tool_name / "Scripts" / "python.exe"), "-c", CHECK)
+                run(
+                    str(root / "tools" / tool_name / "Scripts" / "python.exe"),
+                    "-c",
+                    CHECK,
+                    project["name"],
+                    project["version"],
+                )
         if args.installer:
             destination = root / "installed"
             run(

@@ -1,6 +1,6 @@
 # Release Guide for Kural
 
-This document outlines the maintainer procedures for releasing Kural desktop assets and Python distributions. The existing v0.1.0 GitHub Release uses the Python distribution name `kural`; because that PyPI name belongs to an unrelated project, the next Python distribution is being prepared as `cmd-kural` version 0.1.1. Desktop installer/ZIP releases remain on GitHub Releases.
+This document outlines the maintainer procedures for releasing Kural desktop assets and Python distributions. The existing v0.1.0 GitHub Release uses distribution `kural`; because that PyPI name belongs to an unrelated project, the next Python distribution is `cmd-kural` version 0.1.2. Attempted version 0.1.1 was not published: its Git tag points to a pre-fix commit, and release validation correctly requires the tag commit to be on current main. Desktop installer/ZIP releases remain on GitHub Releases. The 0.1.2 wheel/sdist build and isolated `uv tool` smoke tests pass locally; no PyPI upload has occurred.
 
 ---
 
@@ -36,7 +36,7 @@ Kural uses automated GitHub Actions workflows to validate, package, and publish 
    - Publishes the Python distribution named `cmd-kural` (the import package and CLI remain `kural`).
    - Requires the repository variable `PUBLISH_PYPI=true`, the protected GitHub Environment `pypi`, and a matching PyPI Trusted Publisher.
    - Uses OIDC without long-lived API tokens. It is a manual, tag-validating workflow separate from the GitHub Release workflow.
-   - v0.1.0 remains the original GitHub Release with distribution name `kural`; PyPI publishing starts with `cmd-kural` version 0.1.1 after the package rename PR is merged and ownership/configuration is complete.
+   - v0.1.0 remains the original GitHub Release with distribution name `kural`; the failed v0.1.1 attempt must not be retried. PyPI publishing starts with `cmd-kural` version 0.1.2 after the version-bump PR is merged and ownership/configuration is complete.
 
 ---
 
@@ -155,7 +155,7 @@ kural --version
 
 ## 6. PyPI Trusted Publisher Setup (Optional; `cmd-kural`)
 
-**Do not enable publishing until the distribution rename PR is merged and you own the `cmd-kural` project on PyPI.** The existing PyPI project named `kural` belongs to an unrelated package. The v0.1.0 GitHub Release remains unchanged; this setup is for the next Python distribution, `cmd-kural` 0.1.1.
+**Do not enable publishing until the version 0.1.2 PR is merged, you own the `cmd-kural` project on PyPI, and trusted-publisher setup is verified.** The existing PyPI project named `kural` belongs to an unrelated package. The v0.1.0 GitHub Release remains unchanged. Attempted v0.1.1 was not published because its tag points before the artifact-normalization fix; leave tag `v0.1.1` unchanged. This setup is for `cmd-kural` 0.1.2.
 
 ### Step 1: Claim the PyPI Project Name
 
@@ -165,7 +165,7 @@ kural --version
 
 ### Step 2: Configure the PyPI Trusted Publisher
 
-After the package-rename PR is merged and the workflow exists, sign in to the owning PyPI account and open **Publishing** → **Add a new publisher** on the `cmd-kural` project. Choose **GitHub** and enter exactly:
+After the `cmd-kural` 0.1.2 version-bump PR is merged and `.github/workflows/publish-pypi.yml` is on `main`, sign in to the owning PyPI account and open **Publishing** → **Add a new publisher** on the `cmd-kural` project. Choose **GitHub** and enter exactly:
 
 | PyPI field | Value |
 |---|---|
@@ -188,24 +188,24 @@ The workflow gate is the repository Actions variable:
 - Name: `PUBLISH_PYPI`
 - Value: `true`
 
-Leave it unset (or set to any other value) until all previous steps are complete and the package-rename PR is merged. The manual workflow also validates that the supplied existing tag matches `pyproject.toml` and points to a commit on `main`.
+Leave it unset (or set to any other value) until the version 0.1.2 PR is merged and all account/publisher setup is complete. The manual workflow validates that the supplied existing tag matches `pyproject.toml` and points to a commit on `main`. It rejects v0.1.1 because that immutable tag points to the pre-fix commit; do not move, force-update, or retry that tag.
 
 ### Step 5: First PyPI Publication
 
-After the `cmd-kural` package rename PR is merged:
+After the `cmd-kural` version-bump PR is merged:
 
-1. Claim/create the `cmd-kural` project under the intended PyPI owner account.
-2. Add the PyPI Trusted Publisher with the exact fields above and create the protected GitHub `pypi` environment.
-3. Verify the publisher is active on the PyPI project.
-4. Set the repository variable `PUBLISH_PYPI=true` only after ownership and publisher setup are confirmed.
-5. Confirm the existing `v0.1.1` tag matches `pyproject.toml` and is on `main`.
+1. Confirm `pyproject.toml` and `uv.lock` specify `cmd-kural` version `0.1.2` and the changelog is updated.
+2. Create and push a new annotated `v0.1.2` tag from current `main`; keep `v0.1.1` unchanged.
+3. Confirm the `v0.1.2` GitHub Release workflow completed and artifacts/checksums are valid.
+4. Claim/create `cmd-kural`, configure the PyPI Trusted Publisher with the exact fields above, and create/protect GitHub environment `pypi`.
+5. Verify the publisher is active, then set repository variable `PUBLISH_PYPI=true` only after explicit owner approval.
 6. Trigger the publisher manually:
 
 ```powershell
-gh workflow run publish-pypi.yml -f tag=v0.1.1
+gh workflow run publish-pypi.yml -f tag=v0.1.2
 ```
 
-Approve the protected `pypi` environment if prompted. Watch the workflow and verify `https://pypi.org/project/cmd-kural/0.1.1/`. Install the published CLI using:
+Approve the protected `pypi` environment if prompted. Watch the workflow and verify `https://pypi.org/project/cmd-kural/0.1.2/`. Install the published CLI using:
 
 ```powershell
 uv tool install --python 3.12 --from "cmd-kural[runtime,tray]" kural
@@ -228,8 +228,8 @@ If a critical issue is discovered post-release:
    git push --delete origin v0.1.0
    git tag -d v0.1.0
    ```
-2. **Publish a Patch Release (`v0.1.1`):**
+2. **Publish a Patch Release (`v0.1.3`, if `v0.1.2` is current):**
    - Fix the issue on a branch following the `AGENTS.md` workflow.
-   - Bump version in `pyproject.toml` to `0.1.1`.
-   - Update `CHANGELOG.md`.
-   - Tag and push `v0.1.1`.
+   - Bump version in `pyproject.toml` to the next unused patch version.
+   - Update `CHANGELOG.md` and `uv.lock`.
+   - Create and push a new annotated version tag; never move or force-update an existing release tag.
