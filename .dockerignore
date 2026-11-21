@@ -1,0 +1,16 @@
+.git
+.github
+.venv
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache
+.ruff_cache
+dist
+dist-*
+build
+packaging/dist
+*.spec
+*.iss
+*.log

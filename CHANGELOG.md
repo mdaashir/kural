@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Containerization for headless Whisper API: multi-stage Linux `Dockerfile` (non-root `kural` user, healthcheck, `ffmpeg`), `docker-compose.yml` (loopback-bound to `127.0.0.1:7777` for privacy), and GitHub Actions automated build/push workflow (`.github/workflows/docker.yml`) publishing to GitHub Container Registry (`ghcr.io/mdaashir/kural`).
+- Optional `server` dependency extra in `pyproject.toml` containing `faster-whisper`, `soxr`, and `soundfile` for lightweight headless deployments without Windows desktop GUI/hotkey libraries.
+
 ### Changed
 - Prepare `cmd-kural` 0.1.2 after the failed unpublished 0.1.1 release; the `v0.1.1` tag remains unchanged because it points to a pre-fix commit.
 - Prepare `cmd-kural` 0.1.3 to fix installed `kural --version` and `kural.__version__`, which report stale 0.1.0/0.1.0-dev values in the published 0.1.2 package. The `kural` CLI and import package name remain unchanged.
