@@ -7,7 +7,7 @@
 `chore/package-linking-and-dockerhub`
 
 ## PR
-To be opened with gh after verification passes.
+https://github.com/mdaashir/kural/pull/105 — open for review; hosted Docker and CI workflows pass.
 
 ## Last completed step
 - PR #104 merged; GitHub Pages enabled via GitHub API (`build_type=workflow`), deployment workflow succeeded on `main`, and live site verified at `https://mdaashir.github.io/kural/` (responding HTTP 200).
