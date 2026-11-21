@@ -1,31 +1,26 @@
 # SESSION.md
 
 ## Current milestone
-**Prepare cmd-kural 0.1.2 after v0.1.1 release validation failure**
+Repair the approved cmd-kural 0.1.2 PyPI publisher; publication is pending.
 
 ## Current branch
-`chore/cmd-kural-v0.1.2-release`
+`fix/pypi-publisher-uv-setup`
 
 ## PR
-To be opened after final review/commit/push.
+To be opened after verified commit/push; see this branch's GitHub PR.
 
 ## Last completed step
-PR #98 merged; release checker accepts PEP 427-normalized `cmd_kural-...` wheel/sdist filenames. The `v0.1.1` GitHub Release run `44832574129` failed before release creation because validation expected hyphenated filenames. Its immutable tag points to a pre-fix commit and remains untouched. Prepared `cmd-kural` 0.1.2 metadata, lock, release/docs updates and dynamic installed-distribution smoke validation.
+Confirmed run `44851392430` failed before upload: `uvx: command not found` (exit 127). Added job-local `astral-sh/setup-uv@v5`, pinned to build.yml's uv `0.13.9`, with Python 3.12 before metadata validation. Added a ruamel.yaml regression test for setup ordering and matching build pins. Corrected pending-publisher instructions: first successful upload can create the project; it does not reserve the name.
 
 ## Verification
-- `uv lock --check` and `uv sync --dry-run --locked --extra dev` passed.
-- `uv build --out-dir dist/cmd-kural-0.1.2-final` built `cmd_kural-0.1.2` wheel and sdist.
-- `twine check --strict` passed both artifacts.
-- Isolated `uv tool install` smoke passed for wheel and sdist: distribution reports `cmd-kural==0.1.2`; CLI/module remain `kural`.
-- `ruff check .` and `ruff format --check .` passed; `pytest -q` passed (583 tests); `git diff --check` passed.
-- PyPI gate remains off: `PUBLISH_PYPI` unset. GitHub environment `pypi` exists but has no protection rules; no v0.1.2 tag/release or PyPI publication exists.
+- `uv run --no-sync ruff check .` and `uv run --no-sync ruff format --check .` passed.
+- `uv run --no-sync pytest -q`: 584 passed.
+- actionlint is not installed/on PATH.
+- PyPI `/pypi/cmd-kural/0.1.2/json` still returns 404.
+- Existing GitHub Release v0.1.2 confirmed; tag object `fd7bd3152922ff205314280dcfc9707330bd3cf9` is unchanged.
 
 ## Next step
-1. Review the final diff, commit and push `chore/cmd-kural-v0.1.2-release`, and open a PR.
-2. After merge, create an annotated `v0.1.2` tag on main and verify GitHub Release assets/checksums; leave `v0.1.1` unchanged.
-3. User must claim `cmd-kural` on PyPI (pending publisher does not reserve a name), configure the exact trusted publisher, and protect GitHub environment `pypi`.
-4. Only after explicit user confirmation, enable `PUBLISH_PYPI=true` and manually dispatch `publish-pypi.yml` for `v0.1.2`.
+Review the fix PR and its CI. After owner merge, a separately authorized fresh publisher dispatch from main can target the existing v0.1.2 tag. Do not rerun the old workflow definition or move tags.
 
 ## Open limitations
-- PyPI ownership and trusted-publisher/environment setup are user/account-side; no publish or credential setup was performed.
-- Local GPU inference, microphone capture, and live Windows UI/hotkey behavior are not covered by package tests.
+No merge, publisher dispatch, deployment approval, tag change, or upload performed in this task. OIDC/first upload remains unverified. No local desktop rebuild or hardware test needed for this workflow-only fix.

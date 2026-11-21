@@ -155,17 +155,15 @@ kural --version
 
 ## 6. PyPI Trusted Publisher Setup (Optional; `cmd-kural`)
 
-**Do not enable publishing until the version 0.1.2 PR is merged, you own the `cmd-kural` project on PyPI, and trusted-publisher setup is verified.** The existing PyPI project named `kural` belongs to an unrelated package. The v0.1.0 GitHub Release remains unchanged. Attempted v0.1.1 was not published because its tag points before the artifact-normalization fix; leave tag `v0.1.1` unchanged. This setup is for `cmd-kural` 0.1.2.
+**Publication is pending.** Approved run `44851392430` failed metadata validation with `uvx: command not found` (exit 127), before upload. The fix installs pinned uv and Python 3.12 in the isolated publish job. The existing `v0.1.2` GitHub Release/tag remains unchanged. After this fix is reviewed and merged, an owner-authorized fresh dispatch from `main` can use that same tag; rerunning the old workflow would retain the missing setup. No dispatch or deployment approval is part of this fix. The existing PyPI project named `kural` belongs to an unrelated package. The v0.1.0 GitHub Release remains unchanged. Attempted v0.1.1 was not published because its tag points before the artifact-normalization fix; leave tag `v0.1.1` unchanged. This setup is for `cmd-kural` 0.1.2.
 
-### Step 1: Claim the PyPI Project Name
+### Step 1: Configure a Pending Publisher for a New Project
 
-1. Sign in to the PyPI account that will own the package and create/claim the project `cmd-kural`.
-2. Confirm `https://pypi.org/project/cmd-kural/` identifies your project before enabling publishing.
-3. A PyPI **pending publisher does not reserve the name**. Another user can claim it before the first publish, so claim the project first. If the name is taken, stop and choose another distribution name; update package metadata/release checks before proceeding.
+Sign in to the intended owning PyPI account and use account **Publishing** to add a pending publisher for `cmd-kural`. It creates the project on the first successful upload; an existing project is not required. A pending publisher does not reserve the name. If another owner takes it, stop rather than upload to an unrelated project.
 
-### Step 2: Configure the PyPI Trusted Publisher
+### Step 2: Verify the PyPI Trusted Publisher
 
-After the `cmd-kural` 0.1.2 version-bump PR is merged and `.github/workflows/publish-pypi.yml` is on `main`, sign in to the owning PyPI account and open **Publishing** → **Add a new publisher** on the `cmd-kural` project. Choose **GitHub** and enter exactly:
+For an existing project you own, use its **Publishing** settings; for a new project, verify the pending publisher from Step 1. Choose **GitHub** with exactly:
 
 | PyPI field | Value |
 |---|---|
@@ -192,14 +190,14 @@ Leave it unset (or set to any other value) until the version 0.1.2 PR is merged 
 
 ### Step 5: First PyPI Publication
 
-After the `cmd-kural` version-bump PR is merged:
+After the publisher fix is reviewed and merged:
 
 1. Confirm `pyproject.toml` and `uv.lock` specify `cmd-kural` version `0.1.2` and the changelog is updated.
-2. Create and push a new annotated `v0.1.2` tag from current `main`; keep `v0.1.1` unchanged.
+2. Reuse the existing annotated `v0.1.2` tag; do not recreate or move it. Keep `v0.1.1` unchanged too.
 3. Confirm the `v0.1.2` GitHub Release workflow completed and artifacts/checksums are valid.
-4. Claim/create `cmd-kural`, configure the PyPI Trusted Publisher with the exact fields above, and create/protect GitHub environment `pypi`.
-5. Verify the publisher is active, then set repository variable `PUBLISH_PYPI=true` only after explicit owner approval.
-6. Trigger the publisher manually:
+4. Verify the pending (or existing project) Trusted Publisher with the exact fields above and protected GitHub environment `pypi`.
+5. Verify repository variable `PUBLISH_PYPI=true` and explicit owner authorization before proceeding.
+6. Trigger a fresh publisher run from merged `main` (not a rerun of the failed workflow):
 
 ```powershell
 gh workflow run publish-pypi.yml -f tag=v0.1.2
