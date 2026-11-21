@@ -12,7 +12,7 @@
 [![CUDA: RTX 3050](https://img.shields.io/badge/CUDA-RTX%203050%206GB-76B900.svg)](https://developer.nvidia.com/cuda-zone)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![CI](https://github.com/mdaashir/kural/actions/workflows/ci.yml/badge.svg)](https://github.com/mdaashir/kural/actions/workflows/ci.yml)
-[![Tests: 579](https://img.shields.io/badge/tests-579%20passing-brightgreen.svg)](tests/)
+[![Tests: 583](https://img.shields.io/badge/tests-583%20passing-brightgreen.svg)](tests/)
 
 Kural merges two MIT-licensed upstream projects into one cohesive desktop voice assistant:
 the **GPU speech engine** from `drajb/whisper-local` with the **deep voice-control engine**
@@ -174,14 +174,14 @@ uv tool install --python 3.12 "C:\path\to\kural-0.1.0-py3-none-any.whl[runtime,t
 kural --version
 ```
 
-After `cmd-kural` 0.1.1 is published, install it from PyPI as a CLI tool:
+After `cmd-kural` 0.1.2 has been published to PyPI, install it as a CLI tool:
 
 ```powershell
 uv tool install --python 3.12 --from "cmd-kural[runtime,tray]" kural
 kural --version
 ```
 
-The PyPI distribution is named `cmd-kural`; the installed CLI and Python import stay `kural`. This package is not published yet. The existing `kural` PyPI project belongs to an unrelated package; the owner must claim `cmd-kural` and configure its Trusted Publisher before the gated OIDC workflow can publish. The GitHub Release wheel above remains distribution `kural` version 0.1.0.
+The PyPI distribution is named `cmd-kural`; the installed CLI and Python import stay `kural`. **This PyPI package is not published yet**, so the command above cannot be used until the `cmd-kural` 0.1.2 upload completes. The existing `kural` PyPI project belongs to an unrelated package; the owner must claim `cmd-kural` and configure its Trusted Publisher before the gated OIDC workflow can publish. Until then, use the [v0.1.0 GitHub Release wheel](https://github.com/mdaashir/kural/releases/download/v0.1.0/kural-0.1.0-py3-none-any.whl).
 
 GitHub Releases run only when an existing `v<project.version>` tag is pushed; the tag must
 match `pyproject.toml` exactly. Verified desktop and Python artifacts are attached there.

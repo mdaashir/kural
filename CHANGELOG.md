@@ -10,7 +10,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Changed
-- Prepare the next Python distribution as `cmd-kural` version `0.1.1`; the v0.1.0 GitHub Release and its `kural` wheel remain unchanged.
+- Recover the failed unpublished `cmd-kural` 0.1.1 release using a new `0.1.2` version/tag. The existing `v0.1.1` tag remains unchanged because it points to a pre-fix commit and release tags must not be moved.
+- Prepare `cmd-kural` 0.1.2 wheel/sdist installation through `uv tool`; the `kural` CLI and import package name remain unchanged.
+- The v0.1.0 GitHub Release and its `kural` distribution wheel remain unchanged.
 - Add a manually triggered, OIDC-only PyPI publishing workflow gated on package ownership, PyPI Trusted Publisher setup, the protected GitHub `pypi` environment, and `PUBLISH_PYPI=true`.
 
 ### Notes
