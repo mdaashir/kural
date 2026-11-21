@@ -4,8 +4,14 @@ import importlib
 
 
 def test_kural_imports() -> None:
+    from importlib.metadata import PackageNotFoundError, version
+
     kural = importlib.import_module("kural")
-    assert kural.__version__ == "0.1.0"
+    try:
+        expected = version("cmd-kural")
+    except PackageNotFoundError:
+        expected = "0+unknown"
+    assert kural.__version__ == expected
 
 
 def test_subpackages_import() -> None:

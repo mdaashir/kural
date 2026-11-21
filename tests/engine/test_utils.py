@@ -78,16 +78,23 @@ class TestAssetResolution:
 
 
 class TestGetVersion:
+    def test_get_version_installed_distribution(self):
+        with (
+            patch("kural.engine.utils.is_installed_package", return_value=True),
+            patch("importlib.metadata.version", return_value="9.8.7") as version,
+        ):
+            assert get_version() == "9.8.7"
+        version.assert_called_once_with("cmd-kural")
+
     def test_get_version_repo_checkout(self):
-        ver = get_version()
-        assert ver.endswith("-dev")
-        assert ver.split("-")[0].count(".") == 2
+        with patch("kural.engine.utils.is_installed_package", return_value=False):
+            assert get_version() == "0.1.3-dev"
 
     def test_get_version_frozen(self, tmp_path):
         meipass = tmp_path / "meipass"
         meipass.mkdir(parents=True)
         pyproj = meipass / "pyproject.toml"
-        pyproj.write_text('[project]\nversion = "0.5.0"\n', encoding="utf-8")
+        pyproj.write_text('[project]\nname = "cmd-kural"\nversion = "0.5.0"\n', encoding="utf-8")
 
         with (
             patch.object(sys, "frozen", True, create=True),

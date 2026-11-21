@@ -276,15 +276,16 @@ def get_version() -> str:
         import importlib.metadata
 
         with contextlib.suppress(Exception):
-            return importlib.metadata.version("kural")
+            return importlib.metadata.version("cmd-kural")
 
     # Frozen standalone executable (PyInstaller)
     if getattr(sys, "frozen", False) and hasattr(sys, "_MEIPASS"):
         meipass_pyproj = Path(sys._MEIPASS) / "pyproject.toml"
         if meipass_pyproj.exists():
             with open(meipass_pyproj, "rb") as f:
-                data = tomllib.load(f)
-                return str(data.get("project", {}).get("version", "0.1.0"))
+                project = tomllib.load(f).get("project", {})
+                if project.get("name") == "cmd-kural":
+                    return str(project.get("version", "0.1.0"))
         return "0.1.0"
 
     pyproject_path = Path(__file__).parent.parent.parent / "pyproject.toml"

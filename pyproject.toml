@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "cmd-kural"
-version = "0.1.2"
+version = "0.1.3"
 description = "Local-first voice typing and voice control for Windows. English and Tamil. GPU-accelerated Whisper, no cloud."
 readme = "README.md"
 license = { file = "LICENSE" }
