@@ -4,6 +4,12 @@
 
 FROM python:3.12-slim AS runtime
 
+# OCI labels for GitHub Container Registry package linking and metadata
+LABEL org.opencontainers.image.title="Kural"
+LABEL org.opencontainers.image.description="Local-first voice typing and voice control for Windows - Headless Whisper API"
+LABEL org.opencontainers.image.source="https://github.com/mdaashir/kural"
+LABEL org.opencontainers.image.licenses="MIT"
+
 # Install ffmpeg for audio decoding and curl for healthcheck
 RUN apt-get update && apt-get install -y --no-install-recommends \
     ffmpeg \

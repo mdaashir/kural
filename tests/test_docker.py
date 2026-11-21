@@ -16,6 +16,8 @@ def test_dockerfile_structure():
     assert "HEALTHCHECK" in dockerfile
     assert "uv pip install" in dockerfile
     assert ".[server]" in dockerfile
+    assert "LABEL org.opencontainers.image.source" in dockerfile
+    assert "https://github.com/mdaashir/kural" in dockerfile
 
 
 def test_dockerignore_excludes_sensitive_paths():
@@ -42,6 +44,8 @@ def test_docker_workflow_configuration():
     )
     assert workflow["permissions"]["packages"] == "write"
     assert workflow["permissions"]["contents"] == "read"
+    assert workflow["permissions"]["id-token"] == "write"
     steps = workflow["jobs"]["build"]["steps"]
-    login_step = next(s for s in steps if "login-action" in s.get("uses", ""))
-    assert login_step["with"]["registry"] == "ghcr.io"
+    login_steps = [s for s in steps if "login-action" in s.get("uses", "")]
+    assert any(s["with"]["registry"] == "ghcr.io" for s in login_steps)
+    assert any(s["with"]["registry"] == "docker.io" for s in login_steps)
