@@ -53,3 +53,11 @@ models/
 # Windows
 Thumbs.db
 desktop.ini
+
+# Static website
+site/node_modules/
+site/.next/
+site/out/
+site/*.tsbuildinfo
+.taste-skill/
+site/screenshots/

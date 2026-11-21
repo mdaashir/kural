@@ -1,0 +1,8 @@
+import Link from "next/link";
+import { DocsShell } from "../../../components/docs-shell";
+import { metadata as meta } from "../../../lib/site";
+export const metadata = meta("Commands", "Kural hotkeys, file transcription, diagnostics and voice command reference.", "/docs/commands/");
+export default function Commands() { return <DocsShell current="commands"><p className="eyebrow">Reference</p><h1>Hotkeys and CLI commands</h1><p className="lead">Dictation sends transcribed text to the active cursor. Command mode interprets supported voice commands; Tamil and Tanglish aliases are available, but speech recognition varies by recording and model.</p><h2>Keyboard shortcuts</h2><ul><li><kbd>Ctrl+Space</kbd> — toggle dictation; optionally hold in push-to-talk mode.</li><li><kbd>Ctrl+Shift+Space</kbd> — command mode for voice control.</li><li><kbd>Escape</kbd> — cancel a recording.</li><li><kbd>Ctrl+Alt+V</kbd> — paste the last transcript when available; incognito disables this memory.</li></ul><p>See the app&apos;s built-in command card with <code>kural --cheat-sheet</code>. Configure shortcuts in settings.</p><h2>File transcription</h2><pre><code>kural --transcribe meeting.wav --format text</code></pre><p>Supported output formats: text, srt and json. Use <code>--output transcript.txt</code> to write to a file. A local model may need to download before its first use.</p><h2>Diagnostics and settings</h2><pre><code>{`kural --doctor
+kural --config-check
+kural --settings
+kural --version`}</code></pre><p>Run <code>kural --selftest</code> for live microphone, model and clipboard checks; it needs working runtime hardware. <Link href="/docs/config/">Read the configuration guide</Link>.</p></DocsShell>; }

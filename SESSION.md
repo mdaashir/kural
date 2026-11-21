@@ -1,34 +1,29 @@
 # SESSION.md
 
 ## Current milestone
-**Headless Whisper API Containerization & GitHub Container Registry (GHCR)**
+**Next.js marketing and documentation site for GitHub Pages**
 
 ## Current branch
-`feat/ghcr-docker-container`
+`feat/nextjs-pages-site`
 
 ## PR
-To be opened via gh after verification passes.
+To be opened with gh after final checks.
 
 ## Last completed step
-- `cmd-kural==0.1.3` is live and verified on PyPI; `uv tool install "cmd-kural[runtime,tray]==0.1.3"` verified locally.
-- Implemented containerization for Kural's headless Whisper API:
-  - Multi-stage Linux `Dockerfile` (`python:3.12-slim`, non-root user `kural`, pinned `uv 0.13.9`, healthcheck, `ffmpeg`).
-  - `.dockerignore` excluding `.git`, `.venv`, and temporary artifacts.
-  - `docker-compose.yml` binding port `7777` strictly to host loopback `127.0.0.1` for privacy.
-  - Added `server` optional dependency extra in `pyproject.toml` (`faster-whisper`, `soxr`, `soundfile`) and updated `uv.lock`.
-  - Added GitHub Actions workflow `.github/workflows/docker.yml` building and publishing to `ghcr.io/mdaashir/kural` on tag/push to main, with PR container smoke testing.
-  - Added regression test suite `tests/test_docker.py` (4 tests).
+- PR #103 merged; headless API container workflow published successfully to GHCR on main. The Windows desktop distribution remains separate.
+- Next.js 16 static export built in `site/` for `https://mdaashir.github.io/kural/` with product landing page, downloads, documentation (quickstart, commands, configuration, API, troubleshooting), local artwork, canonical metadata, sitemap and robots.
+- `.github/workflows/pages.yml` builds on PR and deploys only from main/manual main to `github-pages` using Pages/OIDC permissions. Site links point to existing v0.1.3 GitHub Release and PyPI package; no site deployment has occurred.
 
 ## Verification
-- `ruff check .` and `ruff format --check .` passed (143 files).
-- `pytest -q`: 589 passed.
-- `uv lock --check` and `uv sync --dry-run --locked --extra dev` passed.
-- `git diff --check` passed cleanly.
+- `npm ci`, `npm run typecheck`, `npm run lint`, `npm run build`, `npm test` passed; 4 export tests verify Pages base-path links and static assets.
+- Python Ruff lint/format passed (144 files); `pytest -q`: 590 passed. Hosted Pages/CI checks remain pending until PR.
+- Visual browser gate in design-taste-frontend skill was unavailable (script runner reported `scripts/gate.mjs` missing); no browser screenshots were checked.
 
 ## Next steps
-1. Commit and push branch `feat/ghcr-docker-container`, open PR into `main`.
-2. Wait for user review and merge.
-3. Next milestone: Modernized Next.js marketing and documentation site deployed to GitHub Pages.
+1. Verify repository tests, Pages workflow syntax, and site links; review diff.
+2. Commit, push and open one focused site PR; inspect hosted Pages build and Python CI.
+3. Wait for user review/merge; configure GitHub Pages source to **GitHub Actions** if not already set, then verify deployment and live links.
+4. Docker Hub is deferred. GHCR uses GitHub token; Docker Hub publishing requires Docker Hub credentials or a supported trusted-publishing integration, not the GitHub token alone.
 
 ## Open limitations
-- Container image provides headless transcription API only; desktop UI, system tray, hotkeys, and Windows audio capture are not included.
+- No live GitHub Pages deployment or browser layout screenshots yet. GPU/microphone/live desktop behavior is not exercised by site tests.
