@@ -25,4 +25,8 @@ CreateUninstallRegKey=yes
 Source: "..\dist\kural\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 
 [Icons]
-Name: "{userprograms}\Kural"; Filename: "{app}\kural.exe"; Check: not WizardSilent
+Name: "{userprograms}\Kural"; Filename: "{app}\kural.exe"; IconFilename: "{app}\kural.exe"
+Name: "{autodesktop}\Kural"; Filename: "{app}\kural.exe"; IconFilename: "{app}\kural.exe"; Tasks: desktopicon
+
+[Tasks]
+Name: "desktopicon"; Description: "Create a desktop shortcut"; GroupDescription: "Additional shortcuts:"; Flags: checkedonce

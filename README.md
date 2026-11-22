@@ -12,7 +12,7 @@
 [![CUDA: RTX 3050](https://img.shields.io/badge/CUDA-RTX%203050%206GB-76B900.svg)](https://developer.nvidia.com/cuda-zone)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![CI](https://github.com/mdaashir/kural/actions/workflows/ci.yml/badge.svg)](https://github.com/mdaashir/kural/actions/workflows/ci.yml)
-[![Tests: 590](https://img.shields.io/badge/tests-590%20passing-brightgreen.svg)](tests/)
+[![Tests: 599](https://img.shields.io/badge/tests-599%20passing-brightgreen.svg)](tests/)
 
 Kural merges two MIT-licensed upstream projects into one cohesive desktop voice assistant:
 the **GPU speech engine** from `drajb/whisper-local` with the **deep voice-control engine**
@@ -111,7 +111,7 @@ kural/
 ├── doctor.py                   # `kural --doctor` diagnostic health check
 ├── runtime.py                  # Main daemon: state machine, hotkeys, audio loop
 ├── benchmarks/                 # ASR harness: WER, Tamil CER, RTF on GPU
-└── packaging/                  # Standalone PyInstaller build (kural.exe)
+└── packaging/                  # Dual windowed/console PyInstaller builds + installer
 ```
 
 ---
@@ -122,7 +122,7 @@ kural/
 
 - **OS:** Windows 11 (AMD64)
 - **Python:** 3.12+ (managed with `uv` or system Python)
-- **GPU (Recommended):** NVIDIA RTX 3050 or any CUDA 12-compatible GPU with latest drivers
+- **GPU (Recommended):** NVIDIA CUDA-capable GPU with compatible drivers and CUDA 12/cuDNN 9 inference libraries available. The Windows installer/portable ZIP does not bundle the multi-gigabyte CUDA/cuDNN DLLs; `kural-console.exe --doctor` reports missing libraries. Without them, select CPU (`device: cpu`, `compute_type: int8`) in Settings/configuration. CUDA-library installation guidance is not yet provided by this installer.
 
 ### Installation
 
@@ -144,6 +144,16 @@ uv pip install -e ".[runtime]"
 # Optional extras: tray icon, voice activity detection
 uv pip install -e ".[tray,vad]"
 ```
+
+### Installed Windows Launchers
+
+The setup installer creates a Start Menu shortcut and, by default, offers a desktop shortcut. Both start the windowed `kural.exe`, so normal desktop use does not open a terminal. The bundle also contains `kural-console.exe` for visible diagnostics:
+
+```powershell
+& "$env:LOCALAPPDATA\Programs\Kural\kural-console.exe" --doctor
+```
+
+The bundled desktop launcher does not install NVIDIA CUDA/cuDNN DLLs. Run the doctor command to check GPU requirements. If those libraries are missing, choose CPU (`device: cpu`, `compute_type: int8`) in Settings; the app does not silently change the configured device. The Whisper model may still download on first use.
 
 ### Reproducible builds and release artifacts
 
@@ -174,14 +184,7 @@ uv tool install --python 3.12 "C:\path\to\cmd_kural-0.1.3-py3-none-any.whl[runti
 kural --version
 ```
 
-The PyPI distribution is [`cmd-kural`](https://pypi.org/project/cmd-kural/0.1.3/); the import package and executable remain `kural`. Install 0.1.3 as a CLI tool:
-
-```powershell
-uv tool install --python 3.12 --from "cmd-kural[runtime,tray]==0.1.3" kural
-kural --version
-```
-
-The published 0.1.2 package has a stale `--version` display; choose 0.1.3 for corrected version reporting. The unrelated `kural` PyPI project is not this application.
+The PyPI distribution is [`cmd-kural`](https://pypi.org/project/cmd-kural/0.1.3/); the import package and executable remain `kural`. Published 0.1.3 installs, but reports stale `kural --version` and `kural.__version__` values (0.1.0). A 0.1.4 correction is being prepared. Until then, use the GitHub Release wheel above if accurate version reporting matters. The unrelated `kural` PyPI project is not this application.
 
 GitHub Releases run only when an existing `v<project.version>` tag is pushed; the tag must
 match `pyproject.toml` exactly. Verified desktop and Python artifacts are attached there.
@@ -409,9 +412,12 @@ Outputs: `dist/cmd_kural-0.1.3-py3-none-any.whl` and `dist/cmd_kural-0.1.3.tar.g
 packaging\build.bat
 ```
 Output:
-- `dist\kural\kural.exe` — a self-contained Windows application bundle with bundled configurations and no Python runtime installation required.
-- `dist\kural-windows-x64.zip` — portable archive ready to unzip and run anywhere.
-- `dist\kural-windows-x64-setup.exe` — per-user setup wizard installer (built with Inno Setup, lowest privileges, no admin rights required).
+- `dist\kural\kural.exe` — windowed desktop launcher; opening it should not show a terminal.
+- `dist\kural\kural-console.exe` — console launcher for CLI commands such as `--doctor`, `--version`, and `--selftest`.
+- `dist\kural-windows-x64.zip` — portable archive containing both launchers; use `kural.exe` for the tray app and `kural-console.exe` for visible CLI output.
+- `dist\kural-windows-x64-setup.exe` — per-user setup wizard installer (built with Inno Setup, lowest privileges, no admin rights required). It creates a Start Menu shortcut and offers a desktop-shortcut checkbox, selected by default.
+
+The launcher does not install CUDA/cuDNN automatically. Run `kural-console.exe --doctor` to diagnose GPU prerequisites. If NVIDIA inference DLLs are missing, select CPU mode (`device: cpu`, `compute_type: int8`) in Settings; Kural never changes device selection silently. Model initialization errors during a session appear in the status overlay and log. If model initialization fails during the initial runtime constructor, the current launcher still exits before the tray is available; guided startup recovery remains future work. The configured Whisper model downloads on first use.
 
 #### 3. Automated CI / CD & Releases
 

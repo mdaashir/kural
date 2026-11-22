@@ -535,7 +535,17 @@ class KuralRuntime:
             print("⏳ Transcribing on GPU...")
             text = self.engine.transcribe_audio(audio_data)
             if not text:
-                self.audio_feedback.play_error()
+                model_error = getattr(self.engine, "last_error", None)
+                if model_error:
+                    message = (
+                        "Speech model unavailable: check CUDA/cuDNN or select CPU in Settings. "
+                        "Run kural-console.exe --doctor for details; the model downloads on first use."
+                    )
+                    logger.error("Dictation unavailable: %s", model_error)
+                    if getattr(self, "overlay", None):
+                        self.overlay.flash_error(message)
+                if getattr(self, "audio_feedback", None):
+                    self.audio_feedback.play_error()
                 return
 
             if mode == RuntimeState.RECORDING_COMMAND:
@@ -784,6 +794,17 @@ class KuralRuntime:
             self.terminal_title.start()
         self.overlay.start()
         self.tray.start()
+        model_error = getattr(self.engine, "last_error", None)
+        if model_error:
+            logger.error("Whisper is unavailable at startup: %s", model_error)
+            if getattr(self, "fallback_window", None):
+                self.fallback_window.show(
+                    "Whisper could not start. Run kural-console.exe --doctor, install the missing CUDA/cuDNN libraries, or choose CPU mode in Settings. Kural did not change your configured device.",
+                    reason="Speech recognition is unavailable until the selected device is configured correctly.",
+                    allow_clipboard=False,
+                )
+            else:
+                self.overlay.flash_error("Whisper unavailable — run kural-console.exe --doctor")
 
         try:
             while self._running:

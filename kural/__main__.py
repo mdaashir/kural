@@ -1,17 +1,53 @@
 """Entry point for `python -m kural`."""
 
 import argparse
+import logging
+import subprocess
 import sys
+from pathlib import Path
 
 from kural.engine.utils import get_version
 
+logger = logging.getLogger(__name__)
 
-def main() -> None:
+
+def _is_desktop_start(argv: list[str]) -> bool:
+    """Return true only when no command-line arguments were supplied."""
+    return all(arg == "--windowed-launch" for arg in argv)
+
+
+def _relaunch_console(argv: list[str]) -> None:
+    """Rerun CLI-only options with a visible console from the GUI build."""
+    if getattr(sys, "frozen", False):
+        console_exe = Path(sys.executable).with_name("kural-console.exe")
+        if console_exe.is_file():
+            subprocess.Popen([str(console_exe), *argv])
+            return
+        logger.error("Console launcher is missing beside windowed executable: %s", console_exe)
+        return
+
+    from kural.engine.utils import build_relaunch_command
+
+    subprocess.Popen(build_relaunch_command(windowless=False) + argv)
+
+
+def main(argv: list[str] | None = None) -> None:
     """Start the Kural application or run CLI commands."""
+
+    actual_argv = list(sys.argv[1:] if argv is None else argv)
+    launcher = Path(sys.executable).name.lower()
+    windowed = getattr(sys, "frozen", False) and launcher == "kural.exe"
+    if windowed and not _is_desktop_start(actual_argv):
+        cli_args = [arg for arg in actual_argv if arg != "--windowed-launch"]
+        _relaunch_console(cli_args)
+        return
+
     parser = argparse.ArgumentParser(
         prog="kural",
         description="Local-first voice typing and voice control for Windows. English and Tamil.",
     )
+    if windowed:
+        parser.add_argument("--windowed-launch", action="store_true", help=argparse.SUPPRESS)
     parser.add_argument(
         "--doctor",
         action="store_true",
@@ -136,7 +172,41 @@ def main() -> None:
     )
 
     parser.add_argument("--packaging-smoke", action="store_true", help=argparse.SUPPRESS)
-    args = parser.parse_args()
+    parser.add_argument("--windowed-launch", action="store_true", help=argparse.SUPPRESS)
+    args = parser.parse_args(argv)
+
+    cli_only = any(
+        (
+            args.doctor,
+            args.selftest,
+            args.bundle_logs is not None,
+            args.transcribe,
+            args.settings,
+            args.dict_list,
+            args.dict_add,
+            args.dict_remove,
+            args.history is not None,
+            args.history_gui,
+            args.cheat_sheet,
+            args.stats,
+            args.autostart_status,
+            args.enable_autostart,
+            args.disable_autostart,
+            args.serve,
+            args.config_check,
+            args.packaging_smoke,
+        )
+    )
+    if args.windowed_launch and cli_only:
+        from kural.engine.utils import build_relaunch_command
+
+        cli_args = [arg for arg in sys.argv[1:] if arg != "--windowed-launch"]
+        executable = Path(sys.executable).with_name("kural-console.exe")
+        if getattr(sys, "frozen", False) and executable.is_file():
+            subprocess.Popen([str(executable), *cli_args])
+        else:
+            subprocess.Popen(build_relaunch_command(windowless=False) + cli_args)
+        return
 
     if args.packaging_smoke:
         from importlib import import_module
@@ -341,5 +411,44 @@ def main() -> None:
         release_single_instance_lock(lock_handle)
 
 
-if __name__ == "__main__":
+def _show_windowed_startup_error(message: str) -> None:
+    """Show a native Windows startup error dialog if a GUI session exists."""
+    import ctypes
+
+    try:
+        ctypes.windll.user32.MessageBoxW(None, message, "Kural startup problem", 0x10)
+    except Exception:
+        logger.exception("Could not display Kural startup error dialog")
+
+
+def windowed_main() -> None:
+    """Launch the desktop daemon without a console; show actionable startup failures."""
+    import os
+
+    # PyInstaller windowed builds have no console streams. Redirect ordinary
+    # prints away; configured logging continues to the rotating user log.
+    from contextlib import ExitStack
+
+    with ExitStack() as stack:
+        sys.stdout = stack.enter_context(open(os.devnull, "w", encoding="utf-8"))
+        sys.stderr = stack.enter_context(open(os.devnull, "w", encoding="utf-8"))
+        try:
+            main([*sys.argv[1:], "--windowed-launch"])
+        except Exception:
+            logger.exception("Kural desktop startup failed")
+            message = (
+                "Kural could not start its speech engine. Run kural-console.exe --doctor "
+                "and see %USERPROFILE%\\.kural\\kural.log. Install compatible CUDA/cuDNN "
+                "libraries or choose CPU mode (int8) in Settings. Kural did not change "
+                "your device settings."
+            )
+            _show_windowed_startup_error(message)
+
+
+def console_main() -> None:
+    """Launch Kural CLI commands with a visible console."""
     main()
+
+
+if __name__ == "__main__":
+    console_main()
